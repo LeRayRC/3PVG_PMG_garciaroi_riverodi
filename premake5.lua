@@ -89,14 +89,15 @@ workspace "Motor"
                 "src/build/conanfile.txt",
                 "src/build/conan.lua",
                 "src/stdafx.cpp", "src/stdafx.hpp",
-                "src/Window.cpp", "include/tija/Window.hpp",
+                -- "src/Window.cpp", "include/tija/Window.hpp",
                 }
     project"Window"
-        kind "WindowedApp"
+
+        kind "ConsoleApp" -- This was WindowedApp
         language "C++"
         targetdir "build/%{prj.name}/%{cfg.buildcfg}"
         includedirs "include"
-        links "Tija"
+        -- links "Tija"
         conan_config_exec("Debug")
         conan_config_exec("Release")
         conan_config_exec("RelWithDebInfo")
