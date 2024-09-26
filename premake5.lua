@@ -89,7 +89,8 @@ workspace "Motor"
                 "src/build/conanfile.txt",
                 "src/build/conan.lua",
                 "src/stdafx.cpp", "src/stdafx.hpp",
-                -- "src/Window.cpp", "include/tija/Window.hpp",
+                "src/custom_vulkan_helpers.hpp",
+                "src/custom_vulkan_helpers.cpp",
                 }
     project"Window"
 
@@ -108,10 +109,12 @@ workspace "Motor"
         language "C++"
         targetdir "build/%{prj.name}/%{cfg.buildcfg}"
         includedirs "include"
-        -- links "Tija"
+        links "Motor"
         conan_config_exec("Debug")
         conan_config_exec("Release")
         conan_config_exec("RelWithDebInfo")
         debugargs { _MAIN_SCRIPT_DIR .. "/examples/data" }
         files "examples/hellotriangle.cpp"
-        files "include/hellotriangle.h"
+        files "include/hellotriangle.hpp"
+        files "include/custom_vulkan_helpers.hpp"
+        -- files "src/custom_vulkan_helpers.cpp"
