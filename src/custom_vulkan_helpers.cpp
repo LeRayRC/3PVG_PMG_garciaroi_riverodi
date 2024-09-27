@@ -88,3 +88,53 @@ void DestroyDebugUtilsMessengerEXT(VkInstance instance,
 		func(instance, debugMessenger, pAllocator);
 	}
 }
+
+
+bool isDeviceSuitable(VkPhysicalDevice device) {
+	VkPhysicalDeviceProperties deviceProperties;
+	vkGetPhysicalDeviceProperties(device, &deviceProperties);
+
+	VkPhysicalDeviceFeatures deviceFeatures;
+	vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
+	
+	QueueFamilyIndices indices = findQueueFamilies(device);
+	//Para que una GPU sea valida tiene que ser dedicada. Se pueden realizar las
+	// comprobaciones que se quieran en base a las properties o las features
+	// p.e se puede comprobar si la grafica permite usar geometry shaders
+	// return deviceFeatures.geometryShader
+	//return deviceProperties.deviceType = VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
+
+	//No es muy importante para el inicio del motor tener esto bien configurado
+	//Por conveniencia vamos a devolver true siempre y ya se cambiara
+	//El tutorial recomiendo asociar una puntuacion a cada grafica del sistema 
+	//para al menos seleccionar una
+	// https://vulkan-tutorial.com/resources/vulkan_tutorial_en.pdf pag 60
+	return indices.isComplete();
+}
+
+QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device) {
+	QueueFamilyIndices indices;
+
+	uint32_t queueFamilyCount = 0;
+	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
+	std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
+	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, 
+		queueFamilies.data());
+	
+	//Dentro de las colas que existen dentro de la grafica
+	//Se pueden realizar las comprobaciones que se deseen
+	//En este caso se ha decicido encontrar una que soporte 
+	//los comandos graficos
+	int i = 0;
+	for (const auto& queueFamily : queueFamilies) {
+		if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+			indices.graphicsFamily = i;
+		}
+		if (indices.isComplete()) {
+			break;
+		}
+		i++;
+	}
+	
+	return indices;
+}
