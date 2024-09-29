@@ -8,6 +8,7 @@
 #include <cstdlib>
 #include <vector>
 #include <cstring>
+#include <set>
 
 #include "custom_vulkan_helpers.hpp"
 
@@ -18,6 +19,10 @@ const uint32_t HEIGTH = 600;
 //reunidas(bundle) en una layer que se llama VK_LAYER_KHRONOS_validation
 const std::vector<const char*> validationLayers = {
 	"VK_LAYER_KHRONOS_validation"
+};
+
+const std::vector<const char*> requiredDeviceExtensions = {
+	VK_KHR_SWAPCHAIN_EXTENSION_NAME
 };
 
 #ifdef NDEBUG
@@ -42,6 +47,9 @@ private:
 	VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
 	VkDevice device;
 	VkQueue graphicsQueue;
+	VkQueue presentQueue;
+	VkSurfaceKHR surface;
+	VkSwapchainKHR swapChain;
 	
 
 	void initWindow() {
@@ -100,13 +108,14 @@ private:
 	void initVulkan() {
 		createInstance();
 		//Despues de crear la instancia se configura el callback de las validation layers
-		if (enableValidationLayers) {
-			setupDebugMessenger();
-		}
+		setupDebugMessenger();
+		//Ahora se crea la superficie para dibujar sobre ella
+		createSurface();
 		//Ahora se selecciona la tarjeta grafica que cumpla con las necesidades
 		pickPhysicalDevice();
 		//Tras seleccionar el dispositivo fisico ahora toca crear el logico
 		createLogicalDevice();
+		createSwapChain();
 	}
 	void mainLoop() {
 		while (!glfwWindowShouldClose(window)) {
@@ -118,7 +127,7 @@ private:
 		if (enableValidationLayers) {
 			DestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
 		}
-
+		vkDestroySurfaceKHR(instance, surface, nullptr);
 		vkDestroyInstance(instance, nullptr);
 
 		glfwDestroyWindow(window);
@@ -145,19 +154,66 @@ private:
 		}
 	}
 
+	bool isDeviceSuitable(VkPhysicalDevice device) {
+		VkPhysicalDeviceProperties deviceProperties;
+		vkGetPhysicalDeviceProperties(device, &deviceProperties);
+
+		VkPhysicalDeviceFeatures deviceFeatures;
+		vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
+
+		QueueFamilyIndices indices = findQueueFamilies(device,surface);
+
+		bool extensionSupported = checkDeviceExtensionsSupport(device, requiredDeviceExtensions);
+		bool swapChainAdequate = false;
+
+		//Es importante comprobar las propiedades disponibles de 
+		//la swap chain despues de verificar que cuenta con las
+		//extensiones necesarias
+		//En este caso se comprueba que al menos puede representar
+		//una imagen y un modo de presentacion
+		if (extensionSupported) {
+			SwapChainSupportDetails swapChainSupport =
+				querySwapChainSupport(device, surface);
+			swapChainAdequate = !swapChainSupport.formats.empty() &&
+				!swapChainSupport.presentModes.empty();
+		}
+
+
+		//Para que una GPU sea valida tiene que ser dedicada. Se pueden realizar las
+		// comprobaciones que se quieran en base a las properties o las features
+		// p.e se puede comprobar si la grafica permite usar geometry shaders
+		// return deviceFeatures.geometryShader
+		//return deviceProperties.deviceType = VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
+
+		//No es muy importante para el inicio del motor tener esto bien configurado
+		//Por conveniencia vamos a devolver true siempre y ya se cambiara
+		//El tutorial recomiendo asociar una puntuacion a cada grafica del sistema 
+		//para al menos seleccionar una
+		// https://vulkan-tutorial.com/resources/vulkan_tutorial_en.pdf pag 60
+		return indices.isComplete() && extensionSupported && 
+			swapChainAdequate;
+	}
+
 	void createLogicalDevice() {
 		/*
 		* Se tienen que rellenar diversas estructuras, la primera
 		* indica el numero de colas que queremos crear
 		*/
-		QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
-		VkDeviceQueueCreateInfo queueCreateInfo{};
-		queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-		queueCreateInfo.queueFamilyIndex = indices.graphicsFamily.value();
-		queueCreateInfo.queueCount = 1;
-		
+
+		QueueFamilyIndices indices = findQueueFamilies(physicalDevice, surface);
+		std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
+		std::set<uint32_t> uniqueQueueFamilies = { indices.graphicsFamily.value(), indices.presentFamily.value() };
 		float queuePriority = 1.0f;
-		queueCreateInfo.pQueuePriorities = &queuePriority;
+
+	
+		for (uint32_t queueFamily : uniqueQueueFamilies) {
+			VkDeviceQueueCreateInfo queueCreateInfo{};
+			queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+			queueCreateInfo.queueFamilyIndex = queueFamily;
+			queueCreateInfo.queueCount = 1;
+			queueCreateInfo.pQueuePriorities = &queuePriority;
+			queueCreateInfos.push_back(queueCreateInfo);
+		}
 
 		/* Tambien hay que indicar los features que se quieren
 		* activar de la GPU, de momento se han dejado en blanco
@@ -171,8 +227,10 @@ private:
 		VkDeviceCreateInfo createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 		createInfo.pEnabledFeatures = &deviceFeatures;
-		createInfo.pQueueCreateInfos = &queueCreateInfo;
-		createInfo.queueCreateInfoCount = 1;
+		createInfo.pQueueCreateInfos = queueCreateInfos.data();
+		createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
+		createInfo.enabledExtensionCount = static_cast<uint32_t>(requiredDeviceExtensions.size());
+		createInfo.ppEnabledExtensionNames = requiredDeviceExtensions.data();
 
 		if (vkCreateDevice(physicalDevice, &createInfo,
 			nullptr, &device) != VK_SUCCESS) {
@@ -182,12 +240,15 @@ private:
 		// una cola dentro de la familia de colas referentes a 
 		// operaciones graficas
 		vkGetDeviceQueue(device, indices.graphicsFamily.value(), 0, &graphicsQueue);
+		vkGetDeviceQueue(device, indices.presentFamily.value(), 0, &presentQueue);
 	}
 
-	//El objetivo de este metodo es el de configurar un callback que
-	//se ejecutará cuando un validation layer falle.
-
+	/*
+		El objetivo de este metodo es el de configurar un callback que
+		se ejecutará cuando un validation layer falle.
+	*/
 	void setupDebugMessenger() {
+		if (!enableValidationLayers) return;
 
 		VkDebugUtilsMessengerCreateInfoEXT createInfo{};
 		createInfo.sType =
@@ -209,7 +270,64 @@ private:
 		}
 	}
 
+	void createSurface() {
+		if (glfwCreateWindowSurface(instance, window, nullptr, &surface)
+			!= VK_SUCCESS) {
+			throw std::runtime_error("failed to create window surface!!");
+		}
+	}
 
+	void createSwapChain() {
+		SwapChainSupportDetails swapChainSupport =
+			querySwapChainSupport(physicalDevice, surface);
+
+		VkSurfaceFormatKHR surfaceFormat =
+			chooseSwapSurfaceFormat(swapChainSupport.formats);
+		VkPresentModeKHR presentMode =
+			chooseSwapPresentMode(swapChainSupport.presentModes);
+		VkExtent2D extent =
+			chooseSwapExtent(swapChainSupport.capabilities, window);
+		uint32_t imageCount = swapChainSupport.capabilities.minImageCount + 1;
+		if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount >
+			swapChainSupport.capabilities.maxImageCount) {
+			imageCount = swapChainSupport.capabilities.maxImageCount;
+		}
+
+		VkSwapchainCreateInfoKHR createInfo{};
+		createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+		createInfo.surface = surface;
+		createInfo.minImageCount = imageCount;
+		createInfo.imageFormat = surfaceFormat.format;
+		createInfo.imageColorSpace = surfaceFormat.colorSpace;
+		createInfo.imageExtent = extent;
+		createInfo.imageArrayLayers = 1;
+		createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+
+		QueueFamilyIndices indices = findQueueFamilies(physicalDevice, surface);
+		uint32_t queueFamilyIndices[] = { indices.graphicsFamily.value(),
+			indices.presentFamily.value() };
+		if (indices.graphicsFamily != indices.presentFamily) {
+			createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
+			createInfo.queueFamilyIndexCount = 2;
+			createInfo.pQueueFamilyIndices = queueFamilyIndices;
+		}
+		else {
+			createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+			createInfo.queueFamilyIndexCount = 0;
+			createInfo.pQueueFamilyIndices = nullptr;
+		}
+
+		createInfo.preTransform = swapChainSupport.capabilities.currentTransform;
+		createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+		createInfo.presentMode = presentMode;
+		createInfo.clipped = VK_TRUE;
+		createInfo.oldSwapchain = VK_NULL_HANDLE;
+		if (vkCreateSwapchainKHR(device, &createInfo,
+			nullptr, &swapChain) != VK_SUCCESS) {
+			throw std::runtime_error("Failed to create swapchain!!");
+		}
+
+	}
 };
 
 int main() {

@@ -1,6 +1,11 @@
 #include "custom_vulkan_helpers.hpp"
 
 #include <iostream>
+#include <string>
+#include <set>
+#include <limits>
+#include <algorithm>
+#include <cstdint>
 
 VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 	VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
@@ -89,30 +94,30 @@ void DestroyDebugUtilsMessengerEXT(VkInstance instance,
 	}
 }
 
+bool checkDeviceExtensionsSupport(VkPhysicalDevice device,
+	//Comprueba si las extensiones requeridas las por el usuario
+	//las tiene la GPU seleccionada
+	std::vector<const char*> requiredExtensions) {
+	uint32_t extensionCount;
+	vkEnumerateDeviceExtensionProperties(device, nullptr, 
+		&extensionCount, nullptr);
 
-bool isDeviceSuitable(VkPhysicalDevice device) {
-	VkPhysicalDeviceProperties deviceProperties;
-	vkGetPhysicalDeviceProperties(device, &deviceProperties);
+	std::vector<VkExtensionProperties>
+		availableExtensions(extensionCount);
+	vkEnumerateDeviceExtensionProperties(device, nullptr,
+		&extensionCount, availableExtensions.data());
 
-	VkPhysicalDeviceFeatures deviceFeatures;
-	vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
 	
-	QueueFamilyIndices indices = findQueueFamilies(device);
-	//Para que una GPU sea valida tiene que ser dedicada. Se pueden realizar las
-	// comprobaciones que se quieran en base a las properties o las features
-	// p.e se puede comprobar si la grafica permite usar geometry shaders
-	// return deviceFeatures.geometryShader
-	//return deviceProperties.deviceType = VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
-
-	//No es muy importante para el inicio del motor tener esto bien configurado
-	//Por conveniencia vamos a devolver true siempre y ya se cambiara
-	//El tutorial recomiendo asociar una puntuacion a cada grafica del sistema 
-	//para al menos seleccionar una
-	// https://vulkan-tutorial.com/resources/vulkan_tutorial_en.pdf pag 60
-	return indices.isComplete();
+	std::set<std::string> requiredExtensionSet(requiredExtensions.begin(),
+		requiredExtensions.end());
+	for (const auto& extension : availableExtensions) {
+		requiredExtensionSet.erase(extension.extensionName);
+	}
+	
+	return requiredExtensionSet.empty();
 }
 
-QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device) {
+QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface) {
 	QueueFamilyIndices indices;
 
 	uint32_t queueFamilyCount = 0;
@@ -126,9 +131,15 @@ QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device) {
 	//En este caso se ha decicido encontrar una que soporte 
 	//los comandos graficos
 	int i = 0;
+	VkBool32 presentSupport = false;
 	for (const auto& queueFamily : queueFamilies) {
 		if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
 			indices.graphicsFamily = i;
+		}
+		vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, 
+			&presentSupport);
+		if (presentSupport) {
+			indices.presentFamily = i;
 		}
 		if (indices.isComplete()) {
 			break;
@@ -137,4 +148,86 @@ QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device) {
 	}
 	
 	return indices;
+}
+
+
+SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device,
+	VkSurfaceKHR surface) {
+	SwapChainSupportDetails details;
+
+	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface,
+		&details.capabilities);
+
+	uint32_t formatCount;
+	vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount,
+		nullptr);
+	if (formatCount != 0) {
+		details.formats.resize(formatCount);
+		vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface,
+			&formatCount, details.formats.data());
+	}
+
+	uint32_t presentModeCount;
+	vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface,
+		&presentModeCount, nullptr);
+	if (presentModeCount != 0) {
+		details.presentModes.resize(presentModeCount);
+		vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface,
+			&presentModeCount, details.presentModes.data());
+	}
+
+	return details;
+}
+
+VkSurfaceFormatKHR chooseSwapSurfaceFormat(const
+	std::vector<VkSurfaceFormatKHR>& availableFormats) {
+	for (const auto& availableFormat : availableFormats) {
+		if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB &&
+			availableFormat.colorSpace ==
+			VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
+			return availableFormat;
+		}
+	}
+	return availableFormats[0];
+}
+
+VkPresentModeKHR chooseSwapPresentMode(const
+	std::vector<VkPresentModeKHR>& availablePresentModes) {
+	for (const auto& availablePresentMode : availablePresentModes) {
+		if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
+			return availablePresentMode;
+		}
+	}
+
+	return VK_PRESENT_MODE_FIFO_KHR;
+}
+
+VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR&
+	capabilities, GLFWwindow* window) {
+	if (capabilities.currentExtent.width !=
+		std::numeric_limits<uint32_t>::max()) {
+		return capabilities.currentExtent;
+	}
+	else {
+		int width, height;
+		glfwGetFramebufferSize(window, &width, &height);
+		VkExtent2D actualExtent = {
+			static_cast<uint32_t>(width),
+			static_cast<uint32_t>(height)
+		};
+
+		actualExtent.width = std::clamp(
+			actualExtent.width,
+			capabilities.minImageExtent.width,
+			capabilities.maxImageExtent.width
+		);
+		actualExtent.height = std::clamp(
+			actualExtent.height,
+			capabilities.minImageExtent.height,
+			capabilities.maxImageExtent.height
+		);
+
+		return actualExtent;
+	}
+	
 }
