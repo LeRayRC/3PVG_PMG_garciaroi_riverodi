@@ -50,6 +50,10 @@ private:
 	VkQueue presentQueue;
 	VkSurfaceKHR surface;
 	VkSwapchainKHR swapChain;
+	std::vector<VkImage> swapChainImages;
+	std::vector<VkImageView> swapChainImageViews;
+	VkFormat swapChainImageFormat;
+	VkExtent2D swapChainExtent;
 	
 
 	void initWindow() {
@@ -116,6 +120,8 @@ private:
 		//Tras seleccionar el dispositivo fisico ahora toca crear el logico
 		createLogicalDevice();
 		createSwapChain();
+		createImageViews();
+		createGraphicsPipeline();
 	}
 	void mainLoop() {
 		while (!glfwWindowShouldClose(window)) {
@@ -123,6 +129,10 @@ private:
 		}
 	}
 	void cleanUp() {
+		for (auto imageView : swapChainImageViews) {
+			vkDestroyImageView(device, imageView, nullptr);
+		}
+		vkDestroySwapchainKHR(device, swapChain, nullptr);
 		vkDestroyDevice(device, nullptr);
 		if (enableValidationLayers) {
 			DestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
@@ -326,7 +336,66 @@ private:
 			nullptr, &swapChain) != VK_SUCCESS) {
 			throw std::runtime_error("Failed to create swapchain!!");
 		}
+		vkGetSwapchainImagesKHR(device, swapChain, &imageCount, nullptr);
+		swapChainImages.resize(imageCount);
+		vkGetSwapchainImagesKHR(device, swapChain, &imageCount, swapChainImages.data());
+		swapChainImageFormat = surfaceFormat.format;
+		swapChainExtent = extent;
+	}
+	void createImageViews() {
+		swapChainImageViews.resize(swapChainImages.size());
+		for (size_t i = 0; i < swapChainImageViews.size(); i++) {
+			VkImageViewCreateInfo createInfo{};
+			createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+			createInfo.image = swapChainImages[i];
+			createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+			createInfo.format = swapChainImageFormat;
+			createInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+			createInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+			createInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+			createInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+			createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			createInfo.subresourceRange.baseMipLevel = 0;
+			createInfo.subresourceRange.levelCount = 1;
+			createInfo.subresourceRange.baseArrayLayer = 0;
+			createInfo.subresourceRange.layerCount = 1;
 
+			if (vkCreateImageView(device, &createInfo,
+				nullptr, &swapChainImageViews[i]) != VK_SUCCESS) {
+				throw std::runtime_error("Failed to create image view!");
+			}
+		}
+	}
+
+	void createGraphicsPipeline() {
+		auto vertShaderCode = readFile("../src/shaders/hellotrianglevert.spv");
+		auto fragShaderCode = readFile("../src/shaders/hellotrianglefrag.spv");
+		
+		VkShaderModule vertShaderModule = createShaderModule(device, vertShaderCode);
+		VkShaderModule fragShaderModule = createShaderModule(device, fragShaderCode);
+
+		//Empezamos a crear el paso de vertex shader
+		VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
+		vertShaderStageInfo.sType =
+			VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+		vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
+		vertShaderStageInfo.module = vertShaderModule;
+		vertShaderStageInfo.pName = "main";
+
+		VkPipelineShaderStageCreateInfo fragShaderStageInfo{};
+		fragShaderStageInfo.sType =
+			VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+		fragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+		fragShaderStageInfo.module = fragShaderModule;
+		fragShaderStageInfo.pName = "main";
+
+		VkPipelineShaderStageCreateInfo shaderStages[] = {
+			vertShaderStageInfo, fragShaderStageInfo
+		};
+
+
+		vkDestroyShaderModule(device, fragShaderModule, nullptr);
+		vkDestroyShaderModule(device, vertShaderModule, nullptr);
 	}
 };
 

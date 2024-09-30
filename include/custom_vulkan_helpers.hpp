@@ -5,6 +5,7 @@
 #include <GLFW/glfw3.h>
 
 #include <vector>
+#include <string>
 #include <optional>
 
 struct QueueFamilyIndices {
@@ -65,5 +66,9 @@ VkResult CreateDebugUtilsMessengerEXT(VkInstance instance,
 void DestroyDebugUtilsMessengerEXT(VkInstance instance,
 	VkDebugUtilsMessengerEXT debugMessenger,
 	const VkAllocationCallbacks* pAllocator);
+
+std::vector<char> readFile(const std::string& filename);
+
+VkShaderModule createShaderModule(VkDevice device,const std::vector<char>& code);
 
 #endif // !__CUSTOM_VULKAN_HELPERS_H
