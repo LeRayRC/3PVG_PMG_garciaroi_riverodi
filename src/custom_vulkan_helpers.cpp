@@ -1,12 +1,6 @@
 #include "custom_vulkan_helpers.hpp"
 
-#include <iostream>
-#include <string>
-#include <set>
-#include <limits>
-#include <algorithm>
-#include <cstdint>
-#include <fstream>
+#include "custom_types.hpp"
 
 VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 	VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,

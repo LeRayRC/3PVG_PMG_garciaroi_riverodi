@@ -1,4 +1,4 @@
-#include "hellotriangle.hpp"
+#include "examples/hellotriangle.hpp"
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -54,7 +54,8 @@ private:
 	std::vector<VkImage> swapChainImages;
 	std::vector<VkImageView> swapChainImageViews;
 	VkFormat swapChainImageFormat;
-	VkExtent2D swapChainExtent;
+	//TO FIX -> Hardcoded window size
+	VkExtent2D swapChainExtent = {1280,720};
 	VkRenderPass renderPass;
 	VkPipelineLayout pipelineLayout;
 	VkPipeline graphicsPipeline;
