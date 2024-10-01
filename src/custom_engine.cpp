@@ -1,3 +1,13 @@
+/**
+ * @file custom_engine.hpp
+ * @author ???
+ * @brief Custom Engine's file
+ * @version 0.1
+ * @date 2024-10-01
+ *
+ * @copyright Academic Project ESAT 2024/2025
+ *
+ */
 #include "custom_engine.hpp"
 #include "custom_vulkan_helpers.hpp"
 
@@ -18,15 +28,77 @@ const std::vector<const char*> requiredDeviceExtensions = {
 
 Engine* loaded_engine = nullptr;
 
-Engine& Engine::Get() { return *loaded_engine; }
+Engine::Engine() 
+{
+	//Singleton Functionality
+	assert(loaded_engine == nullptr);
+	loaded_engine = this;
 
-Engine::Engine() {}
-Engine::~Engine(){}
+	is_initialized_ = false;
+	frame_number_ = 0;
+	stop_rendering = false;
+
+	window_ = nullptr;
+	window_extent_ = { 1280,720 };
+	instance_ = VK_NULL_HANDLE;
+	debug_messenger_ = VK_NULL_HANDLE;
+	physical_device_ = VK_NULL_HANDLE;
+	device_ = VK_NULL_HANDLE;
+	graphics_queue_ = VK_NULL_HANDLE;
+	present_queue_ = VK_NULL_HANDLE;
+	surface_ = VK_NULL_HANDLE;
+	swapChain = VK_NULL_HANDLE;
+	swap_chain_image_format_ = VK_FORMAT_UNDEFINED;
+	render_pass_ = VK_NULL_HANDLE;
+	pipeline_layout_ = VK_NULL_HANDLE;
+	graphics_pipeline_ = VK_NULL_HANDLE;
+}
+
+Engine::Engine(unsigned int window_width, unsigned int window_height)
+{
+	//Singleton Functionality
+	assert(loaded_engine == nullptr);
+	loaded_engine = this;
+
+	is_initialized_ = false;
+	frame_number_ = 0;
+	stop_rendering = false;
+
+	window_ = nullptr;
+	window_extent_ = { window_width,window_height };
+	instance_ = VK_NULL_HANDLE;
+	debug_messenger_ = VK_NULL_HANDLE;
+	physical_device_ = VK_NULL_HANDLE;
+	device_ = VK_NULL_HANDLE;
+	graphics_queue_ = VK_NULL_HANDLE;
+	present_queue_ = VK_NULL_HANDLE;
+	surface_ = VK_NULL_HANDLE;
+	swapChain = VK_NULL_HANDLE;
+	swap_chain_image_format_ = VK_FORMAT_UNDEFINED;
+	render_pass_ = VK_NULL_HANDLE;
+	pipeline_layout_ = VK_NULL_HANDLE;
+	graphics_pipeline_ = VK_NULL_HANDLE;
+}
+
+Engine::~Engine(){
+
+	for (auto imageView : swap_chain_image_views_) {
+		vkDestroyImageView(device_, imageView, nullptr);
+	}
+	vkDestroySwapchainKHR(device_, swapChain, nullptr);
+	vkDestroyDevice(device_, nullptr);
+	if (enableValidationLayers) {
+		DestroyDebugUtilsMessengerEXT(instance_, debug_messenger_, nullptr);
+	}
+	vkDestroySurfaceKHR(instance_, surface_, nullptr);
+	vkDestroyInstance(instance_, nullptr);
+
+	glfwDestroyWindow(window_);
+	glfwTerminate();
+}
 
 void Engine::init() {
   //Solo se puede llamar una vez a la inicializacion del motor
-  assert(loaded_engine == nullptr);
-  loaded_engine = this;
 
   initWindow();
 	initVulkan();
@@ -51,19 +123,19 @@ void Engine::cleanUp() {
 	//vkDestroyPipeline(device, graphicsPipeline, nullptr);
 	//vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
 	//vkDestroyRenderPass(device, renderPass, nullptr);
-	for (auto imageView : swap_chain_image_views_) {
-		vkDestroyImageView(device_, imageView, nullptr);
-	}
-	vkDestroySwapchainKHR(device_, swapChain, nullptr);
-	vkDestroyDevice(device_, nullptr);
-	if (enableValidationLayers) {
-		DestroyDebugUtilsMessengerEXT(instance_, debug_messenger_, nullptr);
-	}
-	vkDestroySurfaceKHR(instance_, surface_, nullptr);
-	vkDestroyInstance(instance_, nullptr);
-
-	glfwDestroyWindow(window_);
-	glfwTerminate();
+	//for (auto imageView : swap_chain_image_views_) {
+	//	vkDestroyImageView(device_, imageView, nullptr);
+	//}
+	//vkDestroySwapchainKHR(device_, swapChain, nullptr);
+	//vkDestroyDevice(device_, nullptr);
+	//if (enableValidationLayers) {
+	//	DestroyDebugUtilsMessengerEXT(instance_, debug_messenger_, nullptr);
+	//}
+	//vkDestroySurfaceKHR(instance_, surface_, nullptr);
+	//vkDestroyInstance(instance_, nullptr);
+	//
+	//glfwDestroyWindow(window_);
+	//glfwTerminate();
 }
 
 void Engine::initVulkan(){
