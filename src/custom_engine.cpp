@@ -13,7 +13,8 @@ const std::vector<const char*> validationLayers = {
 
 const std::vector<const char*> requiredDeviceExtensions = {
 	VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-	VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME
+	VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
+	VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME
 };
 
 Engine* loaded_engine = nullptr;
@@ -54,7 +55,7 @@ void Engine::cleanUp() {
 	for (auto imageView : swap_chain_image_views_) {
 		vkDestroyImageView(device_, imageView, nullptr);
 	}
-	vkDestroySwapchainKHR(device_, swapChain, nullptr);
+	vkDestroySwapchainKHR(device_, swap_chain_, nullptr);
 	vkDestroyDevice(device_, nullptr);
 	if (enableValidationLayers) {
 		DestroyDebugUtilsMessengerEXT(instance_, debug_messenger_, nullptr);
@@ -148,7 +149,43 @@ void Engine::pickPhysicalDevice(){
 	}
 }
 bool Engine::isDeviceSuitable(VkPhysicalDevice device){
-	return true;
+	VkPhysicalDeviceProperties deviceProperties;
+	vkGetPhysicalDeviceProperties(device, &deviceProperties);
+
+	VkPhysicalDeviceFeatures deviceFeatures;
+	vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
+
+	QueueFamilyIndices indices = findQueueFamilies(device, surface_);
+
+	bool extensionSupported = checkDeviceExtensionsSupport(device, requiredDeviceExtensions);
+	bool swapChainAdequate = false;
+
+	//Es importante comprobar las propiedades disponibles de 
+	//la swap chain despues de verificar que cuenta con las
+	//extensiones necesarias
+	//En este caso se comprueba que al menos puede representar
+	//una imagen y un modo de presentacion
+	if (extensionSupported) {
+		SwapChainSupportDetails swapChainSupport =
+			querySwapChainSupport(device, surface_);
+		swapChainAdequate = !swapChainSupport.formats.empty() &&
+			!swapChainSupport.presentModes.empty();
+	}
+
+
+	//Para que una GPU sea valida tiene que ser dedicada. Se pueden realizar las
+	// comprobaciones que se quieran en base a las properties o las features
+	// p.e se puede comprobar si la grafica permite usar geometry shaders
+	// return deviceFeatures.geometryShader
+	//return deviceProperties.deviceType = VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
+
+	//No es muy importante para el inicio del motor tener esto bien configurado
+	//Por conveniencia vamos a devolver true siempre y ya se cambiara
+	//El tutorial recomiendo asociar una puntuacion a cada grafica del sistema 
+	//para al menos seleccionar una
+	// https://vulkan-tutorial.com/resources/vulkan_tutorial_en.pdf pag 60
+	return indices.isComplete() && extensionSupported &&
+		swapChainAdequate;
 }
 void Engine::createLogicalDevice(){
 	/*
@@ -191,9 +228,13 @@ void Engine::createLogicalDevice(){
 		nullptr, &device_) != VK_SUCCESS) {
 		throw std::runtime_error("failed to create logical device!");
 	}
-	//En el queue index se pone 0 porque se va a crear solo
-	// una cola dentro de la familia de colas referentes a 
-	// operaciones graficas
+
+	//Index 0 hace referencia a que cola se va a utilizar de la 
+	//familia seleccionada, arriba se podrian haber creado una 
+	//cola de cada familia pero en este caso se ha creado una cola de 
+	//dentro de la misma ya que soporta tanto comandos graficos como de presentacion
+	//Tanto si fuesen iguales como diferentes, se seleccionaria la primera cola de cada familia
+	// asi que el index seguiria siendo 0
 	vkGetDeviceQueue(device_, indices.graphicsFamily.value(), 0, &graphics_queue_);
 	vkGetDeviceQueue(device_, indices.presentFamily.value(), 0, &present_queue_);
 }
@@ -229,6 +270,9 @@ void Engine::createSwapChain(){
 	SwapChainSupportDetails swapChainSupport =
 		querySwapChainSupport(physical_device_, surface_);
 
+	//CAREFUL 
+	//En una guia recomiendan VK_FORMAT_B8G8R8A8_UNORM (https://vkguide.dev) 
+	//Y en otra VK_FORMAT_B8G8R8A8_SRGV (se ha seleccionado esta por defecto)
 	VkSurfaceFormatKHR surfaceFormat =
 		chooseSwapSurfaceFormat(swapChainSupport.formats);
 	VkPresentModeKHR presentMode =
@@ -250,7 +294,9 @@ void Engine::createSwapChain(){
 	createInfo.imageColorSpace = surfaceFormat.colorSpace;
 	createInfo.imageExtent = window_extent_;
 	createInfo.imageArrayLayers = 1;
-	createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+	//VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
+	//VK_IMAGE_USAGE_TRANSFER_DST_BIT util para postprocesos
+	createInfo.imageUsage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 
 	QueueFamilyIndices indices = findQueueFamilies(physical_device_, surface_);
 	uint32_t queueFamilyIndices[] = { indices.graphicsFamily.value(),
@@ -272,12 +318,12 @@ void Engine::createSwapChain(){
 	createInfo.clipped = VK_TRUE;
 	createInfo.oldSwapchain = VK_NULL_HANDLE;
 	if (vkCreateSwapchainKHR(device_, &createInfo,
-		nullptr, &swapChain) != VK_SUCCESS) {
+		nullptr, &swap_chain_) != VK_SUCCESS) {
 		throw std::runtime_error("Failed to create swapchain!!");
 	}
-	vkGetSwapchainImagesKHR(device_, swapChain, &imageCount, nullptr);
+	vkGetSwapchainImagesKHR(device_, swap_chain_, &imageCount, nullptr);
 	swap_chain_images_.resize(imageCount);
-	vkGetSwapchainImagesKHR(device_, swapChain, &imageCount, swap_chain_images_.data());
+	vkGetSwapchainImagesKHR(device_, swap_chain_, &imageCount, swap_chain_images_.data());
 	swap_chain_image_format_ = surfaceFormat.format;
 }
 void Engine::createImageViews(){

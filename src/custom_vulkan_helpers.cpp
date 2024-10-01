@@ -102,9 +102,12 @@ bool checkDeviceExtensionsSupport(VkPhysicalDevice device,
 	vkEnumerateDeviceExtensionProperties(device, nullptr,
 		&extensionCount, availableExtensions.data());
 
-	/*for (auto extensionProperty : availableExtensions) {
+#ifndef NDEBUG
+	for (auto extensionProperty : availableExtensions) {
 		printf("%s\n", extensionProperty.extensionName);
-	}*/
+	}
+#endif
+	
 	
 	std::set<std::string> requiredExtensionSet(requiredExtensions.begin(),
 		requiredExtensions.end());

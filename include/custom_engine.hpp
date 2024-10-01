@@ -23,7 +23,7 @@ public:
 	VkQueue graphics_queue_										= VK_NULL_HANDLE;
 	VkQueue present_queue_										= VK_NULL_HANDLE;
 	VkSurfaceKHR surface_											= VK_NULL_HANDLE;
-	VkSwapchainKHR swapChain									= VK_NULL_HANDLE;
+	VkSwapchainKHR swap_chain_								= VK_NULL_HANDLE;
 	std::vector<VkImage> swap_chain_images_;
 	std::vector<VkImageView> swap_chain_image_views_;
 	VkFormat swap_chain_image_format_					= VK_FORMAT_UNDEFINED;
