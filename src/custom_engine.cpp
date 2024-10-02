@@ -1,5 +1,16 @@
+/**
+ * @file custom_engine.hpp
+ * @author ???
+ * @brief Custom Engine's file
+ * @version 0.1
+ * @date 2024-10-01
+ *
+ * @copyright Academic Project ESAT 2024/2025
+ *
+ */
 #include "custom_engine.hpp"
 #include "custom_vulkan_helpers.hpp"
+#include "custom_vulkan_inits.hpp"
 
 #ifdef NDEBUG
 constexpr bool enableValidationLayers = false;
@@ -17,17 +28,85 @@ const std::vector<const char*> requiredDeviceExtensions = {
 	VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME
 };
 
+
+
 Engine* loaded_engine = nullptr;
 
-Engine& Engine::Get() { return *loaded_engine; }
+Engine::Engine() 
+{
+	//Singleton Functionality
+	assert(loaded_engine == nullptr);
+	loaded_engine = this;
 
-Engine::Engine() {}
-Engine::~Engine(){}
+	is_initialized_ = false;
+	frame_number_ = 0;
+	stop_rendering = false;
+
+	window_ = nullptr;
+	window_extent_ = { 1280,720 };
+	instance_ = VK_NULL_HANDLE;
+	debug_messenger_ = VK_NULL_HANDLE;
+	physical_device_ = VK_NULL_HANDLE;
+	device_ = VK_NULL_HANDLE;
+	graphics_queue_ = VK_NULL_HANDLE;
+	present_queue_ = VK_NULL_HANDLE;
+	surface_ = VK_NULL_HANDLE;
+	swap_chain_ = VK_NULL_HANDLE;
+	swap_chain_image_format_ = VK_FORMAT_UNDEFINED;
+	render_pass_ = VK_NULL_HANDLE;
+	pipeline_layout_ = VK_NULL_HANDLE;
+	graphics_pipeline_ = VK_NULL_HANDLE;
+}
+
+Engine::Engine(unsigned int window_width, unsigned int window_height)
+{
+	//Singleton Functionality
+	assert(loaded_engine == nullptr);
+	loaded_engine = this;
+
+	is_initialized_ = false;
+	frame_number_ = 0;
+	stop_rendering = false;
+
+	window_ = nullptr;
+	window_extent_ = { window_width,window_height };
+	instance_ = VK_NULL_HANDLE;
+	debug_messenger_ = VK_NULL_HANDLE;
+	physical_device_ = VK_NULL_HANDLE;
+	device_ = VK_NULL_HANDLE;
+	graphics_queue_ = VK_NULL_HANDLE;
+	present_queue_ = VK_NULL_HANDLE;
+	surface_ = VK_NULL_HANDLE;
+	swap_chain_ = VK_NULL_HANDLE;
+	swap_chain_image_format_ = VK_FORMAT_UNDEFINED;
+	render_pass_ = VK_NULL_HANDLE;
+	pipeline_layout_ = VK_NULL_HANDLE;
+	graphics_pipeline_ = VK_NULL_HANDLE;
+}
+
+Engine::~Engine(){
+	vkDeviceWaitIdle(device_);
+	for (int i = 0; i < FRAME_OVERLAP; i++) {
+		vkDestroyCommandPool(device_, frames_[i].command_pool, nullptr);
+	}
+
+	for (auto imageView : swap_chain_image_views_) {
+		vkDestroyImageView(device_, imageView, nullptr);
+	}
+	vkDestroySwapchainKHR(device_, swap_chain_, nullptr);
+	vkDestroyDevice(device_, nullptr);
+	if (enableValidationLayers) {
+		DestroyDebugUtilsMessengerEXT(instance_, debug_messenger_, nullptr);
+	}
+	vkDestroySurfaceKHR(instance_, surface_, nullptr);
+	vkDestroyInstance(instance_, nullptr);
+
+	glfwDestroyWindow(window_);
+	glfwTerminate();
+}
 
 void Engine::init() {
   //Solo se puede llamar una vez a la inicializacion del motor
-  assert(loaded_engine == nullptr);
-  loaded_engine = this;
 
   initWindow();
 	initVulkan();
@@ -45,6 +124,8 @@ void Engine::initWindow() {
 void Engine::mainLoop() {
   while (!glfwWindowShouldClose(window_)) {
     glfwPollEvents();
+
+		draw();
   }
 }
 
@@ -52,19 +133,19 @@ void Engine::cleanUp() {
 	//vkDestroyPipeline(device, graphicsPipeline, nullptr);
 	//vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
 	//vkDestroyRenderPass(device, renderPass, nullptr);
-	for (auto imageView : swap_chain_image_views_) {
-		vkDestroyImageView(device_, imageView, nullptr);
-	}
-	vkDestroySwapchainKHR(device_, swap_chain_, nullptr);
-	vkDestroyDevice(device_, nullptr);
-	if (enableValidationLayers) {
-		DestroyDebugUtilsMessengerEXT(instance_, debug_messenger_, nullptr);
-	}
-	vkDestroySurfaceKHR(instance_, surface_, nullptr);
-	vkDestroyInstance(instance_, nullptr);
-
-	glfwDestroyWindow(window_);
-	glfwTerminate();
+	//for (auto imageView : swap_chain_image_views_) {
+	//	vkDestroyImageView(device_, imageView, nullptr);
+	//}
+	//vkDestroySwapchainKHR(device_, swapChain, nullptr);
+	//vkDestroyDevice(device_, nullptr);
+	//if (enableValidationLayers) {
+	//	DestroyDebugUtilsMessengerEXT(instance_, debug_messenger_, nullptr);
+	//}
+	//vkDestroySurfaceKHR(instance_, surface_, nullptr);
+	//vkDestroyInstance(instance_, nullptr);
+	//
+	//glfwDestroyWindow(window_);
+	//glfwTerminate();
 }
 
 void Engine::initVulkan(){
@@ -79,6 +160,8 @@ void Engine::initVulkan(){
 	createLogicalDevice();
 	createSwapChain();
 	createImageViews();
+	createCommandPool();
+	createSyncObjects();
 	/*
 	createRenderPass();
 	createGraphicsPipeline();*/
@@ -352,5 +435,208 @@ void Engine::createImageViews(){
 }
 void Engine::createGraphicsPipeline(){}
 void Engine::createRenderPass(){}
+
+void Engine::createCommandPool() {
+	//Primero se crean los command pool
+	QueueFamilyIndices queueFamilyIndices =
+		findQueueFamilies(physical_device_,surface_);
+
+	VkCommandPoolCreateInfo commandPoolInfo{};
+	commandPoolInfo.sType =
+		VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+	commandPoolInfo.pNext = nullptr;
+	commandPoolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+	commandPoolInfo.queueFamilyIndex =
+		queueFamilyIndices.graphicsFamily.value();
+
+	for (int i = 0; i < FRAME_OVERLAP; i++) {
+		if (vkCreateCommandPool(device_, &commandPoolInfo, nullptr, 
+			&frames_[i].command_pool) != VK_SUCCESS) {
+			exit(-1);
+		}
+		VkCommandBufferAllocateInfo commandAllocInfo{};
+		commandAllocInfo.sType =
+			VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+		commandAllocInfo.pNext = nullptr;
+		commandAllocInfo.commandPool = frames_[i].command_pool;
+		commandAllocInfo.commandBufferCount = 1;
+		commandAllocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+		
+		//Se reserva los command buffer correspondientes
+		if (vkAllocateCommandBuffers(device_, &commandAllocInfo, 
+			&frames_[i].main_command_buffer) != VK_SUCCESS) {
+			exit(-1);
+		}
+
+	}
+}
+
+void Engine::createSyncObjects() {
+	//1 fence para avisar a la CPU cuando un frame ya se ha dibujado
+	//1 semaforo para la comunicacion con el swapchain y otro para
+	//los comandos de dibujado
+	VkFenceCreateInfo fenceInfo{};
+	fenceInfo.sType =
+		VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+	fenceInfo.pNext = nullptr;
+	fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+	VkSemaphoreCreateInfo semaphoreInfo{};
+	semaphoreInfo.sType =
+		VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+	semaphoreInfo.pNext = nullptr;
+	
+	for (int i = 0; i < FRAME_OVERLAP; i++) {
+		if (vkCreateFence(device_, &fenceInfo, nullptr, &frames_[i].render_fence) != VK_SUCCESS) {
+			exit(-1);
+		}
+		if (vkCreateSemaphore(device_,&semaphoreInfo,nullptr,&frames_[i].render_semaphore) != VK_SUCCESS) {
+			exit(-1);
+		}
+
+		if (vkCreateSemaphore(device_, &semaphoreInfo, nullptr, &frames_[i].swap_chain_semaphore) != VK_SUCCESS) {
+			exit(-1);
+		}
+	}
+}
+
+void Engine::draw() {
+	//Esperamos a que el fence comunique que la grafica ya ha terminado de dibujar
+	//El timeout esta en nanosegundos 10e-9
+	if (vkWaitForFences(device_, 1, &getCurrentFrame().render_fence, true, 1000000000) != VK_SUCCESS) {
+#ifndef NDEBUG
+		printf("Fence timeout excedeed!");
+#endif // !NDEBUG
+	}
+	//Reseteamos el fence
+	if (vkResetFences(device_, 1, &getCurrentFrame().render_fence) != VK_SUCCESS) {
+#ifndef NDEBUG
+		printf("Fence restart failed!");
+#endif // !NDEBUG
+	}
+
+	//Solicitamos una imagen del swap chain
+	uint32_t swap_chain_image_index;
+	if (vkAcquireNextImageKHR(device_, swap_chain_, 1000000000,
+		getCurrentFrame().swap_chain_semaphore, nullptr, &swap_chain_image_index) != VK_SUCCESS) {
+#ifndef NDEBUG
+		printf("Swapchain image not retrieved!");
+#endif // !NDEBUG
+	}
+
+	//Se resetea e inicia el command buffer del frame actual
+	VkCommandBuffer commandBuffer = getCurrentFrame().main_command_buffer;
+	if (vkResetCommandBuffer(commandBuffer, 0) != VK_SUCCESS) {
+#ifndef NDEBUG
+		printf("Resseting commandbuffer failed!");
+#endif // !NDEBUG
+	}
+
+	//Ahora se rellena la estrcutura del begin command buffer
+	VkCommandBufferBeginInfo commandBufferBeginInfo{};
+	commandBufferBeginInfo.sType =
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	commandBufferBeginInfo.pNext = nullptr;
+	commandBufferBeginInfo.pInheritanceInfo = nullptr;
+	commandBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+	if (vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo) != VK_SUCCESS) {
+#ifndef NDEBUG
+			printf("Begin commandbuffer failed!");
+#endif // !NDEBUG
+	}
+
+	//Convertimos la imagen del swapchain en escribible
+	transitionImage(commandBuffer, swap_chain_images_[swap_chain_image_index],
+		VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+
+	VkClearColorValue clearValue;
+	float flash = std::abs(std::sin(frame_number_ / 120.f));
+	clearValue = { {0.0f,0.0f,flash,0.0f}};
+
+	VkImageSubresourceRange clearRange = imageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT);
+
+	vkCmdClearColorImage(commandBuffer, swap_chain_images_[swap_chain_image_index],
+		VK_IMAGE_LAYOUT_GENERAL, &clearValue, 1, &clearRange);
+
+	transitionImage(commandBuffer, swap_chain_images_[swap_chain_image_index],
+		VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+
+if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
+#ifndef NDEBUG
+		printf("End commandbuffer failed!");
+#endif // !NDEBUG
+	}
+
+	VkCommandBufferSubmitInfo commandSubmitInfo = vkinit::CommandBufferSubmitInfo(commandBuffer);
+	VkSemaphoreSubmitInfo waitInfo = vkinit::SemaphoreSubmitInfo(
+		VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT_KHR, getCurrentFrame().swap_chain_semaphore);
+	VkSemaphoreSubmitInfo signalInfo = vkinit::SemaphoreSubmitInfo(
+		VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT, getCurrentFrame().render_semaphore);
+
+	VkSubmitInfo2 submit = vkinit::SubmitInfo(&commandSubmitInfo, &signalInfo, &waitInfo);
+	vkQueueSubmit2(graphics_queue_, 1, &submit, getCurrentFrame().render_fence);
+
+
+	VkPresentInfoKHR presentInfo = {};
+	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+	presentInfo.pNext = nullptr;
+	presentInfo.pSwapchains = &swap_chain_;
+	presentInfo.swapchainCount = 1;
+
+	presentInfo.pWaitSemaphores = &getCurrentFrame().render_semaphore;
+	presentInfo.waitSemaphoreCount = 1;
+
+	presentInfo.pImageIndices = &swap_chain_image_index;
+
+	vkQueuePresentKHR(graphics_queue_, &presentInfo);
+
+	//increase the number of frames drawn
+	frame_number_++;
+
+}
+
+void Engine::transitionImage(VkCommandBuffer cmd, VkImage image, 
+	VkImageLayout currentLayout, VkImageLayout newLayout) {
+
+	VkImageMemoryBarrier2 imageBarrier{};
+	imageBarrier.sType =
+		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
+	imageBarrier.pNext = nullptr;
+	imageBarrier.srcStageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
+	imageBarrier.srcAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT;
+	imageBarrier.dstStageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
+	imageBarrier.dstAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT | VK_ACCESS_2_MEMORY_READ_BIT;
+
+	imageBarrier.oldLayout = currentLayout;
+	imageBarrier.newLayout = newLayout;
+
+	VkImageAspectFlags aspectMask = (newLayout == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL) ?
+		VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
+
+	imageBarrier.subresourceRange = imageSubresourceRange(aspectMask);
+	imageBarrier.image = image;
+
+	VkDependencyInfo depInfo{};
+	depInfo.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
+	depInfo.pNext = nullptr;
+	depInfo.imageMemoryBarrierCount = 1;
+	depInfo.pImageMemoryBarriers = &imageBarrier;
+
+	vkCmdPipelineBarrier2(cmd, &depInfo);
+}
+
+VkImageSubresourceRange  Engine::imageSubresourceRange(VkImageAspectFlags aspectMask) {
+	VkImageSubresourceRange subImage{};
+	subImage.aspectMask = aspectMask;
+	subImage.baseMipLevel = 0;
+	subImage.levelCount = VK_REMAINING_MIP_LEVELS;
+	subImage.baseArrayLayer = 0;
+	subImage.layerCount = VK_REMAINING_ARRAY_LAYERS;
+
+	return subImage;
+}
+
+
 
 

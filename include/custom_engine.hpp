@@ -1,40 +1,86 @@
+/**
+ * @file custom_engine.hpp
+ * @author ???
+ * @brief Custom Engine's header file
+ * @version 0.1
+ * @date 2024-10-01
+ *
+ * @copyright Academic Project ESAT 2024/2025
+ *
+ */
 #ifndef  __CUSTOM_ENGINE_
 #define  __CUSTOM_ENGINE_ 1
 
 #include "custom_types.hpp"
 
+struct FrameData {
+	VkCommandPool command_pool;
+	VkCommandBuffer main_command_buffer;
+	VkSemaphore swap_chain_semaphore; //GPU <-> GPU
+	VkSemaphore render_semaphore; //GPU <-> GPU
+	VkFence render_fence; // CPU <-> GPU
+};
+
+//Numero de buffers en paralelo (double-buffering)
+constexpr unsigned int FRAME_OVERLAP = 2;
+
 class Engine {
 public:
 
-	//Singleton
-	static Engine& Get();
+	/**
+	* @brief Default constructor
+	*/
+	Engine();
 
-  bool is_initialized_ = false;
-  int frame_number_ = 0;
-  bool stop_rendering = false;
+	/**
+	* @brief Default constructor
+	* 
+	* @param window_width Desire width for the new window
+	* @param window_height Desire height for the new window
+	*/
+	Engine(unsigned int window_width, unsigned int window_height);
 
-  GLFWwindow* window_												= nullptr;
+	/**
+	* @brief Default destructor(destroy all resources incluying the window)
+	*/
+	~Engine();
+
+	/**
+	* @brief Return the engine's intance
+	*/
+	//inline static Engine& Get() { return *loaded_engine; }
+
+	//Engine* loaded_engine;
+
+	bool is_initialized_ = false;
+	bool stop_rendering = false;
+
+	GLFWwindow* window_				;
 	// TO FIX -> Hardcoded window size
-	VkExtent2D window_extent_									= { 1280,720 };
-	VkInstance instance_											=	VK_NULL_HANDLE;
-	VkDebugUtilsMessengerEXT debug_messenger_ = VK_NULL_HANDLE;
-	VkPhysicalDevice physical_device_					= VK_NULL_HANDLE;
-	VkDevice device_													= VK_NULL_HANDLE;
-	VkQueue graphics_queue_										= VK_NULL_HANDLE;
-	VkQueue present_queue_										= VK_NULL_HANDLE;
-	VkSurfaceKHR surface_											= VK_NULL_HANDLE;
-	VkSwapchainKHR swap_chain_								= VK_NULL_HANDLE;
+	VkExtent2D window_extent_;
+	VkInstance instance_;
+	VkDebugUtilsMessengerEXT debug_messenger_;
+	VkPhysicalDevice physical_device_;
+	VkDevice device_;
+	VkQueue graphics_queue_;
+	VkQueue present_queue_;
+	VkSurfaceKHR surface_;
+	VkSwapchainKHR swap_chain_;
 	std::vector<VkImage> swap_chain_images_;
 	std::vector<VkImageView> swap_chain_image_views_;
-	VkFormat swap_chain_image_format_					= VK_FORMAT_UNDEFINED;
-	VkRenderPass render_pass_									= VK_NULL_HANDLE;
-	VkPipelineLayout pipeline_layout_					= VK_NULL_HANDLE;	
-	VkPipeline graphics_pipeline_							= VK_NULL_HANDLE;
+	VkFormat swap_chain_image_format_;
+	VkRenderPass render_pass_;
+	VkPipelineLayout pipeline_layout_;	
+	VkPipeline graphics_pipeline_;
 
-  void init();
+	FrameData frames_[FRAME_OVERLAP];
+	int frame_number_ = 0;
+	FrameData& getCurrentFrame() { return frames_[frame_number_ % FRAME_OVERLAP]; };
+
+	void init();
 	void initWindow();
-  void cleanUp();
-  void initVulkan();
+	void cleanUp();
+	void initVulkan();
 	void mainLoop();
 	void pickPhysicalDevice();
 	bool isDeviceSuitable(VkPhysicalDevice device);
@@ -46,8 +92,32 @@ public:
 	void createImageViews();
 	void createGraphicsPipeline();
 	void createRenderPass();
-	Engine();
-	~Engine();
+	void createCommandPool();
+	void createSyncObjects();
+	void draw();
+	void transitionImage(VkCommandBuffer cmd, VkImage image, 
+		VkImageLayout currentLayout, VkImageLayout newLayout);
+	VkImageSubresourceRange  imageSubresourceRange(VkImageAspectFlags aspectMask);
+
 private:
+	/**
+	* @brief Copy constructor(never use)
+	*/
+	Engine(const Engine& obj) {};
+
+	/**
+	* @brief Assign operator(never use)
+	*/
+	Engine& operator=(const Engine& obj){};
+
+	/**
+	* @brief Move constructor(never use)
+	*/
+	Engine(Engine&& obj) {};
+
+	/**
+	* @brief Move Assign operator(never use)
+	*/
+	Engine& operator=(Engine& obj) {};
 };
 #endif // ! __CUSTOM_ENGINE_
