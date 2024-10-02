@@ -11,6 +11,8 @@
 #include "custom_engine.hpp"
 #include "custom_vulkan_helpers.hpp"
 
+#include "dynamic_ptr.hpp"
+
 #ifdef NDEBUG
 constexpr bool enableValidationLayers = false;
 #else
@@ -26,7 +28,7 @@ const std::vector<const char*> requiredDeviceExtensions = {
 	VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME
 };
 
-Engine* loaded_engine = nullptr;
+Engine* Engine::loaded_engine = nullptr;
 
 Engine::Engine() 
 {
@@ -104,6 +106,9 @@ void Engine::init() {
 	initVulkan();
 
   is_initialized_ = true;
+
+  DynamicPtr<Engine> a;
+  a.UpdatePointer(this);
 }
 
 void Engine::initWindow() {

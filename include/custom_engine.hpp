@@ -97,5 +97,7 @@ private:
 	* @brief Move Assign operator(never use)
 	*/
 	Engine& operator=(Engine& obj) {};
+
+	static Engine* loaded_engine;
 };
 #endif // ! __CUSTOM_ENGINE_
