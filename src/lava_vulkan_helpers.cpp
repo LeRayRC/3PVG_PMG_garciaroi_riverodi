@@ -1,8 +1,7 @@
-#include "custom_vulkan_helpers.hpp"
+#include "lava_vulkan_helpers.hpp"
 
-#include "custom_types.hpp"
 
-VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
+VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
 	VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
 	VkDebugUtilsMessageTypeFlagsEXT messageType,
 	const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
@@ -16,7 +15,7 @@ VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 }
 
 
-bool checkValidationLayerSupport(const std::vector<const char*> validationLayers) {
+bool CheckValidationLayerSupport(const std::vector<const char*> validationLayers) {
 	uint32_t layerCount;
 	vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
 
@@ -39,7 +38,7 @@ bool checkValidationLayerSupport(const std::vector<const char*> validationLayers
 }
 
 
-std::vector<const char*> getRequiredExtensions(bool enableValidationLayers) {
+std::vector<const char*> GetRequiredExtensions(bool enableValidationLayers) {
 	uint32_t glfwExtensionCount = 0;
 	const char** glfwExtensions;
 	glfwExtensions =
@@ -89,7 +88,7 @@ void DestroyDebugUtilsMessengerEXT(VkInstance instance,
 	}
 }
 
-bool checkDeviceExtensionsSupport(VkPhysicalDevice device,
+bool CheckDeviceExtensionsSupport(VkPhysicalDevice device,
 	//Comprueba si las extensiones requeridas las por el usuario
 	//las tiene la GPU seleccionada
 	std::vector<const char*> requiredExtensions) {
@@ -118,7 +117,7 @@ bool checkDeviceExtensionsSupport(VkPhysicalDevice device,
 	return requiredExtensionSet.empty();
 }
 
-QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface) {
+QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface) {
 	QueueFamilyIndices indices;
 
 	uint32_t queueFamilyCount = 0;
@@ -152,7 +151,7 @@ QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surfa
 }
 
 
-SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device,
+SwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice device,
 	VkSurfaceKHR surface) {
 	SwapChainSupportDetails details;
 
@@ -180,10 +179,10 @@ SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device,
 	return details;
 }
 
-VkSurfaceFormatKHR chooseSwapSurfaceFormat(const
+VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const
 	std::vector<VkSurfaceFormatKHR>& availableFormats) {
 	for (const auto& availableFormat : availableFormats) {
-		if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB &&
+		if (availableFormat.format == VK_FORMAT_B8G8R8A8_UNORM &&
 			availableFormat.colorSpace ==
 			VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
 			return availableFormat;
@@ -192,7 +191,7 @@ VkSurfaceFormatKHR chooseSwapSurfaceFormat(const
 	return availableFormats[0];
 }
 
-VkPresentModeKHR chooseSwapPresentMode(const
+VkPresentModeKHR ChooseSwapPresentMode(const
 	std::vector<VkPresentModeKHR>& availablePresentModes) {
 	for (const auto& availablePresentMode : availablePresentModes) {
 		if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
@@ -203,7 +202,7 @@ VkPresentModeKHR chooseSwapPresentMode(const
 	return VK_PRESENT_MODE_FIFO_KHR;
 }
 
-VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR&
+VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR&
 	capabilities, GLFWwindow* window) {
 	if (capabilities.currentExtent.width !=
 		std::numeric_limits<uint32_t>::max()) {
@@ -233,7 +232,7 @@ VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR&
 	
 }
 
-std::vector<char> readFile(const std::string& filename) {
+std::vector<char> ReadFile(const std::string& filename) {
 	std::ifstream file(filename, std::ios::ate | std::ios::binary);
 
 	if (!file.is_open()) {
@@ -248,7 +247,7 @@ std::vector<char> readFile(const std::string& filename) {
 	return buffer;
 }
 
-VkShaderModule createShaderModule(VkDevice device, const std::vector<char>& code) {
+VkShaderModule CreateShaderModule(VkDevice device, const std::vector<char>& code) {
 	VkShaderModuleCreateInfo createInfo{};
 	createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
 	createInfo.codeSize = code.size();
@@ -260,4 +259,81 @@ VkShaderModule createShaderModule(VkDevice device, const std::vector<char>& code
 		throw std::runtime_error("failed to create shader module!");
 	}
 	return shaderModule;
+}
+
+void CopyImageToImage(VkCommandBuffer cmd, VkImage source, VkImage destination,
+	VkExtent2D srcSize, VkExtent2D dstSize) {
+	VkImageBlit2 blit_region{};
+	blit_region.sType = VK_STRUCTURE_TYPE_IMAGE_BLIT_2;
+	blit_region.pNext = nullptr;
+
+	blit_region.srcOffsets[1].x = srcSize.width;
+	blit_region.srcOffsets[1].y = srcSize.height;
+	blit_region.srcOffsets[1].z = 1;
+
+	blit_region.dstOffsets[1].x = dstSize.width;
+	blit_region.dstOffsets[1].y = dstSize.height;
+	blit_region.dstOffsets[1].z = 1;
+
+	blit_region.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	blit_region.srcSubresource.baseArrayLayer = 0;
+	blit_region.srcSubresource.layerCount = 1;
+	blit_region.srcSubresource.mipLevel = 0;
+
+	blit_region.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	blit_region.dstSubresource.baseArrayLayer = 0;
+	blit_region.dstSubresource.layerCount = 1;
+	blit_region.dstSubresource.mipLevel = 0;
+
+	VkBlitImageInfo2 blit_info{ .sType = VK_STRUCTURE_TYPE_BLIT_IMAGE_INFO_2, .pNext = nullptr };
+	blit_info.dstImage = destination;
+	blit_info.dstImageLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+	blit_info.srcImage = source;
+	blit_info.srcImageLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+	blit_info.filter = VK_FILTER_LINEAR;
+	blit_info.regionCount = 1;
+	blit_info.pRegions = &blit_region;
+
+	vkCmdBlitImage2(cmd, &blit_info);
+}
+
+void TransitionImage(VkCommandBuffer cmd, VkImage image,
+	VkImageLayout currentLayout, VkImageLayout newLayout) {
+
+	VkImageMemoryBarrier2 imageBarrier{};
+	imageBarrier.sType =
+		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
+	imageBarrier.pNext = nullptr;
+	imageBarrier.srcStageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
+	imageBarrier.srcAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT;
+	imageBarrier.dstStageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
+	imageBarrier.dstAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT | VK_ACCESS_2_MEMORY_READ_BIT;
+
+	imageBarrier.oldLayout = currentLayout;
+	imageBarrier.newLayout = newLayout;
+
+	VkImageAspectFlags aspectMask = (newLayout == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL) ?
+		VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
+
+	imageBarrier.subresourceRange = ImageSubresourceRange(aspectMask);
+	imageBarrier.image = image;
+
+	VkDependencyInfo depInfo{};
+	depInfo.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
+	depInfo.pNext = nullptr;
+	depInfo.imageMemoryBarrierCount = 1;
+	depInfo.pImageMemoryBarriers = &imageBarrier;
+
+	vkCmdPipelineBarrier2(cmd, &depInfo);
+}
+
+VkImageSubresourceRange  ImageSubresourceRange(VkImageAspectFlags aspectMask) {
+	VkImageSubresourceRange subImage{};
+	subImage.aspectMask = aspectMask;
+	subImage.baseMipLevel = 0;
+	subImage.levelCount = VK_REMAINING_MIP_LEVELS;
+	subImage.baseArrayLayer = 0;
+	subImage.layerCount = VK_REMAINING_ARRAY_LAYERS;
+
+	return subImage;
 }

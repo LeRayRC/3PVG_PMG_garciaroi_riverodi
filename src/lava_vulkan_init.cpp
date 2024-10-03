@@ -1,4 +1,4 @@
-#include "custom_vulkan_inits.hpp"
+#include "lava_vulkan_inits.hpp"
 
 VkSemaphoreSubmitInfo vkinit::SemaphoreSubmitInfo(VkPipelineStageFlags2 stageMask,
   VkSemaphore semaphore) {
@@ -40,6 +40,49 @@ VkSubmitInfo2 vkinit::SubmitInfo(VkCommandBufferSubmitInfo* cmd, VkSemaphoreSubm
 
   info.commandBufferInfoCount = 1;
   info.pCommandBufferInfos = cmd;
+
+  return info;
+}
+
+
+VkImageCreateInfo vkinit::ImageCreateInfo(VkFormat format, VkImageUsageFlags usageFlags, VkExtent3D extent) {
+
+  VkImageCreateInfo info{};
+  info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+  info.pNext = nullptr;
+
+  info.imageType = VK_IMAGE_TYPE_2D;
+
+  info.format = format;
+  info.extent = extent;
+
+  info.mipLevels = 1;
+  info.arrayLayers = 1;
+
+  //Util para MSAA (Antialiasing)
+  info.samples = VK_SAMPLE_COUNT_1_BIT;
+
+  //Permite a la GPU realizar operaciones de intercambio sobre los datos 
+  // de la imagen, lo cual es mas optimo
+  info.tiling = VK_IMAGE_TILING_OPTIMAL;
+  info.usage = usageFlags;
+
+  return info;
+}
+
+VkImageViewCreateInfo vkinit::ImageViewCreateInfo(VkFormat format, VkImage image, VkImageAspectFlags aspectFlags){
+  VkImageViewCreateInfo info = {};
+  info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+  info.pNext = nullptr;
+
+  info.viewType = VK_IMAGE_VIEW_TYPE_2D;
+  info.image = image;
+  info.format = format;
+  info.subresourceRange.baseMipLevel = 0;
+  info.subresourceRange.levelCount = 1;
+  info.subresourceRange.baseArrayLayer = 0;
+  info.subresourceRange.layerCount = 1;
+  info.subresourceRange.aspectMask = aspectFlags;
 
   return info;
 }

@@ -1,6 +1,6 @@
 #include "examples/hellotriangle.hpp"
 
-#include "custom_engine.hpp"
+#include "lava_engine.hpp"
 
 /*
 class HelloTriangleApp {
@@ -557,7 +557,7 @@ private:
 */
 int main(int argc, char* argv[]) {
 
-	Engine engine;
+	LavaEngine engine;
 	engine.init();
 	engine.mainLoop();
 	engine.cleanUp();

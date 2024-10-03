@@ -8,10 +8,28 @@
  * @copyright Academic Project ESAT 2024/2025
  *
  */
-#ifndef  __CUSTOM_ENGINE_
-#define  __CUSTOM_ENGINE_ 1
+#ifndef  __LAVA_ENGINE_
+#define  __LAVA_ENGINE_ 1
 
-#include "custom_types.hpp"
+#include "lava_types.hpp"
+#include "lava_vulkan_helpers.hpp"
+
+
+struct DeletionQueue {
+	//TO FIX -> multiples vector for every kind of Vulkan handle
+	std::deque<std::function<void()>> deletors;
+
+	void push_function(std::function<void()>&& function) {
+		deletors.push_back(function);
+	}
+
+	void flush() {
+		for (auto it = deletors.rbegin(); it != deletors.rend(); it++) {
+			(*it)();
+		}
+		deletors.clear();
+	}
+};
 
 struct FrameData {
 	VkCommandPool command_pool;
@@ -19,18 +37,19 @@ struct FrameData {
 	VkSemaphore swap_chain_semaphore; //GPU <-> GPU
 	VkSemaphore render_semaphore; //GPU <-> GPU
 	VkFence render_fence; // CPU <-> GPU
+	DeletionQueue deletion_queue;
 };
 
 //Numero de buffers en paralelo (double-buffering)
 constexpr unsigned int FRAME_OVERLAP = 2;
 
-class Engine {
+class LavaEngine {
 public:
 
 	/**
 	* @brief Default constructor
 	*/
-	Engine();
+	LavaEngine();
 
 	/**
 	* @brief Default constructor
@@ -38,12 +57,12 @@ public:
 	* @param window_width Desire width for the new window
 	* @param window_height Desire height for the new window
 	*/
-	Engine(unsigned int window_width, unsigned int window_height);
+	LavaEngine(unsigned int window_width, unsigned int window_height);
 
 	/**
 	* @brief Default destructor(destroy all resources incluying the window)
 	*/
-	~Engine();
+	~LavaEngine();
 
 	/**
 	* @brief Return the engine's intance
@@ -54,6 +73,12 @@ public:
 
 	bool is_initialized_ = false;
 	bool stop_rendering = false;
+
+	DeletionQueue main_deletion_queue_;
+	VmaAllocator allocator_;
+	//Recursos para dibujar fuera del swap chain
+	AllocatedImage draw_image_;
+	VkExtent2D draw_extent_;
 
 	GLFWwindow* window_				;
 	// TO FIX -> Hardcoded window size
@@ -74,7 +99,7 @@ public:
 	VkPipeline graphics_pipeline_;
 
 	FrameData frames_[FRAME_OVERLAP];
-	int frame_number_ = 0;
+	uint64_t  frame_number_ = 0;
 	FrameData& getCurrentFrame() { return frames_[frame_number_ % FRAME_OVERLAP]; };
 
 	void init();
@@ -95,29 +120,29 @@ public:
 	void createCommandPool();
 	void createSyncObjects();
 	void draw();
-	void transitionImage(VkCommandBuffer cmd, VkImage image, 
-		VkImageLayout currentLayout, VkImageLayout newLayout);
-	VkImageSubresourceRange  imageSubresourceRange(VkImageAspectFlags aspectMask);
+	void drawBackground(VkCommandBuffer command_buffer);
+	
+	void createAllocator();
 
 private:
 	/**
 	* @brief Copy constructor(never use)
 	*/
-	Engine(const Engine& obj) {};
+	LavaEngine(const LavaEngine& obj) {};
 
 	/**
 	* @brief Assign operator(never use)
 	*/
-	Engine& operator=(const Engine& obj){};
+	LavaEngine& operator=(const LavaEngine& obj){};
 
 	/**
 	* @brief Move constructor(never use)
 	*/
-	Engine(Engine&& obj) {};
+	LavaEngine(LavaEngine&& obj) {};
 
 	/**
 	* @brief Move Assign operator(never use)
 	*/
-	Engine& operator=(Engine& obj) {};
+	LavaEngine& operator=(LavaEngine& obj) {};
 };
 #endif // ! __CUSTOM_ENGINE_
