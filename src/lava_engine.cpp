@@ -59,8 +59,8 @@ LavaEngine::LavaEngine()
 	swap_chain_ = VK_NULL_HANDLE;
 	swap_chain_image_format_ = VK_FORMAT_UNDEFINED;
 	render_pass_ = VK_NULL_HANDLE;
-	pipeline_layout_ = VK_NULL_HANDLE;
-	graphics_pipeline_ = VK_NULL_HANDLE;
+	//pipeline_layout_ = VK_NULL_HANDLE;
+	//graphics_pipeline_ = VK_NULL_HANDLE;
 }
 
 LavaEngine::LavaEngine(unsigned int window_width, unsigned int window_height)
@@ -85,8 +85,8 @@ LavaEngine::LavaEngine(unsigned int window_width, unsigned int window_height)
 	swap_chain_ = VK_NULL_HANDLE;
 	swap_chain_image_format_ = VK_FORMAT_UNDEFINED;
 	render_pass_ = VK_NULL_HANDLE;
-	pipeline_layout_ = VK_NULL_HANDLE;
-	graphics_pipeline_ = VK_NULL_HANDLE;
+	//pipeline_layout_ = VK_NULL_HANDLE;
+	//graphics_pipeline_ = VK_NULL_HANDLE;
 }
 
 LavaEngine::~LavaEngine(){
@@ -176,6 +176,8 @@ void LavaEngine::initVulkan(){
 	createImageViews();
 	createCommandPool();
 	createSyncObjects();
+	createDescriptors();
+	createPipelines();
 	/*
 	createRenderPass();
 	createGraphicsPipeline();*/
@@ -515,8 +517,8 @@ void LavaEngine::createImageViews(){
 		}
 	}
 }
-void LavaEngine::createGraphicsPipeline(){}
-void LavaEngine::createRenderPass(){}
+//void LavaEngine::createGraphicsPipeline(){}
+//void LavaEngine::createRenderPass(){}
 
 void LavaEngine::createCommandPool() {
 	//Primero se crean los command pool
@@ -688,16 +690,30 @@ if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
 }
 
 void LavaEngine::drawBackground(VkCommandBuffer command_buffer) {
-	//Limpiamos la imagen con un clear color
-	VkClearColorValue clearValue;
-	clearValue = { {1.0f,0.0f,0.0f,0.0f} };
 
-	//Seleccionamos un rango de la imagen sobre la que actuar
-	VkImageSubresourceRange clearRange = ImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT);
+	//Se sustituye todo esto por el compute shader
+//	//Limpiamos la imagen con un clear color
+//	VkClearColorValue clearValue;
+//	clearValue = { {1.0f,0.0f,0.0f,0.0f} };
+//
+//	//Seleccionamos un rango de la imagen sobre la que actuar
+//	VkImageSubresourceRange clearRange = ImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT);
+//
+//	//Aplicamos el clear color a una imagen 
+//vkCmdClearColorImage(command_buffer, draw_image_.image,
+//	VK_IMAGE_LAYOUT_GENERAL, &clearValue, 1, &clearRange);
 
-	//Aplicamos el clear color a una imagen 
-	vkCmdClearColorImage(command_buffer, draw_image_.image,
-		VK_IMAGE_LAYOUT_GENERAL, &clearValue, 1, &clearRange);
+
+	// bind the gradient drawing compute pipeline
+	vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_COMPUTE, gradient_pipeline_);
+	
+	//IMPORTANT
+	//Importante recordar esto cuando tengamos que hacer binding de description sets en otros shaders
+	// bind the descriptor set containing the draw image for the compute pipeline
+	vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_COMPUTE, gradient_pipeline_layout_, 0, 1, &draw_image_descriptor_set_, 0, nullptr);
+	
+	// execute the compute pipeline dispatch. We are using 16x16 workgroup size so we need to divide by it
+	vkCmdDispatch(command_buffer, std::ceil(draw_image_.image_extent.width / 16.0), std::ceil(draw_image_.image_extent.height / 16.0), 1);
 
 }
 
@@ -712,7 +728,100 @@ void LavaEngine::createAllocator() {
 
 	main_deletion_queue_.push_function([&]() {
 		vmaDestroyAllocator(allocator_);
-	});
+		});
+}
+
+void LavaEngine::createDescriptors() {
+	//Se crean 10 descriptor sets, cada uno con una imagen
+	std::vector<DescriptorAllocator::PoolSizeRatio> sizes = {
+		{VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1}
+	};
+
+	global_descriptor_allocator_.init_pool(device_, 10, sizes);
+
+	{
+		DescriptorLayoutBuilder builder;
+		builder.addBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+		draw_image_descriptor_set_layout_ = builder.build(device_, VK_SHADER_STAGE_COMPUTE_BIT);
+	}
+
+	//Ahora se reserva el description set
+	draw_image_descriptor_set_ =
+		global_descriptor_allocator_.allocate(device_, draw_image_descriptor_set_layout_);
+
+	VkDescriptorImageInfo img_info{};
+	img_info.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+	//La imagen que se creo con anterioridad 
+	// fuera del swap chain para poder dibujar sobre ella
+	img_info.imageView = draw_image_.image_view;
+
+	VkWriteDescriptorSet draw_image_write{};
+	draw_image_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	draw_image_write.pNext = nullptr;
+
+	draw_image_write.dstBinding = 0;
+	draw_image_write.dstSet = draw_image_descriptor_set_;
+	draw_image_write.descriptorCount = 1;
+	draw_image_write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+	draw_image_write.pImageInfo = &img_info;
+
+	vkUpdateDescriptorSets(device_, 1, &draw_image_write, 0, nullptr);
+
+	//make sure both the descriptor allocator and the new layout get cleaned up properly
+	main_deletion_queue_.push_function([&]() {
+		global_descriptor_allocator_.destroy_pool(device_);
+		vkDestroyDescriptorSetLayout(device_, draw_image_descriptor_set_layout_, nullptr);
+		});
+}
+
+void LavaEngine::createPipelines() {
+	createBackgroundPipelines();
+}
+
+void LavaEngine::createBackgroundPipelines() {
+	VkPipelineLayoutCreateInfo compute_layout{};
+	compute_layout.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+	compute_layout.pNext = nullptr;
+	compute_layout.pSetLayouts = &draw_image_descriptor_set_layout_;
+	compute_layout.setLayoutCount = 1;
+
+	if (vkCreatePipelineLayout(device_, &compute_layout, nullptr, &gradient_pipeline_layout_) != VK_SUCCESS) {
+#ifndef NDEBUG
+		printf("Pipeline layout creation failed!");
+#endif // !NDEBUG
+	}
+
+	//layout code
+	VkShaderModule compute_draw_shader;
+	if (!LoadShader("../src/shaders/gradient.comp.spv", device_, &compute_draw_shader))
+	{
+		printf("Error when building the compute shader \n");
+	}
+
+	VkPipelineShaderStageCreateInfo stage_info{};
+	stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	stage_info.pNext = nullptr;
+	stage_info.stage = VK_SHADER_STAGE_COMPUTE_BIT;
+	stage_info.module = compute_draw_shader;
+	stage_info.pName = "main";
+
+	VkComputePipelineCreateInfo compute_pipeline_create_info{};
+	compute_pipeline_create_info.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+	compute_pipeline_create_info.pNext = nullptr;
+	compute_pipeline_create_info.layout = gradient_pipeline_layout_;
+	compute_pipeline_create_info.stage = stage_info;
+
+	if(vkCreateComputePipelines(device_, VK_NULL_HANDLE, 1, &compute_pipeline_create_info, nullptr, &gradient_pipeline_) != VK_SUCCESS){
+#ifndef NDEBUG
+		printf("Compute pipeline creation failed!");
+#endif // !NDEBUG
+	}
+
+	vkDestroyShaderModule(device_, compute_draw_shader, nullptr);
+	main_deletion_queue_.push_function([&]() {
+		vkDestroyPipelineLayout(device_, gradient_pipeline_layout_, nullptr);
+		vkDestroyPipeline(device_, gradient_pipeline_, nullptr);
+		});
 }
 
 

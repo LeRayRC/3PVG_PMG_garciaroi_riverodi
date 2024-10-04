@@ -70,9 +70,7 @@ void DestroyDebugUtilsMessengerEXT(VkInstance instance,
 	VkDebugUtilsMessengerEXT debugMessenger,
 	const VkAllocationCallbacks* pAllocator);
 
-std::vector<char> ReadFile(const std::string& filename);
 
-VkShaderModule CreateShaderModule(VkDevice device,const std::vector<char>& code);
 
 void CopyImageToImage(VkCommandBuffer cmd, VkImage source, VkImage destination, 
 	VkExtent2D srcSize, VkExtent2D dstSize);
@@ -81,5 +79,11 @@ void TransitionImage(VkCommandBuffer cmd, VkImage image,
 	VkImageLayout currentLayout, VkImageLayout newLayout);
 
 VkImageSubresourceRange  ImageSubresourceRange(VkImageAspectFlags aspectMask);
+
+bool LoadShader(const std::string& file_path,
+	VkDevice device,
+	VkShaderModule* out_shader_module);
+VkShaderModule CreateShaderModule(VkDevice device,const std::vector<char>& code);
+std::vector<char> ReadFile(const std::string& filename);
 
 #endif // !__CUSTOM_VULKAN_HELPERS_H

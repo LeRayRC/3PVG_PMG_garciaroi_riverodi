@@ -102,9 +102,9 @@ bool CheckDeviceExtensionsSupport(VkPhysicalDevice device,
 		&extensionCount, availableExtensions.data());
 
 #ifndef NDEBUG
-	for (auto extensionProperty : availableExtensions) {
+	/*for (auto extensionProperty : availableExtensions) {
 		printf("%s\n", extensionProperty.extensionName);
-	}
+	}*/
 #endif
 	
 	
@@ -232,34 +232,9 @@ VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR&
 	
 }
 
-std::vector<char> ReadFile(const std::string& filename) {
-	std::ifstream file(filename, std::ios::ate | std::ios::binary);
 
-	if (!file.is_open()) {
-		throw std::runtime_error("failed to open file");
-	}
 
-	size_t fileSize = (size_t)file.tellg();
-	std::vector<char> buffer(fileSize);
-	file.seekg(0);
-	file.read(buffer.data(), fileSize);
-	file.close();
-	return buffer;
-}
 
-VkShaderModule CreateShaderModule(VkDevice device, const std::vector<char>& code) {
-	VkShaderModuleCreateInfo createInfo{};
-	createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-	createInfo.codeSize = code.size();
-	createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
-	
-	VkShaderModule shaderModule;
-	if (vkCreateShaderModule(device, &createInfo,
-		nullptr, &shaderModule)) {
-		throw std::runtime_error("failed to create shader module!");
-	}
-	return shaderModule;
-}
 
 void CopyImageToImage(VkCommandBuffer cmd, VkImage source, VkImage destination,
 	VkExtent2D srcSize, VkExtent2D dstSize) {
@@ -336,4 +311,44 @@ VkImageSubresourceRange  ImageSubresourceRange(VkImageAspectFlags aspectMask) {
 	subImage.layerCount = VK_REMAINING_ARRAY_LAYERS;
 
 	return subImage;
+}
+
+bool LoadShader(const std::string& file_path,
+	VkDevice device,
+	VkShaderModule* out_shader_module){
+	
+	auto shader_code = ReadFile(file_path);
+
+	*out_shader_module = CreateShaderModule(device, shader_code);
+	return true;
+}
+
+VkShaderModule CreateShaderModule(VkDevice device, const std::vector<char>& code) {
+	VkShaderModuleCreateInfo createInfo{};
+	createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+	createInfo.codeSize = code.size();
+	createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
+
+	VkShaderModule shaderModule;
+	if (vkCreateShaderModule(device, &createInfo,
+		nullptr, &shaderModule)) {
+		throw std::runtime_error("failed to create shader module!");
+	}
+	return shaderModule;
+}
+
+
+std::vector<char> ReadFile(const std::string& filename) {
+	std::ifstream file(filename, std::ios::ate | std::ios::binary);
+
+	if (!file.is_open()) {
+		throw std::runtime_error("failed to open file");
+	}
+
+	size_t fileSize = (size_t)file.tellg();
+	std::vector<char> buffer(fileSize);
+	file.seekg(0);
+	file.read(buffer.data(), fileSize);
+	file.close();
+	return buffer;
 }

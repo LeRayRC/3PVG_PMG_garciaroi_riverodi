@@ -16,6 +16,7 @@
 #include <deque>
 #include <functional>
 #include <assert.h>
+#include <span>
 #include "vk_mem_alloc.h"
 
 #define GLM_FORCE_RADIANS

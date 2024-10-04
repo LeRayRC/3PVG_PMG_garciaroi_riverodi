@@ -13,6 +13,7 @@
 
 #include "lava_types.hpp"
 #include "lava_vulkan_helpers.hpp"
+#include "lava_descriptors.hpp"
 
 
 struct DeletionQueue {
@@ -95,12 +96,22 @@ public:
 	std::vector<VkImageView> swap_chain_image_views_;
 	VkFormat swap_chain_image_format_;
 	VkRenderPass render_pass_;
-	VkPipelineLayout pipeline_layout_;	
-	VkPipeline graphics_pipeline_;
+	//VkPipelineLayout pipeline_layout_;	
+	//VkPipeline graphics_pipeline_;
 
 	FrameData frames_[FRAME_OVERLAP];
 	uint64_t  frame_number_ = 0;
 	FrameData& getCurrentFrame() { return frames_[frame_number_ % FRAME_OVERLAP]; };
+
+	DescriptorAllocator global_descriptor_allocator_;
+	VkDescriptorSet draw_image_descriptor_set_;
+	VkDescriptorSetLayout draw_image_descriptor_set_layout_;
+
+	VkPipeline gradient_pipeline_;
+	VkPipelineLayout gradient_pipeline_layout_;
+
+
+
 
 	void init();
 	void initWindow();
@@ -115,14 +126,17 @@ public:
 	void createSurface();
 	void createSwapChain();
 	void createImageViews();
-	void createGraphicsPipeline();
-	void createRenderPass();
+	//void createGraphicsPipeline();
+	//void createRenderPass();
 	void createCommandPool();
 	void createSyncObjects();
 	void draw();
 	void drawBackground(VkCommandBuffer command_buffer);
 	
 	void createAllocator();
+	void createDescriptors();
+	void createPipelines();
+	void createBackgroundPipelines();
 
 private:
 	/**
