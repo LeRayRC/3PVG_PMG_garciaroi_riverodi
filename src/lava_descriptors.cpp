@@ -21,7 +21,7 @@ VkDescriptorSetLayout DescriptorLayoutBuilder::build(VkDevice device,
   info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
   info.pNext = pnext;
   info.pBindings = bindings_.data();
-  info.bindingCount = bindings_.size();
+  info.bindingCount = (uint32_t)bindings_.size();
   info.flags = flags;
 
   VkDescriptorSetLayout set;

@@ -110,8 +110,14 @@ public:
 	VkPipeline gradient_pipeline_;
 	VkPipelineLayout gradient_pipeline_layout_;
 
+	//Immediate Submit communication
+	VkFence immediate_fence;
+	VkCommandBuffer immediate_command_buffer;
+	VkCommandPool immediate_command_pool;
 
+	DescriptorAllocator imgui_descriptor_alloc;
 
+	
 
 	void init();
 	void initWindow();
@@ -126,8 +132,6 @@ public:
 	void createSurface();
 	void createSwapChain();
 	void createImageViews();
-	//void createGraphicsPipeline();
-	//void createRenderPass();
 	void createCommandPool();
 	void createSyncObjects();
 	void draw();
@@ -137,6 +141,9 @@ public:
 	void createDescriptors();
 	void createPipelines();
 	void createBackgroundPipelines();
+	void initImgui();
+	void drawImgui(VkCommandBuffer cmd, VkImageView targetImageView);
+	void immediate_submit(std::function<void(VkCommandBuffer)>&& function);
 
 private:
 	/**
@@ -158,5 +165,6 @@ private:
 	* @brief Move Assign operator(never use)
 	*/
 	LavaEngine& operator=(LavaEngine& obj) {};
+
 };
 #endif // ! __CUSTOM_ENGINE_

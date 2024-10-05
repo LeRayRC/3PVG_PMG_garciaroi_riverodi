@@ -18,6 +18,7 @@ for i = 1, 3 do
     cfg["sharedlinkflags"] = conan_sharedlinkflags
     cfg["exelinkflags"] = conan_exelinkflags
     cfg["frameworks"] = conan_frameworks
+    cfg["imgui_bindings_path"] = conan_rootpath_imgui .. "/res/bindings/"
 end
 
 
@@ -46,9 +47,12 @@ function conan_config_lib()
         filter("configurations:" .. configs[i])
 
         linkoptions { cfg["sharedlinkflags"] }
-        includedirs { cfg["includedirs"] }
+        includedirs { cfg["includedirs"], cfg["imgui_bindings_path"]}
         defines { cfg["defines"] }
-
+        files {
+            cfg["imgui_bindings_path"] .. "imgui_impl_vulkan.cpp",
+            cfg["imgui_bindings_path"] .. "imgui_impl_glfw.cpp",
+        }
         filter {}
     end
 end
@@ -89,10 +93,10 @@ workspace "Motor"
                 "src/build/conanfile.txt",
                 "src/build/conan.lua",
                 "src/*.cpp",
-                "include/*.hpp"
+                "include/*.hpp",
+
                 }
     project"Window"
-
         kind "ConsoleApp" -- This was WindowedApp
         language "C++"
         targetdir "build/%{prj.name}/%{cfg.buildcfg}"

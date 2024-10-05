@@ -560,7 +560,6 @@ int main(int argc, char* argv[]) {
 	LavaEngine engine;
 	engine.init();
 	engine.mainLoop();
-	engine.cleanUp();
 
 	return 0; 
 }

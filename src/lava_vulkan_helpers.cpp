@@ -102,9 +102,9 @@ bool CheckDeviceExtensionsSupport(VkPhysicalDevice device,
 		&extensionCount, availableExtensions.data());
 
 #ifndef NDEBUG
-	/*for (auto extensionProperty : availableExtensions) {
+	for (auto extensionProperty : availableExtensions) {
 		printf("%s\n", extensionProperty.extensionName);
-	}*/
+	}
 #endif
 	
 	

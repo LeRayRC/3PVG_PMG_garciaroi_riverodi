@@ -87,3 +87,52 @@ VkImageViewCreateInfo vkinit::ImageViewCreateInfo(VkFormat format, VkImage image
   return info;
 }
 
+VkCommandBufferBeginInfo vkinit::CommandBufferBeginInfo(VkCommandBufferUsageFlags flags) {
+
+  VkCommandBufferBeginInfo command_buffer_begin_info{};
+  command_buffer_begin_info.sType =
+    VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+  command_buffer_begin_info.pNext = nullptr;
+  command_buffer_begin_info.pInheritanceInfo = nullptr;
+  command_buffer_begin_info.flags = flags;
+
+  return command_buffer_begin_info;
+}
+
+VkRenderingAttachmentInfo vkinit::AttachmentInfo(
+  VkImageView view, VkClearValue* clear, VkImageLayout layout) {
+  VkRenderingAttachmentInfo color_attachment{};
+  color_attachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+  color_attachment.pNext = nullptr;
+
+  color_attachment.imageView = view;
+  color_attachment.imageLayout = layout;
+  color_attachment.loadOp = clear ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD;
+  color_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+  if (clear) {
+    color_attachment.clearValue = *clear;
+  }
+
+  return color_attachment;
+}
+
+
+
+
+VkRenderingInfo vkinit::RenderingInfo(VkExtent2D render_extent, VkRenderingAttachmentInfo* color_attachment,
+  VkRenderingAttachmentInfo* depth_attachment)
+{
+  VkRenderingInfo render_info{};
+  render_info.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
+  render_info.pNext = nullptr;
+
+  render_info.renderArea = VkRect2D{ VkOffset2D { 0, 0 }, render_extent };
+  render_info.layerCount = 1;
+  render_info.colorAttachmentCount = 1;
+  render_info.pColorAttachments = color_attachment;
+  render_info.pDepthAttachment = depth_attachment;
+  render_info.pStencilAttachment = nullptr;
+
+  return render_info;
+}
+
