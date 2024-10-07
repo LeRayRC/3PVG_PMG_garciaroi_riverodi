@@ -42,8 +42,10 @@ public:
 	bool is_initialized_ = false;
 	int frame_number_ = 0;
 	bool stop_rendering = false;
+	
+	// NOT HERE
+	GLFWwindow* window_;
 
-	GLFWwindow* window_				;
 	// TO FIX -> Hardcoded window size
 	VkExtent2D window_extent_;
 	VkInstance instance_;
