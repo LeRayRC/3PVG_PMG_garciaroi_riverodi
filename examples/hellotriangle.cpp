@@ -1,38 +1,8 @@
 #include "examples/hellotriangle.hpp"
 
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
+#include "lava_engine.hpp"
 
-#include <iostream>
-#include <stdexcept>
-#include <cstdlib>
-#include <vector>
-#include <cstring>
-#include <set>
-
-#include "custom_vulkan_helpers.hpp"
-
-const uint32_t WIDTH = 800;
-const uint32_t HEIGTH = 600;
-
-//Muchas de las validation layers incluidas en el sdk de vuelkan se encuentran
-//reunidas(bundle) en una layer que se llama VK_LAYER_KHRONOS_validation
-const std::vector<const char*> validationLayers = {
-	"VK_LAYER_KHRONOS_validation"
-};
-
-const std::vector<const char*> requiredDeviceExtensions = {
-	VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-	VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME
-};
-
-#ifdef NDEBUG
-	const bool enableValidationLayers = false;
-#else
-	const bool enableValidationLayers = true;
-#endif
-
-
+/*
 class HelloTriangleApp {
 public:
 	void run() {
@@ -215,10 +185,10 @@ private:
 	}
 
 	void createLogicalDevice() {
-		/*
-		* Se tienen que rellenar diversas estructuras, la primera
-		* indica el numero de colas que queremos crear
-		*/
+		//
+		//Se tienen que rellenar diversas estructuras, la primera
+		//indica el numero de colas que queremos crear
+		//
 
 		QueueFamilyIndices indices = findQueueFamilies(physicalDevice, surface);
 		std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
@@ -235,15 +205,15 @@ private:
 			queueCreateInfos.push_back(queueCreateInfo);
 		}
 
-		/* Tambien hay que indicar los features que se quieren
-		* activar de la GPU, de momento se han dejado en blanco
-		* pero se modificaran mas adelante
-		*/
+		// Tambien hay que indicar los features que se quieren
+		//activar de la GPU, de momento se han dejado en blanco
+		//pero se modificaran mas adelante
+		//
 		VkPhysicalDeviceFeatures deviceFeatures{};
 
-		/*
-		* Ahora se rellena la estructura para crear el dispositivo logico
-		*/
+		//
+		//Ahora se rellena la estructura para crear el dispositivo logico
+		//
 		VkDeviceCreateInfo createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 		createInfo.pEnabledFeatures = &deviceFeatures;
@@ -263,10 +233,10 @@ private:
 		vkGetDeviceQueue(device, indices.presentFamily.value(), 0, &presentQueue);
 	}
 
-	/*
-		El objetivo de este metodo es el de configurar un callback que
-		se ejecutará cuando un validation layer falle.
-	*/
+	//
+	//l objetivo de este metodo es el de configurar un callback que
+	//e ejecutará cuando un validation layer falle.
+	//
 	void setupDebugMessenger() {
 		if (!enableValidationLayers) return;
 
@@ -440,17 +410,17 @@ private:
 		inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 		inputAssembly.primitiveRestartEnable = VK_FALSE;
 
-		/*VkViewport viewport{};
-		viewport.x = 0.0f;
-		viewport.y = 0.0f;
-		viewport.height = (float)swapChainExtent.height;
-		viewport.width	= (float)swapChainExtent.width;
-		viewport.minDepth = 0.0f;
-		viewport.maxDepth = 1.0f;
-
-		VkRect2D scissor{};
-		scissor.offset = { 0,0 };
-		scissor.extent = swapChainExtent;*/
+		//VkViewport viewport{};
+		//viewport.x = 0.0f;
+		//viewport.y = 0.0f;
+		//viewport.height = (float)swapChainExtent.height;
+		//viewport.width	= (float)swapChainExtent.width;
+		//viewport.minDepth = 0.0f;
+		//viewport.maxDepth = 1.0f;
+		//
+		//VkRect2D scissor{};
+		//scissor.offset = { 0,0 };
+		//scissor.extent = swapChainExtent;
 
 		VkPipelineRasterizationStateCreateInfo rasterizer{};
 		rasterizer.sType =
@@ -584,17 +554,12 @@ private:
 
 	}
 };
+*/
+int main(int argc, char* argv[]) {
 
-int main() {
-	HelloTriangleApp app;
+	LavaEngine engine;
+	engine.init();
+	engine.mainLoop();
 
-	try {
-		app.run();
-	}
-	catch (const std::exception& e) {
-		std::cerr << e.what() << std::endl;
-		return EXIT_FAILURE;
-	}
-
-	return EXIT_SUCCESS;
+	return 0; 
 }

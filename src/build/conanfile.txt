@@ -4,7 +4,7 @@ glm/0.9.9.8
 imgui/1.91.2
 vulkan-loader/1.3.290.0
 vulkan-headers/1.3.290.0
-
+vulkan-memory-allocator/cci.20231120
 
 [generators]
 premake

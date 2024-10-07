@@ -1,12 +1,7 @@
-#ifndef __CUSTOM_VULKAN_HELPERS_H
-#define __CUSTOM_VULKAN_HELPERS_H 1
+#ifndef __LAVA_VULKAN_HELPERS_H
+#define __LAVA_VULKAN_HELPERS_H 1
 
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
-
-#include <vector>
-#include <string>
-#include <optional>
+#include "lava_types.hpp"
 
 struct QueueFamilyIndices {
 	//Familia para lanzar comandos de graficos
@@ -20,14 +15,22 @@ struct QueueFamilyIndices {
 	}
 };
 
+struct AllocatedImage {
+	VkImage image;
+	VkImageView image_view;
+	VmaAllocation allocation;
+	VkExtent3D image_extent;
+	VkFormat image_format;
+};
+
+
 struct SwapChainSupportDetails {
 	VkSurfaceCapabilitiesKHR capabilities;
 	std::vector<VkSurfaceFormatKHR> formats;
 	std::vector<VkPresentModeKHR> presentModes;
-
 };
 
-VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
+VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
 	VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
 	VkDebugUtilsMessageTypeFlagsEXT messageType,
 	const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
@@ -35,27 +38,27 @@ VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 
 //Se encarga de comprobar si todas las validation layers solicitadas 
 //estan disponibles dentro de la instancia
-bool checkValidationLayerSupport(const std::vector<const char*> validationLayers);
+bool CheckValidationLayerSupport(const std::vector<const char*> validationLayers);
 
-bool checkDeviceExtensionsSupport(VkPhysicalDevice device,
+bool CheckDeviceExtensionsSupport(VkPhysicalDevice device,
 	std::vector<const char*> requiredExtensions);
 
-std::vector<const char*> getRequiredExtensions(bool enableValidationLayers);
+std::vector<const char*> GetRequiredExtensions(bool enableValidationLayers);
 
-QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device,
+QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device,
 	VkSurfaceKHR surface);
 
 
-SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device,
+SwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice device,
 	VkSurfaceKHR surface);
 
-VkSurfaceFormatKHR chooseSwapSurfaceFormat(const
+VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const
 	std::vector<VkSurfaceFormatKHR>& availableFormats);
 
-VkPresentModeKHR chooseSwapPresentMode(const
+VkPresentModeKHR ChooseSwapPresentMode(const
 	std::vector<VkPresentModeKHR>& availablePresentModes);
 
-VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR&
+VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR&
 	capabilities, GLFWwindow* window);
 
 VkResult CreateDebugUtilsMessengerEXT(VkInstance instance,
@@ -67,8 +70,20 @@ void DestroyDebugUtilsMessengerEXT(VkInstance instance,
 	VkDebugUtilsMessengerEXT debugMessenger,
 	const VkAllocationCallbacks* pAllocator);
 
-std::vector<char> readFile(const std::string& filename);
 
-VkShaderModule createShaderModule(VkDevice device,const std::vector<char>& code);
+
+void CopyImageToImage(VkCommandBuffer cmd, VkImage source, VkImage destination, 
+	VkExtent2D srcSize, VkExtent2D dstSize);
+
+void TransitionImage(VkCommandBuffer cmd, VkImage image,
+	VkImageLayout currentLayout, VkImageLayout newLayout);
+
+VkImageSubresourceRange  ImageSubresourceRange(VkImageAspectFlags aspectMask);
+
+bool LoadShader(const std::string& file_path,
+	VkDevice device,
+	VkShaderModule* out_shader_module);
+VkShaderModule CreateShaderModule(VkDevice device,const std::vector<char>& code);
+std::vector<char> ReadFile(const std::string& filename);
 
 #endif // !__CUSTOM_VULKAN_HELPERS_H
