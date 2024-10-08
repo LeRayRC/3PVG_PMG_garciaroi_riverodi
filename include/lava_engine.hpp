@@ -108,7 +108,6 @@ public:
 	VkDescriptorSetLayout draw_image_descriptor_set_layout_;
 
 	VkPipeline gradient_pipeline_;
-	VkPipelineLayout gradient_pipeline_layout_;
 
 	//Immediate Submit communication
 	VkFence immediate_fence;
@@ -116,6 +115,10 @@ public:
 	VkCommandPool immediate_command_pool;
 
 	DescriptorAllocator imgui_descriptor_alloc;
+
+	//Differents Effects
+	std::vector<ComputeEffect> backgroundEffects;
+	int currentBackgroundEffect{ 0 };
 
 	
 
@@ -136,11 +139,42 @@ public:
 	void createSyncObjects();
 	void draw();
 	void drawBackground(VkCommandBuffer command_buffer);
+	void drawBackgroundImGui(VkCommandBuffer command_buffer);
+	void DrawGeometry(VkCommandBuffer command_buffer);
 	
 	void createAllocator();
 	void createDescriptors();
+
+///////////////PIPELINES/////////
+
 	void createPipelines();
 	void createBackgroundPipelines();
+	void createBackgroundPipelinesImGui();
+
+	//Not use right now
+	VkPipelineLayout _trianglePipelineLayout;
+	VkPipeline _trianglePipeline;
+	void createTrianglePipeline();
+	//
+
+	VkPipelineLayout _meshPipelineLayout;
+	VkPipeline _meshPipeline;
+	GPUMeshBuffers rectangle;
+	void createMeshPipeline();
+	void initDefaultData();
+
+////////////////////////////////
+
+//////////////MESHES////////////
+
+	AllocatedBuffer createBuffer(size_t alloc_size, VkBufferUsageFlags usage, VmaMemoryUsage memory_usage);
+
+	void destroyBuffer(const AllocatedBuffer& buffer);
+
+	GPUMeshBuffers uploadMesh(std::span<uint32_t> indices, std::span<Vertex> vertices);
+
+////////////////////////////////
+
 	void initImgui();
 	void drawImgui(VkCommandBuffer cmd, VkImageView targetImageView);
 	void immediate_submit(std::function<void(VkCommandBuffer)>&& function);

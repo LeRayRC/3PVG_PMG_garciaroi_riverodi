@@ -13,7 +13,7 @@
 #ifndef  __LAVA_WINDOW_SYSTEM_
 #define  __LAVA_WINDOW_SYSTEM_ 1
 
-#include "custom_types.hpp"
+#include "lava_types.hpp"
 
 class LavaWindowSystem {
 public:
@@ -32,13 +32,13 @@ public:
 	}
 
 	//SHOULD BE PRIVATE
+	LavaWindowSystem() { glfwInit(); }
 private:
 
 	static bool is_initialized;
 
 	static std::shared_ptr<LavaWindowSystem> instance_;
 
-	LavaWindowSystem() { glfwInit(); }
 
 	//NEVER USE
 	LavaWindowSystem(const LavaWindowSystem&) = delete; // CONSTRUCTOR DE COPIA

@@ -13,7 +13,7 @@
 #ifndef  __LAVA_WINDOW_
 #define  __LAVA_WINDOW_ 1
 
-#include "custom_types.hpp"
+#include "lava_types.hpp"
 
 class LavaWindow {
 public:
