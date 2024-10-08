@@ -66,6 +66,7 @@ LavaEngine::LavaEngine()
 	//graphics_pipeline_ = VK_NULL_HANDLE;
 }
 
+
 LavaEngine::LavaEngine(unsigned int window_width, unsigned int window_height)
 {
 	//Singleton Functionality
@@ -150,10 +151,9 @@ void LavaEngine::mainLoop() {
 		ImGui::Begin("Lava window");
 		ComputeEffect& selected = backgroundEffects[currentBackgroundEffect];
 
-		ImGui::Text("Selected effect: ", selected.name);
+		ImGui::Text("Selected effect: %s", selected.name);
 
 		ImGui::SliderInt("Effect Index", &currentBackgroundEffect, 0, backgroundEffects.size() - 1);
-
 		if (selected.use_push_constants) {
 			ImGui::InputFloat4("data1", (float*)&selected.data.data1);
 			ImGui::InputFloat4("data2", (float*)&selected.data.data2);
