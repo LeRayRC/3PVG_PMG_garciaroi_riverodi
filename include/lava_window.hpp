@@ -34,15 +34,22 @@ public:
 	//Should be private
 	LavaWindow(GLFWwindow* w) : w_{ w } { }
 
-private:
+	LavaWindow(unsigned int x, unsigned int y, const char* name);
 
-	GLFWwindow* w_;
+	GLFWwindow* get_window() const;
 
-	static std::unique_ptr<LavaWindow> make(int x, int y, std::string& name) {
+	//TALK ABOUT THIS WITH DANI
+	static std::unique_ptr<LavaWindow> make(unsigned int x, unsigned int y, std::string& name) {
 		GLFWwindow* w = glfwCreateWindow(x, y, name.c_str(), nullptr, nullptr);
 		if (nullptr == w) return nullptr;
 		return  std::make_unique<LavaWindow>(w);//LavaWindow{ w };
 	}
+
+private:
+
+	GLFWwindow* w_;
+
+	
 
 	LavaWindow() { w_ = nullptr; }
 

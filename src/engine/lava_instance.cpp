@@ -66,6 +66,6 @@ LavaInstance::~LavaInstance(){
 }
 
 
-VkInstance LavaInstance::get_instance(){
+VkInstance LavaInstance::get_instance() const{
 	return instance_;
 }

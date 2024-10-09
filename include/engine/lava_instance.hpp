@@ -9,7 +9,7 @@ public:
 	LavaInstance(std::vector<const char*> validation_layers);
 	~LavaInstance();
 
-	VkInstance get_instance();
+	VkInstance get_instance() const;
 private:
 	VkInstance instance_;
 

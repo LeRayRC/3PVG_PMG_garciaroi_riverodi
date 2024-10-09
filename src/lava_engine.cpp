@@ -40,7 +40,10 @@ const std::vector<const char*> requiredDeviceExtensions = {
 
 LavaEngine* loaded_engine = nullptr;
 
-LavaEngine::LavaEngine() : instance_{ validationLayers }
+LavaEngine::LavaEngine() : 
+	surface_{ instance_.get_instance(), window_.get_window() },
+	instance_{ validationLayers },
+	window_{ 1280, 720, "LavaEngine" } 
 //LavaEngine::LavaEngine()
 {
 	//Singleton Functionality
@@ -53,14 +56,14 @@ LavaEngine::LavaEngine() : instance_{ validationLayers }
 	frame_number_ = 0;
 	stop_rendering = false;
 
-	window_ = nullptr;
+	//window_ = nullptr;
 	window_extent_ = { 1280,720 };
 	debug_messenger_ = VK_NULL_HANDLE;
 	physical_device_ = VK_NULL_HANDLE;
 	device_ = VK_NULL_HANDLE;
 	graphics_queue_ = VK_NULL_HANDLE;
 	present_queue_ = VK_NULL_HANDLE;
-	surface_ = VK_NULL_HANDLE;
+	//surface_ = VK_NULL_HANDLE;
 	swap_chain_ = VK_NULL_HANDLE;
 	swap_chain_image_format_ = VK_FORMAT_UNDEFINED;
 	render_pass_ = VK_NULL_HANDLE;
@@ -70,7 +73,11 @@ LavaEngine::LavaEngine() : instance_{ validationLayers }
 }
 
 
-LavaEngine::LavaEngine(unsigned int window_width, unsigned int window_height) : instance_{ validationLayers }
+LavaEngine::LavaEngine(unsigned int window_width, unsigned int window_height) :
+	window_{window_width, window_height, "LavaEngine"},
+	instance_{validationLayers},
+	surface_{instance_.get_instance(), window_.get_window()}
+
 //LavaEngine::LavaEngine(unsigned int window_width, unsigned int window_height)
 {
 	//Singleton Functionality
@@ -80,7 +87,7 @@ LavaEngine::LavaEngine(unsigned int window_width, unsigned int window_height) : 
 	frame_number_ = 0;
 	stop_rendering = false;
 
-	window_ = nullptr;
+	//window_ = nullptr;
 	window_extent_ = { window_width,window_height };
 	//instance_ = VK_NULL_HANDLE;
 	debug_messenger_ = VK_NULL_HANDLE;
@@ -88,7 +95,7 @@ LavaEngine::LavaEngine(unsigned int window_width, unsigned int window_height) : 
 	device_ = VK_NULL_HANDLE;
 	graphics_queue_ = VK_NULL_HANDLE;
 	present_queue_ = VK_NULL_HANDLE;
-	surface_ = VK_NULL_HANDLE;
+	//surface_ = VK_NULL_HANDLE;
 	swap_chain_ = VK_NULL_HANDLE;
 	swap_chain_image_format_ = VK_FORMAT_UNDEFINED;
 	render_pass_ = VK_NULL_HANDLE;
@@ -117,38 +124,45 @@ LavaEngine::~LavaEngine(){
 	if (enableValidationLayers) {
 		DestroyDebugUtilsMessengerEXT(get_instance(), debug_messenger_, nullptr);
 	}
-	vkDestroySurfaceKHR(get_instance(), surface_, nullptr);
+	//vkDestroySurfaceKHR(get_instance(), surface_, nullptr);
 	//vkDestroyInstance(get_instance(), nullptr);
 	
 
-	glfwDestroyWindow(window_);
+	//glfwDestroyWindow(window_);
 	//glfwTerminate();
 }
 
-VkInstance LavaEngine::get_instance(){
+VkInstance LavaEngine::get_instance() const{
 	return instance_.get_instance();
-	//return instance_;
+}
+
+GLFWwindow* LavaEngine::get_window() const {
+	return window_.get_window();
+}
+
+VkSurfaceKHR LavaEngine::get_surface() const {
+	return surface_.get_surface();
 }
 
 void LavaEngine::init() {
   //Solo se puede llamar una vez a la inicializacion del motor
 
-  initWindow();
+  //initWindow();
 
 	initVulkan();
 	initImgui();
   is_initialized_ = true;
 }
 
-void LavaEngine::initWindow() {
-  //glfwInit();
-  glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-  glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-  window_ = glfwCreateWindow(window_extent_.width, window_extent_.height, "CustomEngine", nullptr, nullptr);
-}
+//void LavaEngine::initWindow() {
+//  //glfwInit();
+//	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+//	glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+//  window_ = glfwCreateWindow(window_extent_.width, window_extent_.height, "CustomEngine", nullptr, nullptr);
+//}
 
 void LavaEngine::mainLoop() {
-  while (!glfwWindowShouldClose(window_)) {
+  while (!glfwWindowShouldClose(get_window())) {
     glfwPollEvents();
 
 		ImGui_ImplVulkan_NewFrame();
@@ -178,32 +192,12 @@ void LavaEngine::mainLoop() {
   }
 }
 
-void LavaEngine::cleanUp() {
-	//vkDestroyPipeline(device, graphicsPipeline, nullptr);
-	//vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
-	//vkDestroyRenderPass(device, renderPass, nullptr);
-	//for (auto imageView : swap_chain_image_views_) {
-	//	vkDestroyImageView(device_, imageView, nullptr);
-	//}
-	//vkDestroySwapchainKHR(device_, swapChain, nullptr);
-	//vkDestroyDevice(device_, nullptr);
-	//if (enableValidationLayers) {
-	//	DestroyDebugUtilsMessengerEXT(instance_, debug_messenger_, nullptr);
-	//}
-	//vkDestroySurfaceKHR(instance_, surface_, nullptr);
-	//vkDestroyInstance(instance_, nullptr);
-	//
-	//glfwDestroyWindow(window_);
-	//glfwTerminate();
-}
-
 void LavaEngine::initVulkan(){
-	//createInstance();
-	
+
 	//Despues de crear la instancia se configura el callback de las validation layers
 	setupDebugMessenger();
 	//Ahora se crea la superficie para dibujar sobre ella
-	createSurface();
+	//createSurface();
 	//Ahora se selecciona la tarjeta grafica que cumpla con las necesidades
 	pickPhysicalDevice();
 	//Tras seleccionar el dispositivo fisico ahora toca crear el logico
@@ -217,52 +211,8 @@ void LavaEngine::initVulkan(){
 	initDefaultData();
 	createPipelines();
 }
-//void LavaEngine::createInstance() {
-//	//Comprobamos si las validation layers que se quieren activar están disponibles
-//	if (enableValidationLayers && !CheckValidationLayerSupport(validationLayers)) {
-//		throw std::runtime_error("validation layers requested, but not available!");
-//	}
-//
-//	//Primero rellenamos la informacion de la aplicacion
-//	VkApplicationInfo appInfo{};
-//	appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-//	appInfo.pApplicationName = "CustomEngine";
-//	appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-//	appInfo.pEngineName = "No Engine";
-//	appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-//	appInfo.apiVersion = VK_API_VERSION_1_3;
-//
-//	//Se rellena tambien la estructura para crear la 
-//	// instancia mas adelante. Uno de los parametros de la
-//	// estructura es la informacion de aplicacion creada antes
-//	VkInstanceCreateInfo createInfo{};
-//	createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-//	createInfo.pApplicationInfo = &appInfo;
-//
-//	//Activar las validation layers si se requiere
-//	if (enableValidationLayers) {
-//		//Se pasa la cantidad de validation layers asi como el puntero a ellas.
-//		createInfo.enabledLayerCount =
-//			static_cast<uint32_t>(validationLayers.size());
-//		createInfo.ppEnabledLayerNames = validationLayers.data();
-//	}
-//	else {
-//		createInfo.enabledLayerCount = 0;
-//	}
-//
-//	//Obtener de GLFW las extensiones que el necesita para nuestra aplicacion
-//	//En el caso de que se quieran utilizar callbacks para manejar mensajes se 
-//	//requiere de una extension extra de modo que mediante la funcion getRequiredExtensions
-//	//obtenemos las extensions de glfw y añadimos la de debug si fuera necesario
-//	auto extensions = GetRequiredExtensions(enableValidationLayers);
-//	createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
-//	createInfo.ppEnabledExtensionNames = extensions.data();
-//
-//	//Se crea la instancia de Vulkan
-//	if (vkCreateInstance(&createInfo, nullptr, &instance_) != VK_SUCCESS) {
-//		throw std::runtime_error("failed to create vulkan instance!");
-//	}
-//}
+
+
 void LavaEngine::pickPhysicalDevice(){
 	uint32_t deviceCount = 0;
 	//Primero se obtienen la cantidad de GPUs disponibles en el equipo
@@ -289,7 +239,7 @@ bool LavaEngine::isDeviceSuitable(VkPhysicalDevice device){
 	VkPhysicalDeviceFeatures deviceFeatures;
 	vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
 
-	QueueFamilyIndices indices = FindQueueFamilies(device, surface_);
+	QueueFamilyIndices indices = FindQueueFamilies(device, get_surface());
 
 	bool extensionSupported = CheckDeviceExtensionsSupport(device, requiredDeviceExtensions);
 	bool swapChainAdequate = false;
@@ -301,7 +251,7 @@ bool LavaEngine::isDeviceSuitable(VkPhysicalDevice device){
 	//una imagen y un modo de presentacion
 	if (extensionSupported) {
 		SwapChainSupportDetails swapChainSupport =
-			QuerySwapChainSupport(device, surface_);
+			QuerySwapChainSupport(device, get_surface());
 		swapChainAdequate = !swapChainSupport.formats.empty() &&
 			!swapChainSupport.presentModes.empty();
 	}
@@ -326,7 +276,7 @@ void LavaEngine::createLogicalDevice(){
 	* Se tienen que rellenar diversas estructuras, la primera
 	* indica el numero de colas que queremos crear
 	*/
-	QueueFamilyIndices indices = FindQueueFamilies(physical_device_, surface_);
+	QueueFamilyIndices indices = FindQueueFamilies(physical_device_, get_surface());
 	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
 	std::set<uint32_t> uniqueQueueFamilies = { indices.graphicsFamily.value(), indices.presentFamily.value() };
 	float queuePriority = 1.0f;
@@ -423,19 +373,21 @@ void LavaEngine::setupDebugMessenger(){
 		throw std::runtime_error("failed to set up debug messenger!");
 	}
 }
-void LavaEngine::createSurface(){
-	if (glfwCreateWindowSurface(get_instance(), window_, nullptr, &surface_)
-		!= VK_SUCCESS) {
-#ifndef NDEBUG
-		printf("failed to create window surface!!\n");
-#endif // !NDEBUG
 
-		
-	}
-}
+//void LavaEngine::createSurface(){
+//	if (glfwCreateWindowSurface(get_instance(), window_, nullptr, &surface_)
+//		!= VK_SUCCESS) {
+//#ifndef NDEBUG
+//		printf("failed to create window surface!!\n");
+//#endif // !NDEBUG
+//
+//		
+//	}
+//}
+
 void LavaEngine::createSwapChain(){
 	SwapChainSupportDetails swapChainSupport =
-		QuerySwapChainSupport(physical_device_, surface_);
+		QuerySwapChainSupport(physical_device_, get_surface());
 
 	//CAREFUL 
 	//En una guia recomiendan VK_FORMAT_B8G8R8A8_UNORM (https://vkguide.dev) 
@@ -455,7 +407,7 @@ void LavaEngine::createSwapChain(){
 
 	VkSwapchainCreateInfoKHR createInfo{};
 	createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-	createInfo.surface = surface_;
+	createInfo.surface = get_surface();
 	createInfo.minImageCount = imageCount;
 	createInfo.imageFormat = surfaceFormat.format;
 	createInfo.imageColorSpace = surfaceFormat.colorSpace;
@@ -465,7 +417,7 @@ void LavaEngine::createSwapChain(){
 	//VK_IMAGE_USAGE_TRANSFER_DST_BIT util para postprocesos
 	createInfo.imageUsage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-	QueueFamilyIndices indices = FindQueueFamilies(physical_device_, surface_);
+	QueueFamilyIndices indices = FindQueueFamilies(physical_device_, get_surface());
 	uint32_t queueFamilyIndices[] = { indices.graphicsFamily.value(),
 		indices.presentFamily.value() };
 	if (indices.graphicsFamily != indices.presentFamily) {
@@ -532,8 +484,9 @@ void LavaEngine::createSwapChain(){
 		vkDestroyImageView(device_, draw_image_.image_view, nullptr);
 		vmaDestroyImage(allocator_, draw_image_.image, draw_image_.allocation);
 		});
-
 }
+
+
 void LavaEngine::createImageViews(){
 	swap_chain_image_views_.resize(swap_chain_images_.size());
 	for (size_t i = 0; i < swap_chain_images_.size(); i++) {
@@ -562,7 +515,7 @@ void LavaEngine::createImageViews(){
 void LavaEngine::createCommandPool() {
 	//Primero se crean los command pool
 	QueueFamilyIndices queueFamilyIndices =
-		FindQueueFamilies(physical_device_,surface_);
+		FindQueueFamilies(physical_device_, get_surface());
 
 	VkCommandPoolCreateInfo command_pool_info{};
 	command_pool_info.sType =
@@ -1364,7 +1317,7 @@ void LavaEngine::initImgui() {
 
 	ImGui::CreateContext();
 	ImGui::StyleColorsDark();
-	ImGui_ImplGlfw_InitForVulkan(window_,true);
+	ImGui_ImplGlfw_InitForVulkan(get_window(), true);
 	ImGui_ImplVulkan_InitInfo init_info = {};
 	init_info.Instance = get_instance();
 	init_info.PhysicalDevice = physical_device_;
