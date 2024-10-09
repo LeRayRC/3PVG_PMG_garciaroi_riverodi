@@ -14,6 +14,7 @@
 #include "lava_types.hpp"
 #include "lava_vulkan_helpers.hpp"
 #include "lava_descriptors.hpp"
+#include "engine/lava_instance.hpp"
 
 
 struct DeletionQueue {
@@ -84,7 +85,8 @@ public:
 	GLFWwindow* window_				;
 	// TO FIX -> Hardcoded window size
 	VkExtent2D window_extent_;
-	VkInstance instance_;
+	//VkInstance instance_;
+	LavaInstance instance_;
 	VkDebugUtilsMessengerEXT debug_messenger_;
 	VkPhysicalDevice physical_device_;
 	VkDevice device_;
@@ -145,6 +147,8 @@ public:
 	void createAllocator();
 	void createDescriptors();
 
+	VkInstance get_instance();
+
 ///////////////PIPELINES/////////
 
 	void createPipelines();
@@ -183,22 +187,22 @@ private:
 	/**
 	* @brief Copy constructor(never use)
 	*/
-	LavaEngine(const LavaEngine& obj) {};
+	LavaEngine(const LavaEngine& obj) = delete;
 
 	/**
 	* @brief Assign operator(never use)
 	*/
-	LavaEngine& operator=(const LavaEngine& obj){};
+	LavaEngine& operator=(const LavaEngine& obj) = delete;
 
 	/**
 	* @brief Move constructor(never use)
 	*/
-	LavaEngine(LavaEngine&& obj) {};
+	LavaEngine(LavaEngine&& obj) = delete;
 
 	/**
 	* @brief Move Assign operator(never use)
 	*/
-	LavaEngine& operator=(LavaEngine& obj) {};
+	LavaEngine& operator=(LavaEngine& obj) = delete;
 
 };
 #endif // ! __CUSTOM_ENGINE_

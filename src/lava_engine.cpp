@@ -33,18 +33,21 @@ const std::vector<const char*> validationLayers = {
 const std::vector<const char*> requiredDeviceExtensions = {
 	VK_KHR_SWAPCHAIN_EXTENSION_NAME,
 	VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
-	VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME
+	VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME,
 	//VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME
 };
 
 
 LavaEngine* loaded_engine = nullptr;
 
-LavaEngine::LavaEngine()
+LavaEngine::LavaEngine() : instance_{ validationLayers }
+//LavaEngine::LavaEngine()
 {
 	//Singleton Functionality
 	assert(loaded_engine == nullptr);
 	loaded_engine = this;
+
+	
 
 	is_initialized_ = false;
 	frame_number_ = 0;
@@ -52,7 +55,6 @@ LavaEngine::LavaEngine()
 
 	window_ = nullptr;
 	window_extent_ = { 1280,720 };
-	instance_ = VK_NULL_HANDLE;
 	debug_messenger_ = VK_NULL_HANDLE;
 	physical_device_ = VK_NULL_HANDLE;
 	device_ = VK_NULL_HANDLE;
@@ -64,22 +66,23 @@ LavaEngine::LavaEngine()
 	render_pass_ = VK_NULL_HANDLE;
 	//pipeline_layout_ = VK_NULL_HANDLE;
 	//graphics_pipeline_ = VK_NULL_HANDLE;
+
 }
 
 
-LavaEngine::LavaEngine(unsigned int window_width, unsigned int window_height)
+LavaEngine::LavaEngine(unsigned int window_width, unsigned int window_height) : instance_{ validationLayers }
+//LavaEngine::LavaEngine(unsigned int window_width, unsigned int window_height)
 {
 	//Singleton Functionality
 	assert(loaded_engine == nullptr);
 	loaded_engine = this;
-
 	is_initialized_ = false;
 	frame_number_ = 0;
 	stop_rendering = false;
 
 	window_ = nullptr;
 	window_extent_ = { window_width,window_height };
-	instance_ = VK_NULL_HANDLE;
+	//instance_ = VK_NULL_HANDLE;
 	debug_messenger_ = VK_NULL_HANDLE;
 	physical_device_ = VK_NULL_HANDLE;
 	device_ = VK_NULL_HANDLE;
@@ -112,14 +115,19 @@ LavaEngine::~LavaEngine(){
 	vkDestroySwapchainKHR(device_, swap_chain_, nullptr);
 	vkDestroyDevice(device_, nullptr);
 	if (enableValidationLayers) {
-		DestroyDebugUtilsMessengerEXT(instance_, debug_messenger_, nullptr);
+		DestroyDebugUtilsMessengerEXT(get_instance(), debug_messenger_, nullptr);
 	}
-	vkDestroySurfaceKHR(instance_, surface_, nullptr);
-	vkDestroyInstance(instance_, nullptr);
+	vkDestroySurfaceKHR(get_instance(), surface_, nullptr);
+	//vkDestroyInstance(get_instance(), nullptr);
 	
 
 	glfwDestroyWindow(window_);
-	glfwTerminate();
+	//glfwTerminate();
+}
+
+VkInstance LavaEngine::get_instance(){
+	return instance_.get_instance();
+	//return instance_;
 }
 
 void LavaEngine::init() {
@@ -133,7 +141,7 @@ void LavaEngine::init() {
 }
 
 void LavaEngine::initWindow() {
-  glfwInit();
+  //glfwInit();
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
   glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
   window_ = glfwCreateWindow(window_extent_.width, window_extent_.height, "CustomEngine", nullptr, nullptr);
@@ -190,7 +198,8 @@ void LavaEngine::cleanUp() {
 }
 
 void LavaEngine::initVulkan(){
-	createInstance();
+	//createInstance();
+	
 	//Despues de crear la instancia se configura el callback de las validation layers
 	setupDebugMessenger();
 	//Ahora se crea la superficie para dibujar sobre ella
@@ -208,62 +217,62 @@ void LavaEngine::initVulkan(){
 	initDefaultData();
 	createPipelines();
 }
-void LavaEngine::createInstance() {
-	//Comprobamos si las validation layers que se quieren activar están disponibles
-	if (enableValidationLayers && !CheckValidationLayerSupport(validationLayers)) {
-		throw std::runtime_error("validation layers requested, but not available!");
-	}
-
-	//Primero rellenamos la informacion de la aplicacion
-	VkApplicationInfo appInfo{};
-	appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-	appInfo.pApplicationName = "CustomEngine";
-	appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-	appInfo.pEngineName = "No Engine";
-	appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-	appInfo.apiVersion = VK_API_VERSION_1_3;
-
-	//Se rellena tambien la estructura para crear la 
-	// instancia mas adelante. Uno de los parametros de la
-	// estructura es la informacion de aplicacion creada antes
-	VkInstanceCreateInfo createInfo{};
-	createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-	createInfo.pApplicationInfo = &appInfo;
-
-	//Activar las validation layers si se requiere
-	if (enableValidationLayers) {
-		//Se pasa la cantidad de validation layers asi como el puntero a ellas.
-		createInfo.enabledLayerCount =
-			static_cast<uint32_t>(validationLayers.size());
-		createInfo.ppEnabledLayerNames = validationLayers.data();
-	}
-	else {
-		createInfo.enabledLayerCount = 0;
-	}
-
-	//Obtener de GLFW las extensiones que el necesita para nuestra aplicacion
-	//En el caso de que se quieran utilizar callbacks para manejar mensajes se 
-	//requiere de una extension extra de modo que mediante la funcion getRequiredExtensions
-	//obtenemos las extensions de glfw y añadimos la de debug si fuera necesario
-	auto extensions = GetRequiredExtensions(enableValidationLayers);
-	createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
-	createInfo.ppEnabledExtensionNames = extensions.data();
-
-	//Se crea la instancia de Vulkan
-	if (vkCreateInstance(&createInfo, nullptr, &instance_) != VK_SUCCESS) {
-		throw std::runtime_error("failed to create vulkan instance!");
-	}
-}
+//void LavaEngine::createInstance() {
+//	//Comprobamos si las validation layers que se quieren activar están disponibles
+//	if (enableValidationLayers && !CheckValidationLayerSupport(validationLayers)) {
+//		throw std::runtime_error("validation layers requested, but not available!");
+//	}
+//
+//	//Primero rellenamos la informacion de la aplicacion
+//	VkApplicationInfo appInfo{};
+//	appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+//	appInfo.pApplicationName = "CustomEngine";
+//	appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
+//	appInfo.pEngineName = "No Engine";
+//	appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
+//	appInfo.apiVersion = VK_API_VERSION_1_3;
+//
+//	//Se rellena tambien la estructura para crear la 
+//	// instancia mas adelante. Uno de los parametros de la
+//	// estructura es la informacion de aplicacion creada antes
+//	VkInstanceCreateInfo createInfo{};
+//	createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+//	createInfo.pApplicationInfo = &appInfo;
+//
+//	//Activar las validation layers si se requiere
+//	if (enableValidationLayers) {
+//		//Se pasa la cantidad de validation layers asi como el puntero a ellas.
+//		createInfo.enabledLayerCount =
+//			static_cast<uint32_t>(validationLayers.size());
+//		createInfo.ppEnabledLayerNames = validationLayers.data();
+//	}
+//	else {
+//		createInfo.enabledLayerCount = 0;
+//	}
+//
+//	//Obtener de GLFW las extensiones que el necesita para nuestra aplicacion
+//	//En el caso de que se quieran utilizar callbacks para manejar mensajes se 
+//	//requiere de una extension extra de modo que mediante la funcion getRequiredExtensions
+//	//obtenemos las extensions de glfw y añadimos la de debug si fuera necesario
+//	auto extensions = GetRequiredExtensions(enableValidationLayers);
+//	createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
+//	createInfo.ppEnabledExtensionNames = extensions.data();
+//
+//	//Se crea la instancia de Vulkan
+//	if (vkCreateInstance(&createInfo, nullptr, &instance_) != VK_SUCCESS) {
+//		throw std::runtime_error("failed to create vulkan instance!");
+//	}
+//}
 void LavaEngine::pickPhysicalDevice(){
 	uint32_t deviceCount = 0;
 	//Primero se obtienen la cantidad de GPUs disponibles en el equipo
-	vkEnumeratePhysicalDevices(instance_, &deviceCount, nullptr);
+	vkEnumeratePhysicalDevices(get_instance(), &deviceCount, nullptr);
 	if (deviceCount == 0) {
 		throw std::runtime_error("failed to find GPUs with Vulkan support!");
 	}
 	std::vector<VkPhysicalDevice> devices(deviceCount);
 	//Ahora se meten los datos de las GPUs en el vector devices
-	vkEnumeratePhysicalDevices(instance_, &deviceCount, devices.data());
+	vkEnumeratePhysicalDevices(get_instance(), &deviceCount, devices.data());
 	for (const auto& device : devices) {
 		if (isDeviceSuitable(device)) {
 			physical_device_ = device;
@@ -409,15 +418,19 @@ void LavaEngine::setupDebugMessenger(){
 	createInfo.pfnUserCallback = DebugCallback;
 	createInfo.pUserData = nullptr;
 
-	if (CreateDebugUtilsMessengerEXT(instance_, &createInfo, nullptr,
+	if (CreateDebugUtilsMessengerEXT(get_instance(), &createInfo, nullptr,
 		&debug_messenger_) != VK_SUCCESS) {
 		throw std::runtime_error("failed to set up debug messenger!");
 	}
 }
 void LavaEngine::createSurface(){
-	if (glfwCreateWindowSurface(instance_, window_, nullptr, &surface_)
+	if (glfwCreateWindowSurface(get_instance(), window_, nullptr, &surface_)
 		!= VK_SUCCESS) {
-		throw std::runtime_error("failed to create window surface!!");
+#ifndef NDEBUG
+		printf("failed to create window surface!!\n");
+#endif // !NDEBUG
+
+		
 	}
 }
 void LavaEngine::createSwapChain(){
@@ -901,7 +914,7 @@ void LavaEngine::createAllocator() {
 	VmaAllocatorCreateInfo allocatorInfo{};
 	allocatorInfo.physicalDevice = physical_device_;
 	allocatorInfo.device = device_;
-	allocatorInfo.instance = instance_;
+	allocatorInfo.instance = get_instance();
 	allocatorInfo.flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
 	vmaCreateAllocator(&allocatorInfo, &allocator_);
 
@@ -1353,7 +1366,7 @@ void LavaEngine::initImgui() {
 	ImGui::StyleColorsDark();
 	ImGui_ImplGlfw_InitForVulkan(window_,true);
 	ImGui_ImplVulkan_InitInfo init_info = {};
-	init_info.Instance = instance_;
+	init_info.Instance = get_instance();
 	init_info.PhysicalDevice = physical_device_;
 	init_info.Device = device_;
 	init_info.Queue = graphics_queue_;
