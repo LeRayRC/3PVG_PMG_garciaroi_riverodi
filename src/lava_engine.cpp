@@ -30,11 +30,11 @@ const std::vector<const char*> validationLayers = {
 	"VK_LAYER_KHRONOS_validation"
 };
 
-const std::vector<const char*> requiredDeviceExtensions = {
-	VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-	VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
-	VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME,
-};
+//const std::vector<const char*> requiredDeviceExtensions = {
+//	VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+//	VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
+//	VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME,
+//};
 
 
 LavaEngine* loaded_engine = nullptr;
@@ -42,7 +42,8 @@ LavaEngine* loaded_engine = nullptr;
 LavaEngine::LavaEngine() : 
 	surface_{ instance_.get_instance(), window_.get_window() },
 	instance_{ validationLayers },
-	window_{ 1280, 720, "LavaEngine" } 
+	window_{ 1280, 720, "LavaEngine" },
+	physical_device_{instance_,surface_}
 {
 	//Singleton Functionality
 	assert(loaded_engine == nullptr);
@@ -53,7 +54,7 @@ LavaEngine::LavaEngine() :
 
 	window_extent_ = { 1280,720 };
 	debug_messenger_ = VK_NULL_HANDLE;
-	physical_device_ = VK_NULL_HANDLE;
+	//physical_device_ = VK_NULL_HANDLE;
 	device_ = VK_NULL_HANDLE;
 	graphics_queue_ = VK_NULL_HANDLE;
 	present_queue_ = VK_NULL_HANDLE;
@@ -66,7 +67,8 @@ LavaEngine::LavaEngine() :
 LavaEngine::LavaEngine(unsigned int window_width, unsigned int window_height) :
 	window_{window_width, window_height, "LavaEngine"},
 	instance_{validationLayers},
-	surface_{instance_.get_instance(), window_.get_window()}
+	surface_{instance_.get_instance(), window_.get_window()},
+	physical_device_{ instance_,surface_ }
 {
 	//Singleton Functionality
 	assert(loaded_engine == nullptr);
@@ -77,7 +79,7 @@ LavaEngine::LavaEngine(unsigned int window_width, unsigned int window_height) :
 
 	window_extent_ = { window_width,window_height };
 	debug_messenger_ = VK_NULL_HANDLE;
-	physical_device_ = VK_NULL_HANDLE;
+	//physical_device_ = VK_NULL_HANDLE;
 	device_ = VK_NULL_HANDLE;
 	graphics_queue_ = VK_NULL_HANDLE;
 	present_queue_ = VK_NULL_HANDLE;
@@ -168,7 +170,7 @@ void LavaEngine::initVulkan(){
 	setupDebugMessenger();
 	//Ahora se crea la superficie para dibujar sobre ella
 	//Ahora se selecciona la tarjeta grafica que cumpla con las necesidades
-	pickPhysicalDevice();
+	//pickPhysicalDevice();
 	//Tras seleccionar el dispositivo fisico ahora toca crear el logico
 	createLogicalDevice();
 	createAllocator();
@@ -182,70 +184,71 @@ void LavaEngine::initVulkan(){
 }
 
 
-void LavaEngine::pickPhysicalDevice(){
-	uint32_t deviceCount = 0;
-	//Primero se obtienen la cantidad de GPUs disponibles en el equipo
-	vkEnumeratePhysicalDevices(get_instance(), &deviceCount, nullptr);
-	if (deviceCount == 0) {
-		throw std::runtime_error("failed to find GPUs with Vulkan support!");
-	}
-	std::vector<VkPhysicalDevice> devices(deviceCount);
-	//Ahora se meten los datos de las GPUs en el vector devices
-	vkEnumeratePhysicalDevices(get_instance(), &deviceCount, devices.data());
-	for (const auto& device : devices) {
-		if (isDeviceSuitable(device)) {
-			physical_device_ = device;
-		}
-	}
-	if (physical_device_ == VK_NULL_HANDLE) {
-		throw std::runtime_error("failed to find suitable GPU");
-	}
-}
-bool LavaEngine::isDeviceSuitable(VkPhysicalDevice device){
-	VkPhysicalDeviceProperties deviceProperties;
-	vkGetPhysicalDeviceProperties(device, &deviceProperties);
+//void LavaEngine::pickPhysicalDevice(){
+//	uint32_t deviceCount = 0;
+//	//Primero se obtienen la cantidad de GPUs disponibles en el equipo
+//	vkEnumeratePhysicalDevices(get_instance(), &deviceCount, nullptr);
+//	if (deviceCount == 0) {
+//		throw std::runtime_error("failed to find GPUs with Vulkan support!");
+//	}
+//	std::vector<VkPhysicalDevice> devices(deviceCount);
+//	//Ahora se meten los datos de las GPUs en el vector devices
+//	vkEnumeratePhysicalDevices(get_instance(), &deviceCount, devices.data());
+//	for (const auto& device : devices) {
+//		if (isDeviceSuitable(device)) {
+//			physical_device_ = device;
+//		}
+//	}
+//	if (physical_device_ == VK_NULL_HANDLE) {
+//		throw std::runtime_error("failed to find suitable GPU");
+//	}
+//}
 
-	VkPhysicalDeviceFeatures deviceFeatures;
-	vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
-
-	QueueFamilyIndices indices = FindQueueFamilies(device, get_surface());
-
-	bool extensionSupported = CheckDeviceExtensionsSupport(device, requiredDeviceExtensions);
-	bool swapChainAdequate = false;
-
-	//Es importante comprobar las propiedades disponibles de 
-	//la swap chain despues de verificar que cuenta con las
-	//extensiones necesarias
-	//En este caso se comprueba que al menos puede representar
-	//una imagen y un modo de presentacion
-	if (extensionSupported) {
-		SwapChainSupportDetails swapChainSupport =
-			QuerySwapChainSupport(device, get_surface());
-		swapChainAdequate = !swapChainSupport.formats.empty() &&
-			!swapChainSupport.presentModes.empty();
-	}
-
-
-	//Para que una GPU sea valida tiene que ser dedicada. Se pueden realizar las
-	// comprobaciones que se quieran en base a las properties o las features
-	// p.e se puede comprobar si la grafica permite usar geometry shaders
-	// return deviceFeatures.geometryShader
-	//return deviceProperties.deviceType = VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
-
-	//No es muy importante para el inicio del motor tener esto bien configurado
-	//Por conveniencia vamos a devolver true siempre y ya se cambiara
-	//El tutorial recomiendo asociar una puntuacion a cada grafica del sistema 
-	//para al menos seleccionar una
-	// https://vulkan-tutorial.com/resources/vulkan_tutorial_en.pdf pag 60
-	return indices.isComplete() && extensionSupported &&
-		swapChainAdequate;
-}
+//bool LavaEngine::isDeviceSuitable(VkPhysicalDevice device){
+//	VkPhysicalDeviceProperties deviceProperties;
+//	vkGetPhysicalDeviceProperties(device, &deviceProperties);
+//
+//	VkPhysicalDeviceFeatures deviceFeatures;
+//	vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
+//
+//	QueueFamilyIndices indices = FindQueueFamilies(device, get_surface());
+//
+//	bool extensionSupported = CheckDeviceExtensionsSupport(device, requiredDeviceExtensions);
+//	bool swapChainAdequate = false;
+//
+//	//Es importante comprobar las propiedades disponibles de 
+//	//la swap chain despues de verificar que cuenta con las
+//	//extensiones necesarias
+//	//En este caso se comprueba que al menos puede representar
+//	//una imagen y un modo de presentacion
+//	if (extensionSupported) {
+//		SwapChainSupportDetails swapChainSupport =
+//			QuerySwapChainSupport(device, get_surface());
+//		swapChainAdequate = !swapChainSupport.formats.empty() &&
+//			!swapChainSupport.presentModes.empty();
+//	}
+//
+//
+//	//Para que una GPU sea valida tiene que ser dedicada. Se pueden realizar las
+//	// comprobaciones que se quieran en base a las properties o las features
+//	// p.e se puede comprobar si la grafica permite usar geometry shaders
+//	// return deviceFeatures.geometryShader
+//	//return deviceProperties.deviceType = VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
+//
+//	//No es muy importante para el inicio del motor tener esto bien configurado
+//	//Por conveniencia vamos a devolver true siempre y ya se cambiara
+//	//El tutorial recomiendo asociar una puntuacion a cada grafica del sistema 
+//	//para al menos seleccionar una
+//	// https://vulkan-tutorial.com/resources/vulkan_tutorial_en.pdf pag 60
+//	return indices.isComplete() && extensionSupported &&
+//		swapChainAdequate;
+//}
 void LavaEngine::createLogicalDevice(){
 	/*
 	* Se tienen que rellenar diversas estructuras, la primera
 	* indica el numero de colas que queremos crear
 	*/
-	QueueFamilyIndices indices = FindQueueFamilies(physical_device_, get_surface());
+	QueueFamilyIndices indices = FindQueueFamilies(physical_device_.get_physical_device(), get_surface());
 	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
 	std::set<uint32_t> uniqueQueueFamilies = { indices.graphicsFamily.value(), indices.presentFamily.value() };
 	float queuePriority = 1.0f;
@@ -282,7 +285,7 @@ void LavaEngine::createLogicalDevice(){
 	VkPhysicalDeviceFeatures2 device_features{};
 	device_features.sType =
 		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-	vkGetPhysicalDeviceFeatures2(physical_device_, &device_features);
+	vkGetPhysicalDeviceFeatures2(physical_device_.get_physical_device(), &device_features);
 	device_features.pNext = &buffer_device_address_feature_info;
 
 
@@ -295,8 +298,8 @@ void LavaEngine::createLogicalDevice(){
 	//createInfo.pEnabledFeatures = &deviceFeatures;
 	createInfo.pQueueCreateInfos = queueCreateInfos.data();
 	createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
-	createInfo.enabledExtensionCount = static_cast<uint32_t>(requiredDeviceExtensions.size());
-	createInfo.ppEnabledExtensionNames = requiredDeviceExtensions.data();
+	createInfo.enabledExtensionCount = static_cast<uint32_t>(physical_device_.required_device_extensions_.size());
+	createInfo.ppEnabledExtensionNames = physical_device_.required_device_extensions_.data();
 	//Al tener la extension de synchronization2 se tiene que agregar una estructura extra
 	VkPhysicalDeviceSynchronization2Features sync2Info{};
 	sync2Info.sType =
@@ -306,7 +309,7 @@ void LavaEngine::createLogicalDevice(){
 	createInfo.pNext = &sync2Info;
 	sync2Info.pNext = &device_features;
 
-	if (vkCreateDevice(physical_device_, &createInfo,
+	if (vkCreateDevice(physical_device_.get_physical_device(), &createInfo,
 		nullptr, &device_) != VK_SUCCESS) {
 		throw std::runtime_error("failed to create logical device!");
 	}
@@ -345,7 +348,7 @@ void LavaEngine::setupDebugMessenger(){
 
 void LavaEngine::createSwapChain(){
 	SwapChainSupportDetails swapChainSupport =
-		QuerySwapChainSupport(physical_device_, get_surface());
+		QuerySwapChainSupport(physical_device_.get_physical_device(), get_surface());
 
 	//CAREFUL 
 	//En una guia recomiendan VK_FORMAT_B8G8R8A8_UNORM (https://vkguide.dev) 
@@ -375,7 +378,7 @@ void LavaEngine::createSwapChain(){
 	//VK_IMAGE_USAGE_TRANSFER_DST_BIT util para postprocesos
 	createInfo.imageUsage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-	QueueFamilyIndices indices = FindQueueFamilies(physical_device_, get_surface());
+	QueueFamilyIndices indices = FindQueueFamilies(physical_device_.get_physical_device(), get_surface());
 	uint32_t queueFamilyIndices[] = { indices.graphicsFamily.value(),
 		indices.presentFamily.value() };
 	if (indices.graphicsFamily != indices.presentFamily) {
@@ -398,10 +401,12 @@ void LavaEngine::createSwapChain(){
 		nullptr, &swap_chain_) != VK_SUCCESS) {
 		throw std::runtime_error("Failed to create swapchain!!");
 	}
+
 	vkGetSwapchainImagesKHR(device_, swap_chain_, &imageCount, nullptr);
 	swap_chain_images_.resize(imageCount);
 	vkGetSwapchainImagesKHR(device_, swap_chain_, &imageCount, swap_chain_images_.data());
 	swap_chain_image_format_ = surfaceFormat.format;
+
 
 	VkExtent3D draw_image_extent = {
 		window_extent_.width,
@@ -473,7 +478,7 @@ void LavaEngine::createImageViews(){
 void LavaEngine::createCommandPool() {
 	//Primero se crean los command pool
 	QueueFamilyIndices queueFamilyIndices =
-		FindQueueFamilies(physical_device_, get_surface());
+		FindQueueFamilies(physical_device_.get_physical_device(), get_surface());
 
 	VkCommandPoolCreateInfo command_pool_info{};
 	command_pool_info.sType =
@@ -811,9 +816,6 @@ void LavaEngine::DrawGeometry(VkCommandBuffer command_buffer)
 	//launch a draw command to draw 3 vertices
 	vkCmdDraw(command_buffer, 3, 1, 0, 0);
 
-
-
-
 	vkCmdEndRendering(command_buffer);
 
 		//launch a draw command to draw 3 vertices
@@ -823,7 +825,7 @@ void LavaEngine::DrawGeometry(VkCommandBuffer command_buffer)
 
 void LavaEngine::createAllocator() {
 	VmaAllocatorCreateInfo allocatorInfo{};
-	allocatorInfo.physicalDevice = physical_device_;
+	allocatorInfo.physicalDevice = physical_device_.get_physical_device();
 	allocatorInfo.device = device_;
 	allocatorInfo.instance = get_instance();
 	allocatorInfo.flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
@@ -1278,7 +1280,7 @@ void LavaEngine::initImgui() {
 	ImGui_ImplGlfw_InitForVulkan(get_window(), true);
 	ImGui_ImplVulkan_InitInfo init_info = {};
 	init_info.Instance = get_instance();
-	init_info.PhysicalDevice = physical_device_;
+	init_info.PhysicalDevice = physical_device_.get_physical_device();
 	init_info.Device = device_;
 	init_info.Queue = graphics_queue_;
 	init_info.DescriptorPool = imgui_descriptor_alloc.pool;

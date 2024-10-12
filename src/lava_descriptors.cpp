@@ -7,6 +7,7 @@ void DescriptorLayoutBuilder::addBinding(uint32_t binding, VkDescriptorType type
   bind.descriptorType = type;
   bindings_.push_back(bind);
 }
+
 void DescriptorLayoutBuilder::clear() {
   bindings_.clear();
 }

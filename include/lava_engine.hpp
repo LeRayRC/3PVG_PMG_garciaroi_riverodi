@@ -17,6 +17,7 @@
 #include "engine/lava_instance.hpp"
 #include "lava_window.hpp"
 #include "engine/lava_surface.hpp"
+#include "engine/lava_device.hpp"
 
 
 struct DeletionQueue {
@@ -88,11 +89,11 @@ public:
 	LavaWindow window_;
 	LavaInstance instance_;
 	LavaSurface surface_;
+	LavaDevice physical_device_;
 	
 	VkExtent2D window_extent_;
 	//VkInstance instance_;
 	VkDebugUtilsMessengerEXT debug_messenger_;
-	VkPhysicalDevice physical_device_;
 	VkDevice device_;
 	VkQueue graphics_queue_;
 	VkQueue present_queue_;
@@ -129,14 +130,12 @@ public:
 	
 
 	void init();
-	//void initWindow();
 	void initVulkan();
 	void mainLoop();
-	void pickPhysicalDevice();
-	bool isDeviceSuitable(VkPhysicalDevice device);
+	//void pickPhysicalDevice();
+	//bool isDeviceSuitable(VkPhysicalDevice device);
 	void createLogicalDevice();
 	void setupDebugMessenger();
-	//void createSurface();
 	void createSwapChain();
 	void createImageViews();
 	void createCommandPool();

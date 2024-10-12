@@ -86,4 +86,7 @@ bool LoadShader(const std::string& file_path,
 VkShaderModule CreateShaderModule(VkDevice device,const std::vector<char>& code);
 std::vector<char> ReadFile(const std::string& filename);
 
+bool IsDeviceSuitable(VkPhysicalDevice device, VkSurfaceKHR surface, 
+	const std::vector<const char*> required_device_extensions);
+
 #endif // !__CUSTOM_VULKAN_HELPERS_H
