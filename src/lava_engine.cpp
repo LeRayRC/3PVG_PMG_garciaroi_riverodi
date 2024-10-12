@@ -34,7 +34,6 @@ const std::vector<const char*> requiredDeviceExtensions = {
 	VK_KHR_SWAPCHAIN_EXTENSION_NAME,
 	VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
 	VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME,
-	//VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME
 };
 
 
@@ -44,32 +43,23 @@ LavaEngine::LavaEngine() :
 	surface_{ instance_.get_instance(), window_.get_window() },
 	instance_{ validationLayers },
 	window_{ 1280, 720, "LavaEngine" } 
-//LavaEngine::LavaEngine()
 {
 	//Singleton Functionality
 	assert(loaded_engine == nullptr);
 	loaded_engine = this;
-
-	
-
 	is_initialized_ = false;
 	frame_number_ = 0;
 	stop_rendering = false;
 
-	//window_ = nullptr;
 	window_extent_ = { 1280,720 };
 	debug_messenger_ = VK_NULL_HANDLE;
 	physical_device_ = VK_NULL_HANDLE;
 	device_ = VK_NULL_HANDLE;
 	graphics_queue_ = VK_NULL_HANDLE;
 	present_queue_ = VK_NULL_HANDLE;
-	//surface_ = VK_NULL_HANDLE;
 	swap_chain_ = VK_NULL_HANDLE;
 	swap_chain_image_format_ = VK_FORMAT_UNDEFINED;
 	render_pass_ = VK_NULL_HANDLE;
-	//pipeline_layout_ = VK_NULL_HANDLE;
-	//graphics_pipeline_ = VK_NULL_HANDLE;
-
 }
 
 
@@ -77,8 +67,6 @@ LavaEngine::LavaEngine(unsigned int window_width, unsigned int window_height) :
 	window_{window_width, window_height, "LavaEngine"},
 	instance_{validationLayers},
 	surface_{instance_.get_instance(), window_.get_window()}
-
-//LavaEngine::LavaEngine(unsigned int window_width, unsigned int window_height)
 {
 	//Singleton Functionality
 	assert(loaded_engine == nullptr);
@@ -87,20 +75,16 @@ LavaEngine::LavaEngine(unsigned int window_width, unsigned int window_height) :
 	frame_number_ = 0;
 	stop_rendering = false;
 
-	//window_ = nullptr;
 	window_extent_ = { window_width,window_height };
-	//instance_ = VK_NULL_HANDLE;
 	debug_messenger_ = VK_NULL_HANDLE;
 	physical_device_ = VK_NULL_HANDLE;
 	device_ = VK_NULL_HANDLE;
 	graphics_queue_ = VK_NULL_HANDLE;
 	present_queue_ = VK_NULL_HANDLE;
-	//surface_ = VK_NULL_HANDLE;
 	swap_chain_ = VK_NULL_HANDLE;
 	swap_chain_image_format_ = VK_FORMAT_UNDEFINED;
 	render_pass_ = VK_NULL_HANDLE;
-	//pipeline_layout_ = VK_NULL_HANDLE;
-	//graphics_pipeline_ = VK_NULL_HANDLE;
+
 }
 
 LavaEngine::~LavaEngine(){
@@ -124,12 +108,6 @@ LavaEngine::~LavaEngine(){
 	if (enableValidationLayers) {
 		DestroyDebugUtilsMessengerEXT(get_instance(), debug_messenger_, nullptr);
 	}
-	//vkDestroySurfaceKHR(get_instance(), surface_, nullptr);
-	//vkDestroyInstance(get_instance(), nullptr);
-	
-
-	//glfwDestroyWindow(window_);
-	//glfwTerminate();
 }
 
 VkInstance LavaEngine::get_instance() const{
@@ -146,20 +124,12 @@ VkSurfaceKHR LavaEngine::get_surface() const {
 
 void LavaEngine::init() {
   //Solo se puede llamar una vez a la inicializacion del motor
-
-  //initWindow();
-
 	initVulkan();
 	initImgui();
   is_initialized_ = true;
 }
 
-//void LavaEngine::initWindow() {
-//  //glfwInit();
-//	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-//	glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-//  window_ = glfwCreateWindow(window_extent_.width, window_extent_.height, "CustomEngine", nullptr, nullptr);
-//}
+
 
 void LavaEngine::mainLoop() {
   while (!glfwWindowShouldClose(get_window())) {
@@ -197,7 +167,6 @@ void LavaEngine::initVulkan(){
 	//Despues de crear la instancia se configura el callback de las validation layers
 	setupDebugMessenger();
 	//Ahora se crea la superficie para dibujar sobre ella
-	//createSurface();
 	//Ahora se selecciona la tarjeta grafica que cumpla con las necesidades
 	pickPhysicalDevice();
 	//Tras seleccionar el dispositivo fisico ahora toca crear el logico
@@ -373,17 +342,6 @@ void LavaEngine::setupDebugMessenger(){
 		throw std::runtime_error("failed to set up debug messenger!");
 	}
 }
-
-//void LavaEngine::createSurface(){
-//	if (glfwCreateWindowSurface(get_instance(), window_, nullptr, &surface_)
-//		!= VK_SUCCESS) {
-//#ifndef NDEBUG
-//		printf("failed to create window surface!!\n");
-//#endif // !NDEBUG
-//
-//		
-//	}
-//}
 
 void LavaEngine::createSwapChain(){
 	SwapChainSupportDetails swapChainSupport =
