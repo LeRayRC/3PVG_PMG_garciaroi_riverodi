@@ -92,13 +92,7 @@ public:
 	LavaDevice device_;
 	
 	VkExtent2D window_extent_;
-	//VkInstance instance_;
-	VkDebugUtilsMessengerEXT debug_messenger_;
-	//VkDevice device_;
-	//VkPhysicalDevice physical_device_;
-	//VkQueue graphics_queue_;
-	//VkQueue present_queue_;
-	//VkSurfaceKHR surface_;
+	
 	VkSwapchainKHR swap_chain_;
 	std::vector<VkImage> swap_chain_images_;
 	std::vector<VkImageView> swap_chain_image_views_;
@@ -133,10 +127,7 @@ public:
 	void init();
 	void initVulkan();
 	void mainLoop();
-	//void pickPhysicalDevice();
-	//bool isDeviceSuitable(VkPhysicalDevice device);
-	//void createLogicalDevice();
-	void setupDebugMessenger();
+	
 	void createSwapChain();
 	void createImageViews();
 	void createCommandPool();

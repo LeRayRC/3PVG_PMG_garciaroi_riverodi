@@ -12,8 +12,11 @@ public:
 	VkInstance get_instance() const;
 private:
 	VkInstance instance_;
+	VkDebugUtilsMessengerEXT debug_messenger_;
 
 	LavaInstance(const LavaInstance& obj) = delete;
+
+	void setupDebugMessenger();
 };
 
 

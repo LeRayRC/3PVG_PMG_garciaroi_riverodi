@@ -59,13 +59,50 @@ LavaInstance::LavaInstance(std::vector<const char*> validation_layers){
 #endif
 		exit(-1);
 	}
+
+	setupDebugMessenger();
 }
 
 LavaInstance::~LavaInstance(){
+#ifndef NDEBUG
+	DestroyDebugUtilsMessengerEXT(instance_, debug_messenger_, nullptr);
+#endif
 	vkDestroyInstance(instance_, nullptr);
 }
 
 
 VkInstance LavaInstance::get_instance() const{
 	return instance_;
+}
+
+void LavaInstance::setupDebugMessenger() {
+#ifdef NDEBUG
+	bool enableValidationLayers = false;
+#else
+	bool enableValidationLayers = true;
+#endif
+	if (!enableValidationLayers) return;
+
+	VkDebugUtilsMessengerCreateInfoEXT createInfo{};
+	createInfo.sType =
+		VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+	createInfo.messageSeverity =
+		VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
+		VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
+		VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+	createInfo.messageType =
+		VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
+		VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
+		VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+	createInfo.pfnUserCallback = DebugCallback;
+	createInfo.pUserData = nullptr;
+
+	if (CreateDebugUtilsMessengerEXT(get_instance(), &createInfo, nullptr,
+		&debug_messenger_) != VK_SUCCESS) {
+#ifndef NDEBUG
+		printf("Failed to create Debug Utils Messenger");
+#endif
+		exit(-1);
+
+	}
 }
