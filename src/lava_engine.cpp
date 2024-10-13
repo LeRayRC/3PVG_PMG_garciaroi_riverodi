@@ -30,12 +30,11 @@ const std::vector<const char*> validationLayers = {
 	"VK_LAYER_KHRONOS_validation"
 };
 
-//const std::vector<const char*> requiredDeviceExtensions = {
-//	VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-//	VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
-//	VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME,
-//};
-
+const std::vector<const char*> required_device_extensions_ = {
+		VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+		VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
+		VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME,
+};
 
 LavaEngine* loaded_engine = nullptr;
 
@@ -43,7 +42,7 @@ LavaEngine::LavaEngine() :
 	surface_{ instance_.get_instance(), window_.get_window() },
 	instance_{ validationLayers },
 	window_{ 1280, 720, "LavaEngine" },
-	physical_device_{instance_,surface_}
+	device_{instance_,surface_}
 {
 	//Singleton Functionality
 	assert(loaded_engine == nullptr);
@@ -55,9 +54,9 @@ LavaEngine::LavaEngine() :
 	window_extent_ = { 1280,720 };
 	debug_messenger_ = VK_NULL_HANDLE;
 	//physical_device_ = VK_NULL_HANDLE;
-	device_ = VK_NULL_HANDLE;
-	graphics_queue_ = VK_NULL_HANDLE;
-	present_queue_ = VK_NULL_HANDLE;
+	//device_ = VK_NULL_HANDLE;
+	//graphics_queue_ = VK_NULL_HANDLE;
+	//present_queue_ = VK_NULL_HANDLE;
 	swap_chain_ = VK_NULL_HANDLE;
 	swap_chain_image_format_ = VK_FORMAT_UNDEFINED;
 	render_pass_ = VK_NULL_HANDLE;
@@ -68,7 +67,7 @@ LavaEngine::LavaEngine(unsigned int window_width, unsigned int window_height) :
 	window_{window_width, window_height, "LavaEngine"},
 	instance_{validationLayers},
 	surface_{instance_.get_instance(), window_.get_window()},
-	physical_device_{ instance_,surface_ }
+	device_{ instance_,surface_ }
 {
 	//Singleton Functionality
 	assert(loaded_engine == nullptr);
@@ -80,9 +79,9 @@ LavaEngine::LavaEngine(unsigned int window_width, unsigned int window_height) :
 	window_extent_ = { window_width,window_height };
 	debug_messenger_ = VK_NULL_HANDLE;
 	//physical_device_ = VK_NULL_HANDLE;
-	device_ = VK_NULL_HANDLE;
-	graphics_queue_ = VK_NULL_HANDLE;
-	present_queue_ = VK_NULL_HANDLE;
+	//device_ = VK_NULL_HANDLE;
+	//graphics_queue_ = VK_NULL_HANDLE;
+	//present_queue_ = VK_NULL_HANDLE;
 	swap_chain_ = VK_NULL_HANDLE;
 	swap_chain_image_format_ = VK_FORMAT_UNDEFINED;
 	render_pass_ = VK_NULL_HANDLE;
@@ -90,23 +89,22 @@ LavaEngine::LavaEngine(unsigned int window_width, unsigned int window_height) :
 }
 
 LavaEngine::~LavaEngine(){
-	vkDeviceWaitIdle(device_);
+	vkDeviceWaitIdle(device_.get_device());
 
 	main_deletion_queue_.flush();
 
 	for (int i = 0; i < FRAME_OVERLAP; i++) {
-		vkDestroyCommandPool(device_, frames_[i].command_pool, nullptr);
-		vkDestroyFence(device_, frames_[i].render_fence, nullptr);
-		vkDestroySemaphore(device_, frames_[i].render_semaphore, nullptr);
-		vkDestroySemaphore(device_, frames_[i].swap_chain_semaphore, nullptr);
+		vkDestroyCommandPool(device_.get_device(), frames_[i].command_pool, nullptr);
+		vkDestroyFence(device_.get_device(), frames_[i].render_fence, nullptr);
+		vkDestroySemaphore(device_.get_device(), frames_[i].render_semaphore, nullptr);
+		vkDestroySemaphore(device_.get_device(), frames_[i].swap_chain_semaphore, nullptr);
 		
 	}
 
 	for (auto imageView : swap_chain_image_views_) {
-		vkDestroyImageView(device_, imageView, nullptr);
+		vkDestroyImageView(device_.get_device(), imageView, nullptr);
 	}
-	vkDestroySwapchainKHR(device_, swap_chain_, nullptr);
-	vkDestroyDevice(device_, nullptr);
+	vkDestroySwapchainKHR(device_.get_device(), swap_chain_, nullptr);
 	if (enableValidationLayers) {
 		DestroyDebugUtilsMessengerEXT(get_instance(), debug_messenger_, nullptr);
 	}
@@ -172,7 +170,7 @@ void LavaEngine::initVulkan(){
 	//Ahora se selecciona la tarjeta grafica que cumpla con las necesidades
 	//pickPhysicalDevice();
 	//Tras seleccionar el dispositivo fisico ahora toca crear el logico
-	createLogicalDevice();
+	//createLogicalDevice();
 	createAllocator();
 	createSwapChain();
 	createImageViews();
@@ -195,7 +193,7 @@ void LavaEngine::initVulkan(){
 //	//Ahora se meten los datos de las GPUs en el vector devices
 //	vkEnumeratePhysicalDevices(get_instance(), &deviceCount, devices.data());
 //	for (const auto& device : devices) {
-//		if (isDeviceSuitable(device)) {
+//		if (IsDeviceSuitable(device,get_surface(),required_device_extensions_)) {
 //			physical_device_ = device;
 //		}
 //	}
@@ -243,86 +241,86 @@ void LavaEngine::initVulkan(){
 //	return indices.isComplete() && extensionSupported &&
 //		swapChainAdequate;
 //}
-void LavaEngine::createLogicalDevice(){
-	/*
-	* Se tienen que rellenar diversas estructuras, la primera
-	* indica el numero de colas que queremos crear
-	*/
-	QueueFamilyIndices indices = FindQueueFamilies(physical_device_.get_physical_device(), get_surface());
-	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-	std::set<uint32_t> uniqueQueueFamilies = { indices.graphicsFamily.value(), indices.presentFamily.value() };
-	float queuePriority = 1.0f;
-
-
-	for (uint32_t queueFamily : uniqueQueueFamilies) {
-		VkDeviceQueueCreateInfo queueCreateInfo{};
-		queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-		queueCreateInfo.queueFamilyIndex = queueFamily;
-		queueCreateInfo.queueCount = 1;
-		queueCreateInfo.pQueuePriorities = &queuePriority;
-		queueCreateInfos.push_back(queueCreateInfo);
-	}
-
-	/* Tambien hay que indicar los features que se quieren
-	* activar de la GPU, de momento se han dejado en blanco
-	* pero se modificaran mas adelante
-	*/
-	//Dynamic rendering
-	VkPhysicalDeviceDynamicRenderingFeaturesKHR dynamic_rendering_feature{
-	.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES_KHR,
-	.dynamicRendering = VK_TRUE,
-	};
-
-	VkPhysicalDeviceBufferDeviceAddressFeatures buffer_device_address_feature_info;
-	buffer_device_address_feature_info.bufferDeviceAddress = VK_TRUE;
-	buffer_device_address_feature_info.bufferDeviceAddressCaptureReplay = VK_FALSE;
-	buffer_device_address_feature_info.bufferDeviceAddressMultiDevice = VK_FALSE;
-	buffer_device_address_feature_info.sType =
-		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES;
-	buffer_device_address_feature_info.pNext = &dynamic_rendering_feature;
-
-
-	VkPhysicalDeviceFeatures2 device_features{};
-	device_features.sType =
-		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-	vkGetPhysicalDeviceFeatures2(physical_device_.get_physical_device(), &device_features);
-	device_features.pNext = &buffer_device_address_feature_info;
-
-
-
-	/*
-	* Ahora se rellena la estructura para crear el dispositivo logico
-	*/
-	VkDeviceCreateInfo createInfo{};
-	createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-	//createInfo.pEnabledFeatures = &deviceFeatures;
-	createInfo.pQueueCreateInfos = queueCreateInfos.data();
-	createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
-	createInfo.enabledExtensionCount = static_cast<uint32_t>(physical_device_.required_device_extensions_.size());
-	createInfo.ppEnabledExtensionNames = physical_device_.required_device_extensions_.data();
-	//Al tener la extension de synchronization2 se tiene que agregar una estructura extra
-	VkPhysicalDeviceSynchronization2Features sync2Info{};
-	sync2Info.sType =
-		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES;
-	sync2Info.synchronization2 = VK_TRUE;
-
-	createInfo.pNext = &sync2Info;
-	sync2Info.pNext = &device_features;
-
-	if (vkCreateDevice(physical_device_.get_physical_device(), &createInfo,
-		nullptr, &device_) != VK_SUCCESS) {
-		throw std::runtime_error("failed to create logical device!");
-	}
-
-	//Index 0 hace referencia a que cola se va a utilizar de la 
-	//familia seleccionada, arriba se podrian haber creado una 
-	//cola de cada familia pero en este caso se ha creado una cola de 
-	//dentro de la misma ya que soporta tanto comandos graficos como de presentacion
-	//Tanto si fuesen iguales como diferentes, se seleccionaria la primera cola de cada familia
-	// asi que el index seguiria siendo 0
-	vkGetDeviceQueue(device_, indices.graphicsFamily.value(), 0, &graphics_queue_);
-	vkGetDeviceQueue(device_, indices.presentFamily.value(), 0, &present_queue_);
-}
+//void LavaEngine::createLogicalDevice(){
+//	/*
+//	* Se tienen que rellenar diversas estructuras, la primera
+//	* indica el numero de colas que queremos crear
+//	*/
+//	QueueFamilyIndices indices = FindQueueFamilies(physical_device_, get_surface());
+//	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
+//	std::set<uint32_t> uniqueQueueFamilies = { indices.graphicsFamily.value(), indices.presentFamily.value() };
+//	float queuePriority = 1.0f;
+//
+//
+//	for (uint32_t queueFamily : uniqueQueueFamilies) {
+//		VkDeviceQueueCreateInfo queueCreateInfo{};
+//		queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+//		queueCreateInfo.queueFamilyIndex = queueFamily;
+//		queueCreateInfo.queueCount = 1;
+//		queueCreateInfo.pQueuePriorities = &queuePriority;
+//		queueCreateInfos.push_back(queueCreateInfo);
+//	}
+//
+//	/* Tambien hay que indicar los features que se quieren
+//	* activar de la GPU, de momento se han dejado en blanco
+//	* pero se modificaran mas adelante
+//	*/
+//	//Dynamic rendering
+//	VkPhysicalDeviceDynamicRenderingFeaturesKHR dynamic_rendering_feature{
+//	.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES_KHR,
+//	.dynamicRendering = VK_TRUE,
+//	};
+//
+//	VkPhysicalDeviceBufferDeviceAddressFeatures buffer_device_address_feature_info;
+//	buffer_device_address_feature_info.bufferDeviceAddress = VK_TRUE;
+//	buffer_device_address_feature_info.bufferDeviceAddressCaptureReplay = VK_FALSE;
+//	buffer_device_address_feature_info.bufferDeviceAddressMultiDevice = VK_FALSE;
+//	buffer_device_address_feature_info.sType =
+//		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES;
+//	buffer_device_address_feature_info.pNext = &dynamic_rendering_feature;
+//
+//
+//	VkPhysicalDeviceFeatures2 device_features{};
+//	device_features.sType =
+//		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+//	vkGetPhysicalDeviceFeatures2(physical_device_, &device_features);
+//	device_features.pNext = &buffer_device_address_feature_info;
+//
+//
+//
+//	/*
+//	* Ahora se rellena la estructura para crear el dispositivo logico
+//	*/
+//	VkDeviceCreateInfo createInfo{};
+//	createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+//	//createInfo.pEnabledFeatures = &deviceFeatures;
+//	createInfo.pQueueCreateInfos = queueCreateInfos.data();
+//	createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
+//	createInfo.enabledExtensionCount = static_cast<uint32_t>(required_device_extensions_.size());
+//	createInfo.ppEnabledExtensionNames = required_device_extensions_.data();
+//	//Al tener la extension de synchronization2 se tiene que agregar una estructura extra
+//	VkPhysicalDeviceSynchronization2Features sync2Info{};
+//	sync2Info.sType =
+//		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES;
+//	sync2Info.synchronization2 = VK_TRUE;
+//
+//	createInfo.pNext = &sync2Info;
+//	sync2Info.pNext = &device_features;
+//
+//	if (vkCreateDevice(physical_device_, &createInfo,
+//		nullptr, &device_) != VK_SUCCESS) {
+//		throw std::runtime_error("failed to create logical device!");
+//	}
+//
+//	//Index 0 hace referencia a que cola se va a utilizar de la 
+//	//familia seleccionada, arriba se podrian haber creado una 
+//	//cola de cada familia pero en este caso se ha creado una cola de 
+//	//dentro de la misma ya que soporta tanto comandos graficos como de presentacion
+//	//Tanto si fuesen iguales como diferentes, se seleccionaria la primera cola de cada familia
+//	// asi que el index seguiria siendo 0
+//	vkGetDeviceQueue(device_, indices.graphicsFamily.value(), 0, &graphics_queue_);
+//	vkGetDeviceQueue(device_, indices.presentFamily.value(), 0, &present_queue_);
+//}
 void LavaEngine::setupDebugMessenger(){
 	if (!enableValidationLayers) return;
 
@@ -348,7 +346,7 @@ void LavaEngine::setupDebugMessenger(){
 
 void LavaEngine::createSwapChain(){
 	SwapChainSupportDetails swapChainSupport =
-		QuerySwapChainSupport(physical_device_.get_physical_device(), get_surface());
+		QuerySwapChainSupport(device_.get_physical_device(), get_surface());
 
 	//CAREFUL 
 	//En una guia recomiendan VK_FORMAT_B8G8R8A8_UNORM (https://vkguide.dev) 
@@ -378,7 +376,7 @@ void LavaEngine::createSwapChain(){
 	//VK_IMAGE_USAGE_TRANSFER_DST_BIT util para postprocesos
 	createInfo.imageUsage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-	QueueFamilyIndices indices = FindQueueFamilies(physical_device_.get_physical_device(), get_surface());
+	QueueFamilyIndices indices = FindQueueFamilies(device_.get_physical_device(), get_surface());
 	uint32_t queueFamilyIndices[] = { indices.graphicsFamily.value(),
 		indices.presentFamily.value() };
 	if (indices.graphicsFamily != indices.presentFamily) {
@@ -397,14 +395,14 @@ void LavaEngine::createSwapChain(){
 	createInfo.presentMode = presentMode;
 	createInfo.clipped = VK_TRUE;
 	createInfo.oldSwapchain = VK_NULL_HANDLE;
-	if (vkCreateSwapchainKHR(device_, &createInfo,
+	if (vkCreateSwapchainKHR(device_.get_device(), &createInfo,
 		nullptr, &swap_chain_) != VK_SUCCESS) {
 		throw std::runtime_error("Failed to create swapchain!!");
 	}
 
-	vkGetSwapchainImagesKHR(device_, swap_chain_, &imageCount, nullptr);
+	vkGetSwapchainImagesKHR(device_.get_device(), swap_chain_, &imageCount, nullptr);
 	swap_chain_images_.resize(imageCount);
-	vkGetSwapchainImagesKHR(device_, swap_chain_, &imageCount, swap_chain_images_.data());
+	vkGetSwapchainImagesKHR(device_.get_device(), swap_chain_, &imageCount, swap_chain_images_.data());
 	swap_chain_image_format_ = surfaceFormat.format;
 
 
@@ -438,13 +436,13 @@ void LavaEngine::createSwapChain(){
 
 	VkImageViewCreateInfo rview_info = vkinit::ImageViewCreateInfo(draw_image_.image_format,
 		draw_image_.image, VK_IMAGE_ASPECT_COLOR_BIT);
-	if (vkCreateImageView(device_, &rview_info, nullptr, &draw_image_.image_view) !=
+	if (vkCreateImageView(device_.get_device(), &rview_info, nullptr, &draw_image_.image_view) !=
 		VK_SUCCESS) {
 		printf("Error creating image view!\n");
 	}
 
 	main_deletion_queue_.push_function([=]() {
-		vkDestroyImageView(device_, draw_image_.image_view, nullptr);
+		vkDestroyImageView(device_.get_device(), draw_image_.image_view, nullptr);
 		vmaDestroyImage(allocator_, draw_image_.image, draw_image_.allocation);
 		});
 }
@@ -468,7 +466,7 @@ void LavaEngine::createImageViews(){
 		createInfo.subresourceRange.baseArrayLayer = 0;
 		createInfo.subresourceRange.layerCount = 1;
 
-		if (vkCreateImageView(device_, &createInfo,
+		if (vkCreateImageView(device_.get_device(), &createInfo,
 			nullptr, &swap_chain_image_views_[i]) != VK_SUCCESS) {
 			throw std::runtime_error("Failed to create image view!");
 		}
@@ -478,7 +476,7 @@ void LavaEngine::createImageViews(){
 void LavaEngine::createCommandPool() {
 	//Primero se crean los command pool
 	QueueFamilyIndices queueFamilyIndices =
-		FindQueueFamilies(physical_device_.get_physical_device(), get_surface());
+		FindQueueFamilies(device_.get_physical_device(), get_surface());
 
 	VkCommandPoolCreateInfo command_pool_info{};
 	command_pool_info.sType =
@@ -489,7 +487,7 @@ void LavaEngine::createCommandPool() {
 		queueFamilyIndices.graphicsFamily.value();
 
 	for (int i = 0; i < FRAME_OVERLAP; i++) {
-		if (vkCreateCommandPool(device_, &command_pool_info, nullptr,
+		if (vkCreateCommandPool(device_.get_device(), &command_pool_info, nullptr,
 			&frames_[i].command_pool) != VK_SUCCESS) {
 			exit(-1);
 		}
@@ -502,14 +500,14 @@ void LavaEngine::createCommandPool() {
 		command_alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 		
 		//Se reserva los command buffer correspondientes
-		if (vkAllocateCommandBuffers(device_, &command_alloc_info,
+		if (vkAllocateCommandBuffers(device_.get_device(), &command_alloc_info,
 			&frames_[i].main_command_buffer) != VK_SUCCESS) {
 			exit(-1);
 		}
 
 	}
 		
-	if (vkCreateCommandPool(device_, &command_pool_info, nullptr,
+	if (vkCreateCommandPool(device_.get_device(), &command_pool_info, nullptr,
 		&immediate_command_pool) != VK_SUCCESS) {
 		exit(-1);
 	}
@@ -522,13 +520,13 @@ void LavaEngine::createCommandPool() {
 		immediate_command_buffer_alloc_info.commandBufferCount = 1;
 		immediate_command_buffer_alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 		//Se reserva los command buffer correspondientes
-		if (vkAllocateCommandBuffers(device_, &immediate_command_buffer_alloc_info,
+		if (vkAllocateCommandBuffers(device_.get_device(), &immediate_command_buffer_alloc_info,
 			&immediate_command_buffer) != VK_SUCCESS) {
 			exit(-1);
 		}
 
 		main_deletion_queue_.push_function([=]() {
-			vkDestroyCommandPool(device_, immediate_command_pool, nullptr);
+			vkDestroyCommandPool(device_.get_device(), immediate_command_pool, nullptr);
 			});
 
 }
@@ -549,30 +547,30 @@ void LavaEngine::createSyncObjects() {
 	semaphore_info.pNext = nullptr;
 	
 	for (int i = 0; i < FRAME_OVERLAP; i++) {
-		if (vkCreateFence(device_, &fence_info, nullptr, &frames_[i].render_fence) != VK_SUCCESS) {
+		if (vkCreateFence(device_.get_device(), &fence_info, nullptr, &frames_[i].render_fence) != VK_SUCCESS) {
 			exit(-1);
 		}
-		if (vkCreateSemaphore(device_,&semaphore_info,nullptr,&frames_[i].render_semaphore) != VK_SUCCESS) {
+		if (vkCreateSemaphore(device_.get_device(),&semaphore_info,nullptr,&frames_[i].render_semaphore) != VK_SUCCESS) {
 			exit(-1);
 		}
 
-		if (vkCreateSemaphore(device_, &semaphore_info, nullptr, &frames_[i].swap_chain_semaphore) != VK_SUCCESS) {
+		if (vkCreateSemaphore(device_.get_device(), &semaphore_info, nullptr, &frames_[i].swap_chain_semaphore) != VK_SUCCESS) {
 			exit(-1);
 		}
 	}
 
 	//Sync objects for immediate submits
 
-	if (vkCreateFence(device_, &fence_info, nullptr, &immediate_fence) != VK_SUCCESS) {
+	if (vkCreateFence(device_.get_device(), &fence_info, nullptr, &immediate_fence) != VK_SUCCESS) {
 		exit(-1);
 	}
-	main_deletion_queue_.push_function([=]() {vkDestroyFence(device_, immediate_fence, nullptr); });
+	main_deletion_queue_.push_function([=]() {vkDestroyFence(device_.get_device(), immediate_fence, nullptr); });
 }
 
 void LavaEngine::draw() {
 	//Esperamos a que el fence comunique que la grafica ya ha terminado de dibujar
 	//El timeout esta en nanosegundos 10e-9
-	if (vkWaitForFences(device_, 1, &getCurrentFrame().render_fence, true, 1000000000) != VK_SUCCESS) {
+	if (vkWaitForFences(device_.get_device(), 1, &getCurrentFrame().render_fence, true, 1000000000) != VK_SUCCESS) {
 #ifndef NDEBUG
 		printf("Fence timeout excedeed!");
 #endif // !NDEBUG
@@ -580,7 +578,7 @@ void LavaEngine::draw() {
 	getCurrentFrame().deletion_queue.flush();
 
 	//Reseteamos el fence
-	if (vkResetFences(device_, 1, &getCurrentFrame().render_fence) != VK_SUCCESS) {
+	if (vkResetFences(device_.get_device(), 1, &getCurrentFrame().render_fence) != VK_SUCCESS) {
 #ifndef NDEBUG
 		printf("Fence restart failed!");
 #endif // !NDEBUG
@@ -588,7 +586,7 @@ void LavaEngine::draw() {
 
 	//Solicitamos una imagen del swap chain
 	uint32_t swap_chain_image_index;
-	if (vkAcquireNextImageKHR(device_, swap_chain_, 1000000000,
+	if (vkAcquireNextImageKHR(device_.get_device(), swap_chain_, 1000000000,
 		getCurrentFrame().swap_chain_semaphore, nullptr, &swap_chain_image_index) != VK_SUCCESS) {
 #ifndef NDEBUG
 		printf("Swapchain image not retrieved!");
@@ -675,7 +673,7 @@ if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
 		VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT, getCurrentFrame().render_semaphore);
 
 	VkSubmitInfo2 submit = vkinit::SubmitInfo(&commandSubmitInfo, &signalInfo, &waitInfo);
-	vkQueueSubmit2(graphics_queue_, 1, &submit, getCurrentFrame().render_fence);
+	vkQueueSubmit2(device_.get_graphics_queue(), 1, &submit, getCurrentFrame().render_fence);
 
 	//Se crea la estructura de presentacion para enviarla a la ventana de GLFW
 	VkPresentInfoKHR presentInfo = {};
@@ -689,7 +687,7 @@ if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
 
 	presentInfo.pImageIndices = &swap_chain_image_index;
 
-	vkQueuePresentKHR(present_queue_, &presentInfo);
+	vkQueuePresentKHR(device_.get_present_queue(), &presentInfo);
 
 	//increase the number of frames drawn
 	frame_number_++;
@@ -825,8 +823,8 @@ void LavaEngine::DrawGeometry(VkCommandBuffer command_buffer)
 
 void LavaEngine::createAllocator() {
 	VmaAllocatorCreateInfo allocatorInfo{};
-	allocatorInfo.physicalDevice = physical_device_.get_physical_device();
-	allocatorInfo.device = device_;
+	allocatorInfo.physicalDevice = device_.get_physical_device();
+	allocatorInfo.device = device_.get_device();
 	allocatorInfo.instance = get_instance();
 	allocatorInfo.flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
 	vmaCreateAllocator(&allocatorInfo, &allocator_);
@@ -842,17 +840,17 @@ void LavaEngine::createDescriptors() {
 		{VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1}
 	};
 
-	global_descriptor_allocator_.init_pool(device_, 10, sizes);
+	global_descriptor_allocator_.init_pool(device_.get_device(), 10, sizes);
 
 	{
 		DescriptorLayoutBuilder builder;
 		builder.addBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
-		draw_image_descriptor_set_layout_ = builder.build(device_, VK_SHADER_STAGE_COMPUTE_BIT);
+		draw_image_descriptor_set_layout_ = builder.build(device_.get_device(), VK_SHADER_STAGE_COMPUTE_BIT);
 	}
 
 	//Ahora se reserva el description set
 	draw_image_descriptor_set_ =
-		global_descriptor_allocator_.allocate(device_, draw_image_descriptor_set_layout_);
+		global_descriptor_allocator_.allocate(device_.get_device(), draw_image_descriptor_set_layout_);
 
 	VkDescriptorImageInfo img_info{};
 	img_info.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
@@ -870,12 +868,12 @@ void LavaEngine::createDescriptors() {
 	draw_image_write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
 	draw_image_write.pImageInfo = &img_info;
 
-	vkUpdateDescriptorSets(device_, 1, &draw_image_write, 0, nullptr);
+	vkUpdateDescriptorSets(device_.get_device(), 1, &draw_image_write, 0, nullptr);
 
 	//make sure both the descriptor allocator and the new layout get cleaned up properly
 	main_deletion_queue_.push_function([&]() {
-		global_descriptor_allocator_.destroy_pool(device_);
-		vkDestroyDescriptorSetLayout(device_, draw_image_descriptor_set_layout_, nullptr);
+		global_descriptor_allocator_.destroy_pool(device_.get_device());
+		vkDestroyDescriptorSetLayout(device_.get_device(), draw_image_descriptor_set_layout_, nullptr);
 		});
 }
 
@@ -893,7 +891,7 @@ void LavaEngine::createBackgroundPipelines() {
 	compute_layout.pSetLayouts = &draw_image_descriptor_set_layout_;
 	compute_layout.setLayoutCount = 1;
 	ComputeEffect gradient;
-	if (vkCreatePipelineLayout(device_, &compute_layout, nullptr, &gradient.layout) != VK_SUCCESS) {
+	if (vkCreatePipelineLayout(device_.get_device(), &compute_layout, nullptr, &gradient.layout) != VK_SUCCESS) {
 #ifndef NDEBUG
 		printf("Pipeline layout creation failed!");
 #endif // !NDEBUG
@@ -901,7 +899,7 @@ void LavaEngine::createBackgroundPipelines() {
 
 	//layout code
 	VkShaderModule compute_draw_shader;
-	if (!LoadShader("../src/shaders/gradient.comp.spv", device_, &compute_draw_shader))
+	if (!LoadShader("../src/shaders/gradient.comp.spv", device_.get_device(), &compute_draw_shader))
 	{
 		printf("Error when building the compute shader \n");
 	}
@@ -925,7 +923,7 @@ void LavaEngine::createBackgroundPipelines() {
 	gradient.data = {};
 	gradient.use_push_constants = false;
 
-	if(vkCreateComputePipelines(device_, VK_NULL_HANDLE, 1, &compute_pipeline_create_info, nullptr, &gradient.pipeline) != VK_SUCCESS){
+	if(vkCreateComputePipelines(device_.get_device(), VK_NULL_HANDLE, 1, &compute_pipeline_create_info, nullptr, &gradient.pipeline) != VK_SUCCESS){
 #ifndef NDEBUG
 		printf("Compute pipeline creation failed!");
 #endif // !NDEBUG
@@ -933,11 +931,11 @@ void LavaEngine::createBackgroundPipelines() {
 
 	backgroundEffects.push_back(gradient);
 
-	vkDestroyShaderModule(device_, compute_draw_shader, nullptr);
+	vkDestroyShaderModule(device_.get_device(), compute_draw_shader, nullptr);
 	main_deletion_queue_.push_function([&]() {
 		//vkDestroyPipelineLayout(device_, gradient_pipeline_layout_, nullptr);
-		vkDestroyPipelineLayout(device_, backgroundEffects[0].layout, nullptr);
-		vkDestroyPipeline(device_, backgroundEffects[0].pipeline, nullptr);
+		vkDestroyPipelineLayout(device_.get_device(), backgroundEffects[0].layout, nullptr);
+		vkDestroyPipeline(device_.get_device(), backgroundEffects[0].pipeline, nullptr);
 		});
 }
 
@@ -957,7 +955,7 @@ void LavaEngine::createBackgroundPipelinesImGui()
 	compute_layout.pPushConstantRanges = &push_constant;
 	compute_layout.pushConstantRangeCount = 1;
 	ComputeEffect gradient_imgui;
-	if (vkCreatePipelineLayout(device_, &compute_layout, nullptr, &gradient_imgui.layout) != VK_SUCCESS) {
+	if (vkCreatePipelineLayout(device_.get_device(), &compute_layout, nullptr, &gradient_imgui.layout) != VK_SUCCESS) {
 #ifndef NDEBUG
 		printf("Pipeline layout creation failed!");
 #endif // !NDEBUG
@@ -965,7 +963,7 @@ void LavaEngine::createBackgroundPipelinesImGui()
 
 	//layout code
 	VkShaderModule compute_draw_shader;
-	if (!LoadShader("../src/shaders/gradient_imgui.comp.spv", device_, &compute_draw_shader))
+	if (!LoadShader("../src/shaders/gradient_imgui.comp.spv", device_.get_device(), &compute_draw_shader))
 	{
 		printf("Error when building the compute shader \n");
 	}
@@ -993,7 +991,7 @@ void LavaEngine::createBackgroundPipelinesImGui()
 	gradient_imgui.data.data1 = glm::vec4(1, 0, 0, 1);
 	gradient_imgui.data.data2 = glm::vec4(0, 0, 1, 1);
 
-	if (vkCreateComputePipelines(device_, VK_NULL_HANDLE, 1, &compute_pipeline_create_info, nullptr, &gradient_imgui.pipeline) != VK_SUCCESS) {
+	if (vkCreateComputePipelines(device_.get_device(), VK_NULL_HANDLE, 1, &compute_pipeline_create_info, nullptr, &gradient_imgui.pipeline) != VK_SUCCESS) {
 #ifndef NDEBUG
 		printf("Compute pipeline creation failed!");
 #endif // !NDEBUG
@@ -1001,18 +999,18 @@ void LavaEngine::createBackgroundPipelinesImGui()
 
 	backgroundEffects.push_back(gradient_imgui);
 
-	vkDestroyShaderModule(device_, compute_draw_shader, nullptr);
+	vkDestroyShaderModule(device_.get_device(), compute_draw_shader, nullptr);
 	main_deletion_queue_.push_function([&]() {
 		//vkDestroyPipelineLayout(device_, gradient_imgui_pipeline_layout_, nullptr);
-		vkDestroyPipelineLayout(device_, backgroundEffects[1].layout, nullptr);
-		vkDestroyPipeline(device_, backgroundEffects[1].pipeline, nullptr);
+		vkDestroyPipelineLayout(device_.get_device(), backgroundEffects[1].layout, nullptr);
+		vkDestroyPipeline(device_.get_device(), backgroundEffects[1].pipeline, nullptr);
 		});
 }
 
 void LavaEngine::createTrianglePipeline()
 {
 	VkShaderModule triangleFragShader;
-	if (!LoadShader("../src/shaders/colored_triangle.frag.spv", device_, &triangleFragShader)) {
+	if (!LoadShader("../src/shaders/colored_triangle.frag.spv", device_.get_device(), &triangleFragShader)) {
 		printf("Error when building the triangle fragment shader module");
 	}
 	else {
@@ -1020,7 +1018,7 @@ void LavaEngine::createTrianglePipeline()
 	}
 
 	VkShaderModule triangleVertexShader;
-	if (!LoadShader("../src/shaders/colored_triangle.vert.spv", device_, &triangleVertexShader)) {
+	if (!LoadShader("../src/shaders/colored_triangle.vert.spv", device_.get_device(), &triangleVertexShader)) {
 		printf("Error when building the triangle vertex shader module");
 	}
 	else {
@@ -1035,7 +1033,7 @@ void LavaEngine::createTrianglePipeline()
 	pipeline_layout_info.pSetLayouts = &draw_image_descriptor_set_layout_;
 	pipeline_layout_info.setLayoutCount = 1;
 
-	if (vkCreatePipelineLayout(device_, &pipeline_layout_info, nullptr, &_trianglePipelineLayout)) {
+	if (vkCreatePipelineLayout(device_.get_device(), &pipeline_layout_info, nullptr, &_trianglePipelineLayout)) {
 #ifndef NDEBUG
 		printf("Compute pipeline creation failed!");
 #endif // !NDEBUG
@@ -1065,22 +1063,22 @@ void LavaEngine::createTrianglePipeline()
 	pipeline_builder.SetDepthFormat(VK_FORMAT_UNDEFINED);
 
 	//finally build the pipeline
-	_trianglePipeline = pipeline_builder.BuildPipeline(device_);
+	_trianglePipeline = pipeline_builder.BuildPipeline(device_.get_device());
 
 	//clean structures
-	vkDestroyShaderModule(device_, triangleFragShader, nullptr);
-	vkDestroyShaderModule(device_, triangleVertexShader, nullptr);
+	vkDestroyShaderModule(device_.get_device(), triangleFragShader, nullptr);
+	vkDestroyShaderModule(device_.get_device(), triangleVertexShader, nullptr);
 
 	main_deletion_queue_.push_function([&]() {
-		vkDestroyPipelineLayout(device_, _trianglePipelineLayout, nullptr);
-		vkDestroyPipeline(device_, _trianglePipeline, nullptr);
+		vkDestroyPipelineLayout(device_.get_device(), _trianglePipelineLayout, nullptr);
+		vkDestroyPipeline(device_.get_device(), _trianglePipeline, nullptr);
 	});
 }
 
 void LavaEngine::createMeshPipeline()
 {
 	VkShaderModule triangleFragShader;
-	if (!LoadShader("../src/shaders/colored_triangle.frag.spv", device_, &triangleFragShader)) {
+	if (!LoadShader("../src/shaders/colored_triangle.frag.spv", device_.get_device(), &triangleFragShader)) {
 		printf("Error when building the triangle fragment shader module");
 	}
 	else {
@@ -1088,7 +1086,7 @@ void LavaEngine::createMeshPipeline()
 	}
 
 	VkShaderModule triangleVertexShader;
-	if (!LoadShader("../src/shaders/colored_triangle_mesh.vert.spv", device_, &triangleVertexShader)) {
+	if (!LoadShader("../src/shaders/colored_triangle_mesh.vert.spv", device_.get_device(), &triangleVertexShader)) {
 		printf("Error when building the triangle vertex shader module");
 	}
 	else {
@@ -1108,7 +1106,7 @@ void LavaEngine::createMeshPipeline()
 	pipeline_layout_info.pPushConstantRanges = &buffer_range;
 	pipeline_layout_info.pushConstantRangeCount = 1;
 
-	if (vkCreatePipelineLayout(device_, &pipeline_layout_info, nullptr, &_meshPipelineLayout)) {
+	if (vkCreatePipelineLayout(device_.get_device(), &pipeline_layout_info, nullptr, &_meshPipelineLayout)) {
 #ifndef NDEBUG
 		printf("Compute pipeline creation failed!");
 #endif // !NDEBUG
@@ -1138,15 +1136,15 @@ void LavaEngine::createMeshPipeline()
 	pipeline_builder.SetDepthFormat(VK_FORMAT_UNDEFINED);
 
 	//finally build the pipeline
-	_meshPipeline = pipeline_builder.BuildPipeline(device_);
+	_meshPipeline = pipeline_builder.BuildPipeline(device_.get_device());
 
 	//clean structures
-	vkDestroyShaderModule(device_, triangleFragShader, nullptr);
-	vkDestroyShaderModule(device_, triangleVertexShader, nullptr);
+	vkDestroyShaderModule(device_.get_device(), triangleFragShader, nullptr);
+	vkDestroyShaderModule(device_.get_device(), triangleVertexShader, nullptr);
 
 	main_deletion_queue_.push_function([&]() {
-		vkDestroyPipelineLayout(device_, _meshPipelineLayout, nullptr);
-		vkDestroyPipeline(device_, _meshPipeline, nullptr);
+		vkDestroyPipelineLayout(device_.get_device(), _meshPipelineLayout, nullptr);
+		vkDestroyPipeline(device_.get_device(), _meshPipeline, nullptr);
 		});
 }
 
@@ -1220,7 +1218,7 @@ GPUMeshBuffers LavaEngine::uploadMesh(std::span<uint32_t> indices, std::span<Ver
 
 	//find the adress of the vertex buffer
 	VkBufferDeviceAddressInfo deviceAdressInfo{ .sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO,.buffer = new_surface.vertex_buffer.buffer };
-	new_surface.vertex_buffer_address = vkGetBufferDeviceAddress(device_, &deviceAdressInfo);
+	new_surface.vertex_buffer_address = vkGetBufferDeviceAddress(device_.get_device(), &deviceAdressInfo);
 
 	//create index buffer
 	new_surface.index_buffer = createBuffer(index_buffer_size, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
@@ -1273,16 +1271,16 @@ void LavaEngine::initImgui() {
 		{ VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1 }
 	};
 
-	imgui_descriptor_alloc.init_pool(device_, 1000, pool_sizes);
+	imgui_descriptor_alloc.init_pool(device_.get_device(), 1000, pool_sizes);
 
 	ImGui::CreateContext();
 	ImGui::StyleColorsDark();
 	ImGui_ImplGlfw_InitForVulkan(get_window(), true);
 	ImGui_ImplVulkan_InitInfo init_info = {};
 	init_info.Instance = get_instance();
-	init_info.PhysicalDevice = physical_device_.get_physical_device();
-	init_info.Device = device_;
-	init_info.Queue = graphics_queue_;
+	init_info.PhysicalDevice = device_.get_physical_device();
+	init_info.Device = device_.get_device();
+	init_info.Queue = device_.get_graphics_queue();
 	init_info.DescriptorPool = imgui_descriptor_alloc.pool;
 	init_info.MinImageCount = 3;
 	init_info.ImageCount = 3;
@@ -1296,13 +1294,13 @@ void LavaEngine::initImgui() {
 
 	main_deletion_queue_.push_function([=]() {
 		ImGui_ImplVulkan_Shutdown();
-		imgui_descriptor_alloc.destroy_pool(device_);
+		imgui_descriptor_alloc.destroy_pool(device_.get_device());
 		});
 
 }
 
 void LavaEngine::immediate_submit(std::function<void(VkCommandBuffer)>&& function) {
-	if (vkResetFences(device_, 1, &immediate_fence) != VK_SUCCESS) {
+	if (vkResetFences(device_.get_device(), 1, &immediate_fence) != VK_SUCCESS) {
 		exit(-1);
 	}
 
@@ -1325,9 +1323,9 @@ void LavaEngine::immediate_submit(std::function<void(VkCommandBuffer)>&& functio
 
 	// submit command buffer to the queue and execute it.
 	//  _renderFence will now block until the graphic commands finish execution
-	vkQueueSubmit2(graphics_queue_, 1, &submit, immediate_fence);
+	vkQueueSubmit2(device_.get_graphics_queue(), 1, &submit, immediate_fence);
 
-	vkWaitForFences(device_, 1, &immediate_fence, true, 9999999999);
+	vkWaitForFences(device_.get_device(), 1, &immediate_fence, true, 9999999999);
 }
 
 void LavaEngine::drawImgui(VkCommandBuffer command_buffer, VkImageView target_image_view) {

@@ -8,11 +8,23 @@ class LavaSurface;
 class LavaDevice
 {
 public:
-	LavaDevice(LavaInstance& instance, LavaSurface surface);
+	LavaDevice(LavaInstance& instance, LavaSurface& surface);
 	~LavaDevice();
 
-	VkPhysicalDevice get_physical_device() const {
+	VkPhysicalDevice get_physical_device() const{
 		return physical_device_;
+	}
+
+	VkDevice get_device() const {
+		return device_;
+	}
+
+	VkQueue get_graphics_queue() const {
+		return graphics_queue_;
+	}
+
+	VkQueue get_present_queue() const {
+		return present_queue_;
 	}
 
 	const std::vector<const char*> required_device_extensions_ = {
@@ -27,7 +39,8 @@ private:
 	VkQueue graphics_queue_;
 	VkQueue present_queue_;
 
-	
+	void createLogicalDevice(LavaSurface& surface);
+	void pickPhysicalDevice(LavaInstance& instance, LavaSurface& surface);
 
 
 };
