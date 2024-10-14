@@ -94,7 +94,8 @@ workspace "Motor"
                 "src/build/conan.lua",
                 "src/*.cpp",
                 "include/*.hpp",
-
+                "include/*/*.hpp",
+                "src/*/*.cpp",
                 }
     project"Window"
         kind "ConsoleApp" -- This was WindowedApp

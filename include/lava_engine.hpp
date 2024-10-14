@@ -14,6 +14,10 @@
 #include "lava_types.hpp"
 #include "lava_vulkan_helpers.hpp"
 #include "lava_descriptors.hpp"
+#include "engine/lava_instance.hpp"
+#include "lava_window.hpp"
+#include "engine/lava_surface.hpp"
+#include "engine/lava_device.hpp"
 
 
 struct DeletionQueue {
@@ -81,16 +85,14 @@ public:
 	AllocatedImage draw_image_;
 	VkExtent2D draw_extent_;
 
-	GLFWwindow* window_				;
-	// TO FIX -> Hardcoded window size
+	//GLFWwindow* window_;
+	LavaWindow window_;
+	LavaInstance instance_;
+	LavaSurface surface_;
+	LavaDevice device_;
+	
 	VkExtent2D window_extent_;
-	VkInstance instance_;
-	VkDebugUtilsMessengerEXT debug_messenger_;
-	VkPhysicalDevice physical_device_;
-	VkDevice device_;
-	VkQueue graphics_queue_;
-	VkQueue present_queue_;
-	VkSurfaceKHR surface_;
+	
 	VkSwapchainKHR swap_chain_;
 	std::vector<VkImage> swap_chain_images_;
 	std::vector<VkImageView> swap_chain_image_views_;
@@ -123,16 +125,9 @@ public:
 	
 
 	void init();
-	void initWindow();
-	void cleanUp();
 	void initVulkan();
 	void mainLoop();
-	void pickPhysicalDevice();
-	bool isDeviceSuitable(VkPhysicalDevice device);
-	void createInstance();
-	void createLogicalDevice();
-	void setupDebugMessenger();
-	void createSurface();
+	
 	void createSwapChain();
 	void createImageViews();
 	void createCommandPool();
@@ -144,6 +139,10 @@ public:
 	
 	void createAllocator();
 	void createDescriptors();
+
+	VkInstance get_instance() const;
+	GLFWwindow* get_window() const;
+	VkSurfaceKHR get_surface() const;
 
 ///////////////PIPELINES/////////
 
@@ -183,22 +182,22 @@ private:
 	/**
 	* @brief Copy constructor(never use)
 	*/
-	LavaEngine(const LavaEngine& obj) {};
+	LavaEngine(const LavaEngine& obj) = delete;
 
 	/**
 	* @brief Assign operator(never use)
 	*/
-	LavaEngine& operator=(const LavaEngine& obj){};
+	LavaEngine& operator=(const LavaEngine& obj) = delete;
 
 	/**
 	* @brief Move constructor(never use)
 	*/
-	LavaEngine(LavaEngine&& obj) {};
+	LavaEngine(LavaEngine&& obj) = delete;
 
 	/**
 	* @brief Move Assign operator(never use)
 	*/
-	LavaEngine& operator=(LavaEngine& obj) {};
+	LavaEngine& operator=(LavaEngine& obj) = delete;
 
 };
 #endif // ! __CUSTOM_ENGINE_

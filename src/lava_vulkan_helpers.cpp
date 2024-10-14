@@ -352,3 +352,43 @@ std::vector<char> ReadFile(const std::string& filename) {
 	file.close();
 	return buffer;
 }
+
+bool IsDeviceSuitable(VkPhysicalDevice device, VkSurfaceKHR surface, const std::vector<const char*> required_device_extensions) {
+	VkPhysicalDeviceProperties deviceProperties;
+	vkGetPhysicalDeviceProperties(device, &deviceProperties);
+
+	VkPhysicalDeviceFeatures deviceFeatures;
+	vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
+
+	QueueFamilyIndices indices = FindQueueFamilies(device, surface);
+
+	bool extensionSupported = CheckDeviceExtensionsSupport(device, required_device_extensions);
+	bool swapChainAdequate = false;
+
+	//Es importante comprobar las propiedades disponibles de 
+	//la swap chain despues de verificar que cuenta con las
+	//extensiones necesarias
+	//En este caso se comprueba que al menos puede representar
+	//una imagen y un modo de presentacion
+	if (extensionSupported) {
+		SwapChainSupportDetails swapChainSupport =
+			QuerySwapChainSupport(device, surface);
+		swapChainAdequate = !swapChainSupport.formats.empty() &&
+			!swapChainSupport.presentModes.empty();
+	}
+
+
+	//Para que una GPU sea valida tiene que ser dedicada. Se pueden realizar las
+	// comprobaciones que se quieran en base a las properties o las features
+	// p.e se puede comprobar si la grafica permite usar geometry shaders
+	// return deviceFeatures.geometryShader
+	//return deviceProperties.deviceType = VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
+
+	//No es muy importante para el inicio del motor tener esto bien configurado
+	//Por conveniencia vamos a devolver true siempre y ya se cambiara
+	//El tutorial recomiendo asociar una puntuacion a cada grafica del sistema 
+	//para al menos seleccionar una
+	// https://vulkan-tutorial.com/resources/vulkan_tutorial_en.pdf pag 60
+	return indices.isComplete() && extensionSupported &&
+		swapChainAdequate;
+}
