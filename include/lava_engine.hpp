@@ -23,6 +23,7 @@
 #include "engine/lava_frame_data.hpp"
 #include "engine/lava_inmediate_communication.hpp"
 #include "engine/lava_loader.hpp"
+#include "engine/lava_pipeline.hpp"
 
 
 struct DeletionQueue {
@@ -94,7 +95,7 @@ public:
 	VkDescriptorSet draw_image_descriptor_set_;
 	VkDescriptorSetLayout draw_image_descriptor_set_layout_;
 
-	VkPipeline gradient_pipeline_;
+	//VkPipeline gradient_pipeline_;
 
 	DescriptorAllocator imgui_descriptor_alloc;
 
@@ -114,7 +115,7 @@ public:
 	void DrawGeometry(VkCommandBuffer command_buffer);
 	void DrawGeometryWithProperties(VkCommandBuffer command_buffer);
 	void DrawMesh(VkCommandBuffer command_buffer);
-
+	void addPipeline(LavaPipeline::Config config);
 	void createDescriptors();
 
 	VkInstance get_instance() const;
@@ -123,24 +124,30 @@ public:
 
 ///////////////PIPELINES/////////
 
-	void createPipelines();
+	//void createPipelines();
 	void createBackgroundPipelines();
 	void createBackgroundPipelinesImGui();
 
 	//Not use right now
-	VkPipelineLayout _trianglePipelineLayout;
-	VkPipeline _trianglePipeline;
-	void createTrianglePipeline();
+	//VkPipelineLayout _trianglePipelineLayout;
+	//VkPipeline _trianglePipeline;
+	//void createTrianglePipeline();
 	//
 
-	VkPipelineLayout _meshPipelineLayout;
-	VkPipeline _meshPipeline;
+	//VkPipelineLayout _meshPipelineLayout;
+	//VkPipeline _meshPipeline;
 	GPUMeshBuffers rectangle;
-	void createMeshPipeline();
+	//void createMeshPipeline();
 	void initDefaultData();
+////////////////////////////////
+	std::vector<std::unique_ptr<LavaPipeline>> pipelines_;
+
+	//meshes.emplace_back(std::make_shared<MeshAsset>(std::move(newmesh)));
+////////////PIPELINE//////////////
 
 ////////////////////////////////
 	std::vector<std::shared_ptr<MeshAsset>> test_meshes;
+
 //////////////MESHES////////////
 
 	AllocatedBuffer createBuffer(size_t alloc_size, VkBufferUsageFlags usage, VmaMemoryUsage memory_usage);

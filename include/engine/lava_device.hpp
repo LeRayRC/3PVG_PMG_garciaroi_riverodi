@@ -11,6 +11,8 @@ public:
 	LavaDevice(LavaInstance& instance, LavaSurface& surface);
 	~LavaDevice();
 
+	void operator=(LavaDevice& device);
+
 	VkPhysicalDevice get_physical_device() const{
 		return physical_device_;
 	}

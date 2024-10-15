@@ -1,5 +1,5 @@
-#ifndef __LAVA_PIPELINES_H_
-#define __LAVA_PIPELINES_H_ 1
+#ifndef __LAVA_PIPELINE_BUILDER_H_
+#define __LAVA_PIPELINE_BUILDER_H_ 1
 
 #include "lava_types.hpp"
 

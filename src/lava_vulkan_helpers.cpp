@@ -313,7 +313,7 @@ VkImageSubresourceRange  ImageSubresourceRange(VkImageAspectFlags aspectMask) {
 	return subImage;
 }
 
-bool LoadShader(const std::string& file_path,
+bool LoadShader(const char* file_path,
 	VkDevice device,
 	VkShaderModule* out_shader_module){
 	

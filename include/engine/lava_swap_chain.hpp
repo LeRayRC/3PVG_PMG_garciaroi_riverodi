@@ -11,7 +11,7 @@
  */
 
 #ifndef __LAVA_SWAP_CHAIN_H__
-#define __LAVA_SWAP_CHAIN__ 1
+#define __LAVA_SWAP_CHAIN_H__ 1
 
 #include "lava_types.hpp"
 #include "lava_vulkan_helpers.hpp"
