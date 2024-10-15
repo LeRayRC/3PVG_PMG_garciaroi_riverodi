@@ -197,12 +197,12 @@ void LavaEngine::draw() {
 	TransitionImage(commandBuffer, swap_chain_.get_draw_image().image,
 		VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
 
-	drawBackground(commandBuffer);
+	//drawBackground(commandBuffer);
 
 	TransitionImage(commandBuffer, swap_chain_.get_draw_image().image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
-	DrawGeometry(commandBuffer);
-	//DrawGeometryWithProperties(commandBuffer);
+	//DrawGeometry(commandBuffer);
+	DrawGeometryWithProperties(commandBuffer);
 
 	//Cambiamos tanto la imagen del swapchain como la de 
 	// dibujado al mismo estado para copiar la informacion
@@ -488,7 +488,7 @@ void LavaEngine::createDescriptors() {
 void LavaEngine::createPipelines() {
 	createBackgroundPipelines();
 	createBackgroundPipelinesImGui();
-	createTrianglePipeline();
+	//createTrianglePipeline();
 	createMeshPipeline();
 }
 
@@ -694,7 +694,7 @@ void LavaEngine::createMeshPipeline()
 	}
 
 	VkShaderModule triangleVertexShader;
-	if (!LoadShader("../src/shaders/colored_triangle_mesh.vert.spv", device_.get_device(), &triangleVertexShader)) {
+	if (!LoadShader("../src/shaders/colored_triangle_mesh_prop.vert.spv", device_.get_device(), &triangleVertexShader)) {
 		printf("Error when building the triangle vertex shader module");
 	}
 	else {
@@ -706,6 +706,118 @@ void LavaEngine::createMeshPipeline()
 	buffer_range.size = sizeof(GPUDrawPushConstants);
 	buffer_range.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
+	VkPipelineLayoutCreateInfo pipeline_layout_info{};
+	pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+	pipeline_layout_info.pNext = nullptr;
+	pipeline_layout_info.pSetLayouts = &draw_image_descriptor_set_layout_;
+	pipeline_layout_info.setLayoutCount = 1;
+	pipeline_layout_info.pPushConstantRanges = &buffer_range;
+	pipeline_layout_info.pushConstantRangeCount = 1;
+
+	if (vkCreatePipelineLayout(device_.get_device(), &pipeline_layout_info, nullptr, &_meshPipelineLayout)) {
+#ifndef NDEBUG
+		printf("Compute pipeline creation failed!");
+#endif // !NDEBUG
+	}
+
+	PipelineBuilder pipeline_builder;
+
+	//use the triangle layout we created
+	pipeline_builder._pipeline_layout = _meshPipelineLayout;
+	//connecting the vertex and pixel shaders to the pipeline
+	pipeline_builder.SetShaders(triangleVertexShader, triangleFragShader);
+	//it will draw triangles
+	pipeline_builder.SetInputTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+	//filled triangles
+	pipeline_builder.SetPolygonMode(VK_POLYGON_MODE_FILL);
+	//no backface culling
+	pipeline_builder.SetCullMode(VK_CULL_MODE_NONE, VK_FRONT_FACE_CLOCKWISE);
+	//no multisampling
+	pipeline_builder.SetMultisamplingNone();
+	//no blending
+	pipeline_builder.DisableBlending();
+	//no depth testing
+	pipeline_builder.DisableDepthtest();
+
+	//connect the image format we will draw into, from draw image
+	pipeline_builder.SetColorAttachmentFormat(swap_chain_.get_draw_image().image_format);
+	pipeline_builder.SetDepthFormat(VK_FORMAT_UNDEFINED);
+
+	//finally build the pipeline
+	_meshPipeline = pipeline_builder.BuildPipeline(device_.get_device());
+
+	//clean structures
+	vkDestroyShaderModule(device_.get_device(), triangleFragShader, nullptr);
+	vkDestroyShaderModule(device_.get_device(), triangleVertexShader, nullptr);
+
+	main_deletion_queue_.push_function([&]() {
+		vkDestroyPipelineLayout(device_.get_device(), _meshPipelineLayout, nullptr);
+		vkDestroyPipeline(device_.get_device(), _meshPipeline, nullptr);
+		});
+}
+
+void LavaEngine::createMeshPipelineWithAttr()
+{
+	VkShaderModule triangleFragShader;
+	if (!LoadShader("../src/shaders/colored_triangle.frag.spv", device_.get_device(), &triangleFragShader)) {
+		printf("Error when building the triangle fragment shader module");
+	}
+	else {
+		printf("Triangle fragment shader succesfully loaded");
+	}
+
+	VkShaderModule triangleVertexShader;
+	if (!LoadShader("../src/shaders/colored_triangle_mesh.vert.spv", device_.get_device(), &triangleVertexShader)) {
+		printf("Error when building the triangle vertex shader module");
+	}
+	else {
+		printf("Triangle vertex shader succesfully loaded");
+	}
+
+	//VkVertexInputBindingDescription bindingDescription;
+	//bindingDescription.binding = 0;
+	//bindingDescription.stride = sizeof(Vertex);
+	//bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+	//
+	//std::array<VkVertexInputAttributeDescription, 5> attributeDescriptions;
+	//attributeDescriptions[0].binding = 0;
+	//attributeDescriptions[0].location = 0;
+	//attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
+	//attributeDescriptions[0].offset = offsetof(Vertex, position);
+	//
+	//attributeDescriptions[1].binding = 0;
+	//attributeDescriptions[1].location = 1;
+	//attributeDescriptions[1].format = VK_FORMAT_R32_SFLOAT;
+	//attributeDescriptions[1].offset = offsetof(Vertex, uv_x);
+	//
+	//attributeDescriptions[2].binding = 0;
+	//attributeDescriptions[2].location = 2;
+	//attributeDescriptions[2].format = VK_FORMAT_R32G32B32_SFLOAT;
+	//attributeDescriptions[2].offset = offsetof(Vertex, normal);
+	//
+	//attributeDescriptions[3].binding = 0;
+	//attributeDescriptions[3].location = 3;
+	//attributeDescriptions[3].format = VK_FORMAT_R32_SFLOAT;
+	//attributeDescriptions[3].offset = offsetof(Vertex, uv_y);
+	//
+	//attributeDescriptions[4].binding = 0;
+	//attributeDescriptions[4].location = 4;
+	//attributeDescriptions[4].format = VK_FORMAT_R32G32B32A32_SFLOAT;
+	//attributeDescriptions[4].offset = offsetof(Vertex, color);
+	//
+	//VkPipelineVertexInputStateCreateInfo vertexInputInfo;
+	//vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+	//vertexInputInfo.vertexBindingDescriptionCount = 0;
+	//vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
+	//vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
+	//vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
+	//vertexInputInfo.pNext = nullptr;
+
+	VkPushConstantRange buffer_range{};
+	buffer_range.offset = 0;
+	buffer_range.size = sizeof(GPUDrawPushConstants);
+	buffer_range.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+	
 	VkPipelineLayoutCreateInfo pipeline_layout_info{};
 	pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 	pipeline_layout_info.pNext = nullptr;

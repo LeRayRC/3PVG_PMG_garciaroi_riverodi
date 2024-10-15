@@ -135,6 +135,7 @@ public:
 	VkPipeline _meshPipeline;
 	GPUMeshBuffers rectangle;
 	void createMeshPipeline();
+	void createMeshPipelineWithAttr();
 	void initDefaultData();
 
 ////////////////////////////////
