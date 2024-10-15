@@ -32,22 +32,22 @@ const std::vector<const char*> validationLayers = {
 
 LavaEngine* loaded_engine = nullptr;
 
-LavaEngine::LavaEngine() : 
+LavaEngine::LavaEngine() :
 	surface_{ instance_.get_instance(), window_.get_window() },
 	instance_{ validationLayers },
 	window_{ 1280, 720, "LavaEngine" },
-	device_{instance_,surface_}
+	device_{ instance_,surface_ },
+	window_extent_{ 1280, 720 },
+	allocator_{device_, instance_},
+	swap_chain_{ device_, surface_, window_extent_, allocator_.get_allocator()},
+	frame_data_{device_, surface_},
+	inmediate_communication{device_, surface_}
 {
 	//Singleton Functionality
 	assert(loaded_engine == nullptr);
 	loaded_engine = this;
 	is_initialized_ = false;
-	frame_number_ = 0;
 	stop_rendering = false;
-
-	window_extent_ = { 1280,720 };
-	swap_chain_ = VK_NULL_HANDLE;
-	swap_chain_image_format_ = VK_FORMAT_UNDEFINED;
 	render_pass_ = VK_NULL_HANDLE;
 }
 
@@ -56,18 +56,18 @@ LavaEngine::LavaEngine(unsigned int window_width, unsigned int window_height) :
 	window_{window_width, window_height, "LavaEngine"},
 	instance_{validationLayers},
 	surface_{instance_.get_instance(), window_.get_window()},
-	device_{ instance_,surface_ }
+	device_{ instance_,surface_ },
+	window_extent_{window_width, window_height},
+	allocator_{ device_, instance_ },
+	swap_chain_{ device_, surface_, window_extent_, allocator_.get_allocator() },
+	frame_data_{ device_, surface_ },
+	inmediate_communication{ device_, surface_ }
 {
 	//Singleton Functionality
 	assert(loaded_engine == nullptr);
 	loaded_engine = this;
 	is_initialized_ = false;
-	frame_number_ = 0;
 	stop_rendering = false;
-
-	window_extent_ = { window_width,window_height };
-	swap_chain_ = VK_NULL_HANDLE;
-	swap_chain_image_format_ = VK_FORMAT_UNDEFINED;
 	render_pass_ = VK_NULL_HANDLE;
 
 }
@@ -75,20 +75,7 @@ LavaEngine::LavaEngine(unsigned int window_width, unsigned int window_height) :
 LavaEngine::~LavaEngine(){
 	vkDeviceWaitIdle(device_.get_device());
 
-	main_deletion_queue_.flush();
-
-	for (int i = 0; i < FRAME_OVERLAP; i++) {
-		vkDestroyCommandPool(device_.get_device(), frames_[i].command_pool, nullptr);
-		vkDestroyFence(device_.get_device(), frames_[i].render_fence, nullptr);
-		vkDestroySemaphore(device_.get_device(), frames_[i].render_semaphore, nullptr);
-		vkDestroySemaphore(device_.get_device(), frames_[i].swap_chain_semaphore, nullptr);
-		
-	}
-	for (auto imageView : swap_chain_image_views_) {
-		vkDestroyImageView(device_.get_device(), imageView, nullptr);
-	}
-	vkDestroySwapchainKHR(device_.get_device(), swap_chain_, nullptr);
-	
+	main_deletion_queue_.flush();	
 }
 
 VkInstance LavaEngine::get_instance() const{
@@ -145,250 +132,23 @@ void LavaEngine::initVulkan(){
 
 	//Despues de crear la instancia se configura el callback de las validation layers
 	//Tras seleccionar el dispositivo fisico ahora toca crear el logico
-	createAllocator();
-	createSwapChain();
-	createImageViews();
-	createCommandPool();
-	createSyncObjects();
 	createDescriptors();
 	initDefaultData();
 	createPipelines();
 }
 
-void LavaEngine::createSwapChain(){
-	SwapChainSupportDetails swapChainSupport =
-		QuerySwapChainSupport(device_.get_physical_device(), get_surface());
-
-	//CAREFUL 
-	//En una guia recomiendan VK_FORMAT_B8G8R8A8_UNORM (https://vkguide.dev) 
-	//Y en otra VK_FORMAT_B8G8R8A8_SRGV
-	VkSurfaceFormatKHR surfaceFormat =
-		ChooseSwapSurfaceFormat(swapChainSupport.formats);
-	VkPresentModeKHR presentMode =
-		ChooseSwapPresentMode(swapChainSupport.presentModes);
-	
-	//VkExtent2D extent =
-	//	chooseSwapExtent(swapChainSupport.capabilities, window_);
-	uint32_t imageCount = swapChainSupport.capabilities.minImageCount + 1;
-	if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount >
-		swapChainSupport.capabilities.maxImageCount) {
-		imageCount = swapChainSupport.capabilities.maxImageCount;
-	}
-
-	VkSwapchainCreateInfoKHR createInfo{};
-	createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-	createInfo.surface = get_surface();
-	createInfo.minImageCount = imageCount;
-	createInfo.imageFormat = surfaceFormat.format;
-	createInfo.imageColorSpace = surfaceFormat.colorSpace;
-	createInfo.imageExtent = window_extent_;
-	createInfo.imageArrayLayers = 1;
-	//VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
-	//VK_IMAGE_USAGE_TRANSFER_DST_BIT util para postprocesos
-	createInfo.imageUsage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-
-	QueueFamilyIndices indices = FindQueueFamilies(device_.get_physical_device(), get_surface());
-	uint32_t queueFamilyIndices[] = { indices.graphicsFamily.value(),
-		indices.presentFamily.value() };
-	if (indices.graphicsFamily != indices.presentFamily) {
-		createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
-		createInfo.queueFamilyIndexCount = 2;
-		createInfo.pQueueFamilyIndices = queueFamilyIndices;
-	}
-	else {
-		createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-		createInfo.queueFamilyIndexCount = 0;
-		createInfo.pQueueFamilyIndices = nullptr;
-	}
-
-	createInfo.preTransform = swapChainSupport.capabilities.currentTransform;
-	createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-	createInfo.presentMode = presentMode;
-	createInfo.clipped = VK_TRUE;
-	createInfo.oldSwapchain = VK_NULL_HANDLE;
-	if (vkCreateSwapchainKHR(device_.get_device(), &createInfo,
-		nullptr, &swap_chain_) != VK_SUCCESS) {
-		throw std::runtime_error("Failed to create swapchain!!");
-	}
-
-	vkGetSwapchainImagesKHR(device_.get_device(), swap_chain_, &imageCount, nullptr);
-	swap_chain_images_.resize(imageCount);
-	vkGetSwapchainImagesKHR(device_.get_device(), swap_chain_, &imageCount, swap_chain_images_.data());
-	swap_chain_image_format_ = surfaceFormat.format;
-
-
-	VkExtent3D draw_image_extent = {
-		window_extent_.width,
-		window_extent_.height,
-		1
-	};
-
-	draw_image_.image_format = VK_FORMAT_R16G16B16A16_SFLOAT;
-	draw_image_.image_extent = draw_image_extent;
-
-	draw_extent_ = window_extent_;
-
-	VkImageUsageFlags draw_image_usages{};
-	draw_image_usages |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-	draw_image_usages |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-	draw_image_usages |= VK_IMAGE_USAGE_STORAGE_BIT;
-	draw_image_usages |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-
-	VkImageCreateInfo rimg_info = vkinit::ImageCreateInfo(draw_image_.image_format,
-		draw_image_usages, draw_image_extent);
-
-	VmaAllocationCreateInfo rimg_allocinfo = {};
-	rimg_allocinfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
-	rimg_allocinfo.requiredFlags = VkMemoryPropertyFlags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
-	//allocate and create the image
-	vmaCreateImage(allocator_, &rimg_info, &rimg_allocinfo, &draw_image_.image,
-		&draw_image_.allocation, nullptr);
-
-	VkImageViewCreateInfo rview_info = vkinit::ImageViewCreateInfo(draw_image_.image_format,
-		draw_image_.image, VK_IMAGE_ASPECT_COLOR_BIT);
-	if (vkCreateImageView(device_.get_device(), &rview_info, nullptr, &draw_image_.image_view) !=
-		VK_SUCCESS) {
-		printf("Error creating image view!\n");
-	}
-
-	main_deletion_queue_.push_function([=]() {
-		vkDestroyImageView(device_.get_device(), draw_image_.image_view, nullptr);
-		vmaDestroyImage(allocator_, draw_image_.image, draw_image_.allocation);
-		});
-}
-
-void LavaEngine::createImageViews(){
-	swap_chain_image_views_.resize(swap_chain_images_.size());
-	for (size_t i = 0; i < swap_chain_images_.size(); i++) {
-		VkImageViewCreateInfo createInfo{};
-		createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-		createInfo.image = swap_chain_images_[i];
-		createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-		createInfo.format = swap_chain_image_format_;
-		createInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-		createInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-		createInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-		createInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-		createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		createInfo.subresourceRange.baseMipLevel = 0;
-		createInfo.subresourceRange.levelCount = 1;
-		createInfo.subresourceRange.baseArrayLayer = 0;
-		createInfo.subresourceRange.layerCount = 1;
-
-		if (vkCreateImageView(device_.get_device(), &createInfo,
-			nullptr, &swap_chain_image_views_[i]) != VK_SUCCESS) {
-			throw std::runtime_error("Failed to create image view!");
-		}
-	}
-}
-
-void LavaEngine::createCommandPool() {
-	//Primero se crean los command pool
-	QueueFamilyIndices queueFamilyIndices =
-		FindQueueFamilies(device_.get_physical_device(), get_surface());
-
-	VkCommandPoolCreateInfo command_pool_info{};
-	command_pool_info.sType =
-		VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-	command_pool_info.pNext = nullptr;
-	command_pool_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-	command_pool_info.queueFamilyIndex =
-		queueFamilyIndices.graphicsFamily.value();
-
-	for (int i = 0; i < FRAME_OVERLAP; i++) {
-		if (vkCreateCommandPool(device_.get_device(), &command_pool_info, nullptr,
-			&frames_[i].command_pool) != VK_SUCCESS) {
-			exit(-1);
-		}
-		VkCommandBufferAllocateInfo command_alloc_info{};
-		command_alloc_info.sType =
-			VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		command_alloc_info.pNext = nullptr;
-		command_alloc_info.commandPool = frames_[i].command_pool;
-		command_alloc_info.commandBufferCount = 1;
-		command_alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		
-		//Se reserva los command buffer correspondientes
-		if (vkAllocateCommandBuffers(device_.get_device(), &command_alloc_info,
-			&frames_[i].main_command_buffer) != VK_SUCCESS) {
-			exit(-1);
-		}
-
-	}
-		
-	if (vkCreateCommandPool(device_.get_device(), &command_pool_info, nullptr,
-		&immediate_command_pool) != VK_SUCCESS) {
-		exit(-1);
-	}
-
-		VkCommandBufferAllocateInfo immediate_command_buffer_alloc_info{};
-		immediate_command_buffer_alloc_info.sType =
-			VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		immediate_command_buffer_alloc_info.pNext = nullptr;
-		immediate_command_buffer_alloc_info.commandPool = immediate_command_pool;
-		immediate_command_buffer_alloc_info.commandBufferCount = 1;
-		immediate_command_buffer_alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		//Se reserva los command buffer correspondientes
-		if (vkAllocateCommandBuffers(device_.get_device(), &immediate_command_buffer_alloc_info,
-			&immediate_command_buffer) != VK_SUCCESS) {
-			exit(-1);
-		}
-
-		main_deletion_queue_.push_function([=]() {
-			vkDestroyCommandPool(device_.get_device(), immediate_command_pool, nullptr);
-			});
-
-}
-
-void LavaEngine::createSyncObjects() {
-	//1 fence para avisar a la CPU cuando un frame ya se ha dibujado
-	//1 semaforo para la comunicacion con el swapchain y otro para
-	//los comandos de dibujado
-	VkFenceCreateInfo fence_info{};
-	fence_info.sType =
-		VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-	fence_info.pNext = nullptr;
-	fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-
-	VkSemaphoreCreateInfo semaphore_info{};
-	semaphore_info.sType =
-		VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-	semaphore_info.pNext = nullptr;
-	
-	for (int i = 0; i < FRAME_OVERLAP; i++) {
-		if (vkCreateFence(device_.get_device(), &fence_info, nullptr, &frames_[i].render_fence) != VK_SUCCESS) {
-			exit(-1);
-		}
-		if (vkCreateSemaphore(device_.get_device(),&semaphore_info,nullptr,&frames_[i].render_semaphore) != VK_SUCCESS) {
-			exit(-1);
-		}
-
-		if (vkCreateSemaphore(device_.get_device(), &semaphore_info, nullptr, &frames_[i].swap_chain_semaphore) != VK_SUCCESS) {
-			exit(-1);
-		}
-	}
-
-	//Sync objects for immediate submits
-
-	if (vkCreateFence(device_.get_device(), &fence_info, nullptr, &immediate_fence) != VK_SUCCESS) {
-		exit(-1);
-	}
-	main_deletion_queue_.push_function([=]() {vkDestroyFence(device_.get_device(), immediate_fence, nullptr); });
-}
-
 void LavaEngine::draw() {
 	//Esperamos a que el fence comunique que la grafica ya ha terminado de dibujar
 	//El timeout esta en nanosegundos 10e-9
-	if (vkWaitForFences(device_.get_device(), 1, &getCurrentFrame().render_fence, true, 1000000000) != VK_SUCCESS) {
+	if (vkWaitForFences(device_.get_device(), 1, &frame_data_.getCurrentFrame().render_fence, true, 1000000000) != VK_SUCCESS) {
 #ifndef NDEBUG
 		printf("Fence timeout excedeed!");
 #endif // !NDEBUG
 	}
-	getCurrentFrame().deletion_queue.flush();
+	//getCurrentFrame().deletion_queue.flush();
 
 	//Reseteamos el fence
-	if (vkResetFences(device_.get_device(), 1, &getCurrentFrame().render_fence) != VK_SUCCESS) {
+	if (vkResetFences(device_.get_device(), 1, &frame_data_.getCurrentFrame().render_fence) != VK_SUCCESS) {
 #ifndef NDEBUG
 		printf("Fence restart failed!");
 #endif // !NDEBUG
@@ -396,15 +156,15 @@ void LavaEngine::draw() {
 
 	//Solicitamos una imagen del swap chain
 	uint32_t swap_chain_image_index;
-	if (vkAcquireNextImageKHR(device_.get_device(), swap_chain_, 1000000000,
-		getCurrentFrame().swap_chain_semaphore, nullptr, &swap_chain_image_index) != VK_SUCCESS) {
+	if (vkAcquireNextImageKHR(device_.get_device(), swap_chain_.get_swap_chain(), 1000000000,
+		frame_data_.getCurrentFrame().swap_chain_semaphore, nullptr, &swap_chain_image_index) != VK_SUCCESS) {
 #ifndef NDEBUG
 		printf("Swapchain image not retrieved!");
 #endif // !NDEBUG
 	}
 
 	//Se resetea e inicia el command buffer del frame actual
-	VkCommandBuffer commandBuffer = getCurrentFrame().main_command_buffer;
+	VkCommandBuffer commandBuffer = frame_data_.getCurrentFrame().main_command_buffer;
 	if (vkResetCommandBuffer(commandBuffer, 0) != VK_SUCCESS) {
 #ifndef NDEBUG
 		printf("Resseting commandbuffer failed!");
@@ -434,39 +194,40 @@ void LavaEngine::draw() {
 	// -> INICIO PRIMER DIBUJADO
 	// 
 	//Convertimos la imagen de dibujado a escribible
-	TransitionImage(commandBuffer, draw_image_.image,
+	TransitionImage(commandBuffer, swap_chain_.get_draw_image().image,
 		VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
 
 	drawBackground(commandBuffer);
 
-	TransitionImage(commandBuffer, draw_image_.image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+	TransitionImage(commandBuffer, swap_chain_.get_draw_image().image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
 	DrawGeometry(commandBuffer);
+	//DrawGeometryWithProperties(commandBuffer);
 
 	//Cambiamos tanto la imagen del swapchain como la de 
 	// dibujado al mismo estado para copiar la informacion
-	TransitionImage(commandBuffer,draw_image_.image ,
+	TransitionImage(commandBuffer, swap_chain_.get_draw_image().image ,
 		VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 	//Cambiamos la imagen a tipo presentable para enseñarla en la superficie
-	TransitionImage(commandBuffer, swap_chain_images_[swap_chain_image_index],
+	TransitionImage(commandBuffer, swap_chain_.get_swap_chain_images()[swap_chain_image_index],
 		VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
 	// -> FIN PRIMER DIBUJADO
 	// -> INICIO IMGUI DIBUJADO
 	// Devolvemos la imagen al swapchain
-	CopyImageToImage(commandBuffer, draw_image_.image, 
-		swap_chain_images_[swap_chain_image_index], draw_extent_, window_extent_);
+	CopyImageToImage(commandBuffer, swap_chain_.get_draw_image().image,
+		swap_chain_.get_swap_chain_images()[swap_chain_image_index], swap_chain_.get_draw_extent(), window_extent_);
 
 	// Cambiamos la imagen del swap chain para poder escribir sobre ella
-	TransitionImage(commandBuffer, swap_chain_images_[swap_chain_image_index],
+	TransitionImage(commandBuffer, swap_chain_.get_swap_chain_images()[swap_chain_image_index],
 		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
 	//draw imgui into the swapchain image
-	drawImgui(commandBuffer, swap_chain_image_views_[swap_chain_image_index]);
+	drawImgui(commandBuffer, swap_chain_.get_swap_chain_image_views()[swap_chain_image_index]);
 	
 	// -> FIN IMGUI DIBUJADO
 	//Se cambia la imagen al layout presentable
-	TransitionImage(commandBuffer, swap_chain_images_[swap_chain_image_index],
+	TransitionImage(commandBuffer, swap_chain_.get_swap_chain_images()[swap_chain_image_index],
 		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
 	//Se finalizar el command buffer
@@ -478,21 +239,22 @@ if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
 
 	VkCommandBufferSubmitInfo commandSubmitInfo = vkinit::CommandBufferSubmitInfo(commandBuffer);
 	VkSemaphoreSubmitInfo waitInfo = vkinit::SemaphoreSubmitInfo(
-		VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT_KHR, getCurrentFrame().swap_chain_semaphore);
+		VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT_KHR, frame_data_.getCurrentFrame().swap_chain_semaphore);
 	VkSemaphoreSubmitInfo signalInfo = vkinit::SemaphoreSubmitInfo(
-		VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT, getCurrentFrame().render_semaphore);
+		VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT, frame_data_.getCurrentFrame().render_semaphore);
 
 	VkSubmitInfo2 submit = vkinit::SubmitInfo(&commandSubmitInfo, &signalInfo, &waitInfo);
-	vkQueueSubmit2(device_.get_graphics_queue(), 1, &submit, getCurrentFrame().render_fence);
+	vkQueueSubmit2(device_.get_graphics_queue(), 1, &submit, frame_data_.getCurrentFrame().render_fence);
 
 	//Se crea la estructura de presentacion para enviarla a la ventana de GLFW
 	VkPresentInfoKHR presentInfo = {};
 	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 	presentInfo.pNext = nullptr;
-	presentInfo.pSwapchains = &swap_chain_;
+	VkSwapchainKHR aux_swap = swap_chain_.get_swap_chain();
+	presentInfo.pSwapchains = &aux_swap;
 	presentInfo.swapchainCount = 1;
 
-	presentInfo.pWaitSemaphores = &getCurrentFrame().render_semaphore;
+	presentInfo.pWaitSemaphores = &frame_data_.getCurrentFrame().render_semaphore;
 	presentInfo.waitSemaphoreCount = 1;
 
 	presentInfo.pImageIndices = &swap_chain_image_index;
@@ -500,7 +262,7 @@ if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
 	vkQueuePresentKHR(device_.get_present_queue(), &presentInfo);
 
 	//increase the number of frames drawn
-	frame_number_++;
+	frame_data_.increaseFrameNumber();
 
 }
 
@@ -543,7 +305,7 @@ void LavaEngine::drawBackground(VkCommandBuffer command_buffer) {
 		vkCmdPushConstants(command_buffer, effect.layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(ComputePushConstants), &effect.data);
 	}
 	// execute the compute pipeline dispatch. We are using 16x16 workgroup size so we need to divide by it
-	vkCmdDispatch(command_buffer, std::ceil(draw_image_.image_extent.width / 16.0), std::ceil(draw_image_.image_extent.height / 16.0), 1);
+	vkCmdDispatch(command_buffer, std::ceil(swap_chain_.get_draw_image().image_extent.width / 16.0), std::ceil(swap_chain_.get_draw_image().image_extent.height / 16.0), 1);
 
 }
 
@@ -584,9 +346,9 @@ void LavaEngine::drawBackgroundImGui(VkCommandBuffer command_buffer) {
 void LavaEngine::DrawGeometry(VkCommandBuffer command_buffer)
 {
 	//begin a render pass  connected to our draw image
-	VkRenderingAttachmentInfo colorAttachment = vkinit::AttachmentInfo(draw_image_.image_view, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+	VkRenderingAttachmentInfo colorAttachment = vkinit::AttachmentInfo(swap_chain_.get_draw_image().image_view, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 	//
-	VkRenderingInfo renderInfo = vkinit::RenderingInfo(draw_extent_, &colorAttachment, nullptr);
+	VkRenderingInfo renderInfo = vkinit::RenderingInfo(swap_chain_.get_draw_extent(), &colorAttachment, nullptr);
 	vkCmdBeginRendering(command_buffer, &renderInfo);
 	
 	//vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _trianglePipeline);
@@ -595,8 +357,8 @@ void LavaEngine::DrawGeometry(VkCommandBuffer command_buffer)
 	VkViewport viewport = {};
 	viewport.x = 0;
 	viewport.y = 0;
-	viewport.width = draw_extent_.width;
-	viewport.height = draw_extent_.height;
+	viewport.width = swap_chain_.get_draw_extent().width;
+	viewport.height = swap_chain_.get_draw_extent().height;
 	viewport.minDepth = 0.f;
 	viewport.maxDepth = 1.f;
 	
@@ -605,8 +367,8 @@ void LavaEngine::DrawGeometry(VkCommandBuffer command_buffer)
 	VkRect2D scissor = {};
 	scissor.offset.x = 0;
 	scissor.offset.y = 0;
-	scissor.extent.width = draw_extent_.width;
-	scissor.extent.height = draw_extent_.height;
+	scissor.extent.width = swap_chain_.get_draw_extent().width;
+	scissor.extent.height = swap_chain_.get_draw_extent().height;
 	
 	vkCmdSetScissor(command_buffer, 0, 1, &scissor);
 
@@ -630,17 +392,54 @@ void LavaEngine::DrawGeometry(VkCommandBuffer command_buffer)
 
 }
 
-void LavaEngine::createAllocator() {
-	VmaAllocatorCreateInfo allocatorInfo{};
-	allocatorInfo.physicalDevice = device_.get_physical_device();
-	allocatorInfo.device = device_.get_device();
-	allocatorInfo.instance = get_instance();
-	allocatorInfo.flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
-	vmaCreateAllocator(&allocatorInfo, &allocator_);
+void LavaEngine::DrawGeometryWithProperties(VkCommandBuffer command_buffer)
+{
+	//begin a render pass  connected to our draw image
+	VkRenderingAttachmentInfo colorAttachment = vkinit::AttachmentInfo(swap_chain_.get_draw_image().image_view, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+	//
+	VkRenderingInfo renderInfo = vkinit::RenderingInfo(swap_chain_.get_draw_extent(), &colorAttachment, nullptr);
+	vkCmdBeginRendering(command_buffer, &renderInfo);
 
-	main_deletion_queue_.push_function([&]() {
-		vmaDestroyAllocator(allocator_);
-		});
+	//vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _trianglePipeline);
+
+	//set dynamic viewport and scissor
+	VkViewport viewport = {};
+	viewport.x = 0;
+	viewport.y = 0;
+	viewport.width = swap_chain_.get_draw_extent().width;
+	viewport.height = swap_chain_.get_draw_extent().height;
+	viewport.minDepth = 0.f;
+	viewport.maxDepth = 1.f;
+
+	vkCmdSetViewport(command_buffer, 0, 1, &viewport);
+
+	VkRect2D scissor = {};
+	scissor.offset.x = 0;
+	scissor.offset.y = 0;
+	scissor.extent.width = swap_chain_.get_draw_extent().width;
+	scissor.extent.height = swap_chain_.get_draw_extent().height;
+
+	vkCmdSetScissor(command_buffer, 0, 1, &scissor);
+
+	vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _meshPipeline);
+
+	GPUDrawPushConstants push_constants;
+	push_constants.world_matrix = glm::mat4{ 1.f };
+	//push_constants.vertex_buffer = rectangle.vertex_buffer_address;
+
+	vkCmdPushConstants(command_buffer, _meshPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &push_constants);
+	VkDeviceSize offsets[] = { 0 };
+	vkCmdBindVertexBuffers(command_buffer, 0, 1, &rectangle.vertex_buffer.buffer, offsets);
+	vkCmdBindIndexBuffer(command_buffer, rectangle.index_buffer.buffer, 0, VK_INDEX_TYPE_UINT32);
+
+	vkCmdDrawIndexed(command_buffer, 3, 1, 0, 0, 0);
+
+	//launch a draw command to draw 3 vertices
+	vkCmdDraw(command_buffer, 3, 1, 0, 0);
+
+	vkCmdEndRendering(command_buffer);
+
+	//launch a draw command to draw 3 vertices
 }
 
 void LavaEngine::createDescriptors() {
@@ -665,7 +464,7 @@ void LavaEngine::createDescriptors() {
 	img_info.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
 	//La imagen que se creo con anterioridad 
 	// fuera del swap chain para poder dibujar sobre ella
-	img_info.imageView = draw_image_.image_view;
+	img_info.imageView = swap_chain_.get_draw_image().image_view;
 
 	VkWriteDescriptorSet draw_image_write{};
 	draw_image_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -678,7 +477,7 @@ void LavaEngine::createDescriptors() {
 	draw_image_write.pImageInfo = &img_info;
 
 	vkUpdateDescriptorSets(device_.get_device(), 1, &draw_image_write, 0, nullptr);
-
+	
 	//make sure both the descriptor allocator and the new layout get cleaned up properly
 	main_deletion_queue_.push_function([&]() {
 		global_descriptor_allocator_.destroy_pool(device_.get_device());
@@ -868,7 +667,7 @@ void LavaEngine::createTrianglePipeline()
 	pipeline_builder.DisableDepthtest();
 
 	//connect the image format we will draw into, from draw image
-	pipeline_builder.SetColorAttachmentFormat(draw_image_.image_format);
+	pipeline_builder.SetColorAttachmentFormat(swap_chain_.get_draw_image().image_format);
 	pipeline_builder.SetDepthFormat(VK_FORMAT_UNDEFINED);
 
 	//finally build the pipeline
@@ -941,7 +740,7 @@ void LavaEngine::createMeshPipeline()
 	pipeline_builder.DisableDepthtest();
 
 	//connect the image format we will draw into, from draw image
-	pipeline_builder.SetColorAttachmentFormat(draw_image_.image_format);
+	pipeline_builder.SetColorAttachmentFormat(swap_chain_.get_draw_image().image_format);
 	pipeline_builder.SetDepthFormat(VK_FORMAT_UNDEFINED);
 
 	//finally build the pipeline
@@ -999,7 +798,7 @@ AllocatedBuffer LavaEngine::createBuffer(size_t alloc_size, VkBufferUsageFlags u
 	AllocatedBuffer new_buffer;
 
 	// allocate the buffer
-	if (vmaCreateBuffer(allocator_, &buffer_info, &vmaalloc_info, &new_buffer.buffer, &new_buffer.allocation,
+	if (vmaCreateBuffer(allocator_.get_allocator(), &buffer_info, &vmaalloc_info, &new_buffer.buffer, &new_buffer.allocation,
 		&new_buffer.info)) {
 #ifndef NDEBUG
 		printf("Mesh Buffer creation fail!");
@@ -1011,7 +810,7 @@ AllocatedBuffer LavaEngine::createBuffer(size_t alloc_size, VkBufferUsageFlags u
 
 void LavaEngine::destroyBuffer(const AllocatedBuffer& buffer)
 {
-	vmaDestroyBuffer(allocator_, buffer.buffer, buffer.allocation);
+	vmaDestroyBuffer(allocator_.get_allocator(), buffer.buffer, buffer.allocation);
 }
 
 GPUMeshBuffers LavaEngine::uploadMesh(std::span<uint32_t> indices, std::span<Vertex> vertices)
@@ -1022,7 +821,7 @@ GPUMeshBuffers LavaEngine::uploadMesh(std::span<uint32_t> indices, std::span<Ver
 	GPUMeshBuffers new_surface;
 
 	//create vertex buffer
-	new_surface.vertex_buffer = createBuffer(vertex_buffer_size, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+	new_surface.vertex_buffer = createBuffer(vertex_buffer_size, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
 		VMA_MEMORY_USAGE_GPU_ONLY);
 
 	//find the adress of the vertex buffer
@@ -1096,7 +895,8 @@ void LavaEngine::initImgui() {
 	init_info.UseDynamicRendering = true;
 	init_info.PipelineRenderingCreateInfo = { .sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO };
 	init_info.PipelineRenderingCreateInfo.colorAttachmentCount = 1;
-	init_info.PipelineRenderingCreateInfo.pColorAttachmentFormats = &swap_chain_image_format_;
+	VkFormat swap_format = swap_chain_.get_swap_chain_image_format();
+	init_info.PipelineRenderingCreateInfo.pColorAttachmentFormats = &swap_format;
 	init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
 	ImGui_ImplVulkan_Init(&init_info);
 	ImGui_ImplVulkan_CreateFontsTexture();
@@ -1109,15 +909,17 @@ void LavaEngine::initImgui() {
 }
 
 void LavaEngine::immediate_submit(std::function<void(VkCommandBuffer)>&& function) {
-	if (vkResetFences(device_.get_device(), 1, &immediate_fence) != VK_SUCCESS) {
+	VkFence aux_inmediate_fence = inmediate_communication.get_inmediate_fence();
+	if (vkResetFences(device_.get_device(), 1, &aux_inmediate_fence) != VK_SUCCESS) {
 		exit(-1);
 	}
 
-	if (vkResetCommandBuffer(immediate_command_buffer,0) != VK_SUCCESS) {
+	VkCommandBuffer aux_immediate_command_buffer = inmediate_communication.get_immediate_command_buffer();
+	if (vkResetCommandBuffer(aux_immediate_command_buffer,0) != VK_SUCCESS) {
 		exit(-1);
 	}
 
-	VkCommandBuffer command_buffer = immediate_command_buffer;
+	VkCommandBuffer command_buffer = aux_immediate_command_buffer;
 	VkCommandBufferBeginInfo command_buffer_begin_info = 
 		vkinit::CommandBufferBeginInfo(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
@@ -1132,9 +934,9 @@ void LavaEngine::immediate_submit(std::function<void(VkCommandBuffer)>&& functio
 
 	// submit command buffer to the queue and execute it.
 	//  _renderFence will now block until the graphic commands finish execution
-	vkQueueSubmit2(device_.get_graphics_queue(), 1, &submit, immediate_fence);
+	vkQueueSubmit2(device_.get_graphics_queue(), 1, &submit, aux_inmediate_fence);
 
-	vkWaitForFences(device_.get_device(), 1, &immediate_fence, true, 9999999999);
+	vkWaitForFences(device_.get_device(), 1, &aux_inmediate_fence, true, 9999999999);
 }
 
 void LavaEngine::drawImgui(VkCommandBuffer command_buffer, VkImageView target_image_view) {

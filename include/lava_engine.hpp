@@ -18,6 +18,10 @@
 #include "lava_window.hpp"
 #include "engine/lava_surface.hpp"
 #include "engine/lava_device.hpp"
+#include "engine/lava_swap_chain.hpp"
+#include "engine/lava_allocator.hpp"
+#include "engine/lava_frame_data.hpp"
+#include "engine/lava_inmediate_communication.hpp"
 
 
 struct DeletionQueue {
@@ -36,17 +40,6 @@ struct DeletionQueue {
 	}
 };
 
-struct FrameData {
-	VkCommandPool command_pool;
-	VkCommandBuffer main_command_buffer;
-	VkSemaphore swap_chain_semaphore; //GPU <-> GPU
-	VkSemaphore render_semaphore; //GPU <-> GPU
-	VkFence render_fence; // CPU <-> GPU
-	DeletionQueue deletion_queue;
-};
-
-//Numero de buffers en paralelo (double-buffering)
-constexpr unsigned int FRAME_OVERLAP = 2;
 
 class LavaEngine {
 public:
@@ -80,41 +73,27 @@ public:
 	bool stop_rendering = false;
 
 	DeletionQueue main_deletion_queue_;
-	VmaAllocator allocator_;
-	//Recursos para dibujar fuera del swap chain
-	AllocatedImage draw_image_;
-	VkExtent2D draw_extent_;
 
-	//GLFWwindow* window_;
 	LavaWindow window_;
 	LavaInstance instance_;
 	LavaSurface surface_;
 	LavaDevice device_;
-	
 	VkExtent2D window_extent_;
+	LavaAllocator allocator_;
+	LavaSwapChain swap_chain_;
+	LavaFrameData frame_data_;
+	LavaInmediateCommunication inmediate_communication;
 	
-	VkSwapchainKHR swap_chain_;
-	std::vector<VkImage> swap_chain_images_;
-	std::vector<VkImageView> swap_chain_image_views_;
-	VkFormat swap_chain_image_format_;
+
 	VkRenderPass render_pass_;
 	//VkPipelineLayout pipeline_layout_;	
 	//VkPipeline graphics_pipeline_;
-
-	FrameData frames_[FRAME_OVERLAP];
-	uint64_t  frame_number_ = 0;
-	FrameData& getCurrentFrame() { return frames_[frame_number_ % FRAME_OVERLAP]; };
 
 	DescriptorAllocator global_descriptor_allocator_;
 	VkDescriptorSet draw_image_descriptor_set_;
 	VkDescriptorSetLayout draw_image_descriptor_set_layout_;
 
 	VkPipeline gradient_pipeline_;
-
-	//Immediate Submit communication
-	VkFence immediate_fence;
-	VkCommandBuffer immediate_command_buffer;
-	VkCommandPool immediate_command_pool;
 
 	DescriptorAllocator imgui_descriptor_alloc;
 
@@ -128,16 +107,12 @@ public:
 	void initVulkan();
 	void mainLoop();
 	
-	void createSwapChain();
-	void createImageViews();
-	void createCommandPool();
-	void createSyncObjects();
 	void draw();
 	void drawBackground(VkCommandBuffer command_buffer);
 	void drawBackgroundImGui(VkCommandBuffer command_buffer);
 	void DrawGeometry(VkCommandBuffer command_buffer);
+	void DrawGeometryWithProperties(VkCommandBuffer command_buffer);
 	
-	void createAllocator();
 	void createDescriptors();
 
 	VkInstance get_instance() const;
