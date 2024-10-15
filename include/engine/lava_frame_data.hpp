@@ -36,9 +36,9 @@ public:
 	FrameData& getCurrentFrame() { return frames_[frame_number_ % FRAME_OVERLAP]; };
 
 	void increaseFrameNumber() { frame_number_++; };
+	uint64_t  frame_number_;
 private:
 	FrameData frames_[FRAME_OVERLAP];
-	uint64_t  frame_number_;
 
 	//Require Device for creation and destruction
 	class LavaDevice* device_;

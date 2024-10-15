@@ -38,6 +38,8 @@ public:
 
     void SetDepthFormat(VkFormat format);
 
+    void EnableDepthTest(bool depthWriteEnable, VkCompareOp op);
+
     void DisableDepthtest();
 };
 

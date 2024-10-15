@@ -22,6 +22,7 @@
 #include "engine/lava_allocator.hpp"
 #include "engine/lava_frame_data.hpp"
 #include "engine/lava_inmediate_communication.hpp"
+#include "engine/lava_loader.hpp"
 
 
 struct DeletionQueue {
@@ -112,7 +113,8 @@ public:
 	void drawBackgroundImGui(VkCommandBuffer command_buffer);
 	void DrawGeometry(VkCommandBuffer command_buffer);
 	void DrawGeometryWithProperties(VkCommandBuffer command_buffer);
-	
+	void DrawMesh(VkCommandBuffer command_buffer);
+
 	void createDescriptors();
 
 	VkInstance get_instance() const;
@@ -138,7 +140,7 @@ public:
 	void initDefaultData();
 
 ////////////////////////////////
-
+	std::vector<std::shared_ptr<MeshAsset>> test_meshes;
 //////////////MESHES////////////
 
 	AllocatedBuffer createBuffer(size_t alloc_size, VkBufferUsageFlags usage, VmaMemoryUsage memory_usage);

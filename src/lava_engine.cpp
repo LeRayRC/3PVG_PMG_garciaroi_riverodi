@@ -20,6 +20,8 @@
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_vulkan.h"
 
+
+
 #ifdef NDEBUG
 constexpr bool enableValidationLayers = false;
 #else
@@ -200,8 +202,10 @@ void LavaEngine::draw() {
 	drawBackground(commandBuffer);
 
 	TransitionImage(commandBuffer, swap_chain_.get_draw_image().image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+	TransitionImage(commandBuffer, swap_chain_.get_depth_image().image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
 
-	DrawGeometry(commandBuffer);
+	//DrawGeometry(commandBuffer);
+	DrawMesh(commandBuffer);
 	//DrawGeometryWithProperties(commandBuffer);
 
 	//Cambiamos tanto la imagen del swapchain como la de 
@@ -392,6 +396,67 @@ void LavaEngine::DrawGeometry(VkCommandBuffer command_buffer)
 
 }
 
+void LavaEngine::DrawMesh(VkCommandBuffer command_buffer)
+{
+	//begin a render pass  connected to our draw image
+	VkRenderingAttachmentInfo color_attachment = vkinit::AttachmentInfo(swap_chain_.get_draw_image().image_view, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+	VkRenderingAttachmentInfo depth_attachment = vkinit::DepthAttachmentInfo(swap_chain_.get_depth_image().image_view, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+	//
+	VkRenderingInfo renderInfo = vkinit::RenderingInfo(swap_chain_.get_draw_extent(), &color_attachment, &depth_attachment);
+	vkCmdBeginRendering(command_buffer, &renderInfo);
+
+	//vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _trianglePipeline);
+
+	//set dynamic viewport and scissor
+	VkViewport viewport = {};
+	viewport.x = 0;
+	viewport.y = 0;
+	viewport.width = swap_chain_.get_draw_extent().width;
+	viewport.height = swap_chain_.get_draw_extent().height;
+	viewport.minDepth = 0.f;
+	viewport.maxDepth = 1.f;
+
+	vkCmdSetViewport(command_buffer, 0, 1, &viewport);
+
+	VkRect2D scissor = {};
+	scissor.offset.x = 0;
+	scissor.offset.y = 0;
+	scissor.extent.width = swap_chain_.get_draw_extent().width;
+	scissor.extent.height = swap_chain_.get_draw_extent().height;
+
+	vkCmdSetScissor(command_buffer, 0, 1, &scissor);
+
+	vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _meshPipeline);
+
+	GPUDrawPushConstants push_constants;
+	glm::mat4 model = glm::mat4(1.0f);
+	model = glm::translate(model, glm::vec3(0.0f, 0.0f, -5.0f));
+	model = glm::rotate(model, glm::radians( 0.01f * frame_data_.frame_number_) , glm::vec3(1.0f, 0.0f,0.0f));
+	model = glm::rotate(model, glm::radians(0.02f * frame_data_.frame_number_), glm::vec3(0.0f, 1.0f, 0.0f));
+	model = glm::rotate(model, glm::radians(0.03f * frame_data_.frame_number_), glm::vec3(0.0f, 0.0f, 1.0f));
+	glm::mat4 projection = glm::perspective(glm::radians(70.0f),
+		(float)swap_chain_.get_draw_extent().width/ (float)swap_chain_.get_draw_extent().height,10000.f,0.1f);
+
+	projection[1][1] *= -1;
+
+
+	push_constants.world_matrix = projection * model;
+	push_constants.vertex_buffer = test_meshes[1]->meshBuffers.vertex_buffer_address;
+
+	vkCmdPushConstants(command_buffer, _meshPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &push_constants);
+	vkCmdBindIndexBuffer(command_buffer, test_meshes[1]->meshBuffers.index_buffer.buffer , 0, VK_INDEX_TYPE_UINT32);
+
+	vkCmdDrawIndexed(command_buffer, test_meshes[1]->surfaces[0].count, 1, test_meshes[1]->surfaces[0].start_index, 0, 0);
+
+	//launch a draw command to draw 3 vertices
+	vkCmdDraw(command_buffer, 3, 1, 0, 0);
+
+	vkCmdEndRendering(command_buffer);
+
+	//launch a draw command to draw 3 vertices
+
+}
+
 void LavaEngine::DrawGeometryWithProperties(VkCommandBuffer command_buffer)
 {
 	//begin a render pass  connected to our draw image
@@ -441,6 +506,7 @@ void LavaEngine::DrawGeometryWithProperties(VkCommandBuffer command_buffer)
 
 	//launch a draw command to draw 3 vertices
 }
+
 
 void LavaEngine::createDescriptors() {
 	//Se crean 10 descriptor sets, cada uno con una imagen
@@ -737,11 +803,12 @@ void LavaEngine::createMeshPipeline()
 	//no blending
 	pipeline_builder.DisableBlending();
 	//no depth testing
-	pipeline_builder.DisableDepthtest();
+	//pipeline_builder.DisableDepthtest();
+	pipeline_builder.EnableDepthTest(true, VK_COMPARE_OP_GREATER_OR_EQUAL);
 
 	//connect the image format we will draw into, from draw image
 	pipeline_builder.SetColorAttachmentFormat(swap_chain_.get_draw_image().image_format);
-	pipeline_builder.SetDepthFormat(VK_FORMAT_UNDEFINED);
+	pipeline_builder.SetDepthFormat(swap_chain_.get_depth_image().image_format);
 
 	//finally build the pipeline
 	_meshPipeline = pipeline_builder.BuildPipeline(device_.get_device());
@@ -775,6 +842,8 @@ void LavaEngine::initDefaultData()
 	rect_indices[2] = 2;
 
 	rectangle = uploadMesh(rect_indices, rect_vertices);
+
+	test_meshes = LoadGLTFMesh(this, "../examples/assets/shiba/shiba.glb").value();
 
 	//delete the rectangle data on engine shutdown
 	main_deletion_queue_.push_function([&]() {

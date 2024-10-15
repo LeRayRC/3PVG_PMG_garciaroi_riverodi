@@ -18,12 +18,16 @@
 #include <functional>
 #include <assert.h>
 #include <span>
+#include <format>
 #include "vk_mem_alloc.h"
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/vec4.hpp>
+#include <glm/gtx/transform.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 #include <glm/mat4x4.hpp>
+#include <glm/gtx/quaternion.hpp>
 
 struct ComputePushConstants {
 	glm::vec4 data1;

@@ -25,6 +25,7 @@ public:
 	VkSwapchainKHR get_swap_chain() const { return swap_chain_; }
 
 	AllocatedImage get_draw_image() const { return draw_image_; }
+	AllocatedImage get_depth_image() const { return depth_image_; }
 
 	std::vector<VkImage> get_swap_chain_images() const { return swap_chain_images_; }
 
@@ -43,6 +44,7 @@ private:
 
 	//Resources for drawing outside of the swap chain
 	AllocatedImage draw_image_;
+	AllocatedImage depth_image_;
 	VkExtent2D draw_extent_;
 
 	//Main Swap Chain Resources
