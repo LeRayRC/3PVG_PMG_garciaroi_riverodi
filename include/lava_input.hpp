@@ -23,13 +23,30 @@ public:
 
 	~LavaInput();
 
-	bool isKeyPressed(int key);
+	// Keys & Mouse Implementation
 
-	bool isKeyReleased(int key);
+	bool isInputPressed(int key);
 
-	bool isKeyUp(int key);
+	bool isInputReleased(int key);
 
-	bool isKeyDown(int key);
+	bool isInputUp(int key);
+
+	bool isInputDown(int key);
+
+	void BindActionToInput(int action, int key);
+
+	// Gamepad Implementation
+		  //TO DO//
+
+	// Action Implementation
+
+	bool isActionPressed(int action);
+
+	bool isActionReleased(int action);
+
+	bool isActionUp(int action);
+
+	bool isActionDown(int action);
 
 private:
 
@@ -37,9 +54,13 @@ private:
 
 	GLFWwindow* window_;
 
-	std::unordered_map<int, KeyProperties> input_properties_map;
+	// Keys & Mouse Implementation
+	std::unordered_map<int, KeyProperties> kb_mouse_input_properties_map;
+	std::map<int, std::set<int>> kb_mouse_action_map;
+	void kb_mouse_callback(int key, int scancode, int action, int mods);
 
-	void key_callback(int key, int scancode, int action, int mods);
+	// GamePad Implementation
+	GLFWgamepadstate game_pad_state;
 
 	void ProcessEndFrame();
 
@@ -48,6 +69,10 @@ private:
 	static std::unordered_map<GLFWwindow*, LavaInput*> input_map;
 
 	static void global_key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
+
+	static void global_mouse_callback(GLFWwindow* window, int button, int action, int mods);
+
+	static void global_joystick_callback(int jid, int event);
 
 	static void clean_bindings(GLFWwindow* window);
 

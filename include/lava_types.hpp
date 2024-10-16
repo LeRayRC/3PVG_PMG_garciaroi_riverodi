@@ -14,6 +14,7 @@
 #include <fstream>
 #include <vector>
 #include <array>
+#include <map>
 #include <deque>
 #include <functional>
 #include <assert.h>
@@ -82,6 +83,7 @@ struct GPUDrawPushConstants {
 #define KEY_PRESS 0x0001
 #define KEY_RELEASE 0x0002
 #define KEY_REPEAT 0x0004
+#define SUSTAIN_TIL_RELEASE 0x0008
 
 //Redefine Keys for easy use(can use glfw key defines for those not included)
 #define KEY_SPACE 32
@@ -93,6 +95,11 @@ struct GPUDrawPushConstants {
 #define KEY_LEFT 263
 #define KEY_DOWN 264
 #define KEY_UP 265
+
+//Redefine Mouse Buttons for easy use(can use glfw key defines for those not included)
+#define 	MOUSE_BUTTON_1   0
+#define 	MOUSE_BUTTON_2   1
+#define 	MOUSE_BUTTON_3   2
 
 struct KeyProperties {
 	KeyProperties() {

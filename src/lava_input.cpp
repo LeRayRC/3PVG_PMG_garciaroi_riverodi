@@ -1,5 +1,3 @@
-#include "lava_input.hpp"
-#include "lava_input.hpp"
 /**
  * @file lava_input.cpp
  * @author Carlos Garcia Roig (garciaroi@esat-alumni.com)
@@ -20,6 +18,8 @@ std::unordered_map<GLFWwindow*, LavaInput*> LavaInput::input_map;
 LavaInput::LavaInput(GLFWwindow* window) : window_{window}
 {
 	glfwSetKeyCallback(window_, global_key_callback);
+	glfwSetMouseButtonCallback(window_, global_mouse_callback);
+	glfwSetJoystickCallback(global_joystick_callback);
 	glfwSetWindowCloseCallback(window_, clean_bindings);
 
 	if(input_map.empty()) LavaEngine::end_frame_callbacks.push_back(end_frame);
@@ -32,53 +32,102 @@ LavaInput::~LavaInput()
 	clean_bindings(window_);
 }
 
-bool LavaInput::isKeyPressed(int key)
+bool LavaInput::isInputPressed(int key)
 {
-	return input_properties_map[key].past_frame_properties & KEY_PRESS;
+	return kb_mouse_input_properties_map[key].past_frame_properties & KEY_PRESS;
 }
 
-bool LavaInput::isKeyReleased(int key)
+bool LavaInput::isInputReleased(int key)
 {
-	return input_properties_map[key].past_frame_properties & KEY_RELEASE;
+	return kb_mouse_input_properties_map[key].past_frame_properties & KEY_RELEASE;
 }
 
-bool LavaInput::isKeyUp(int key)
+bool LavaInput::isInputUp(int key)
 {
-	return input_properties_map[key].past_frame_properties == 0 || 
-		   input_properties_map[key].past_frame_properties & KEY_RELEASE;
+	return kb_mouse_input_properties_map[key].past_frame_properties == 0 ||
+		kb_mouse_input_properties_map[key].past_frame_properties & KEY_RELEASE;
 }
 
-bool LavaInput::isKeyDown(int key)
+bool LavaInput::isInputDown(int key)
 {
-	return input_properties_map[key].past_frame_properties & KEY_PRESS ||
-		input_properties_map[key].past_frame_properties & KEY_REPEAT;
+	return kb_mouse_input_properties_map[key].past_frame_properties & KEY_PRESS ||
+		kb_mouse_input_properties_map[key].past_frame_properties & KEY_REPEAT;
 }
 
-void LavaInput::key_callback(int key, int scancode, int action, int mods)
+bool LavaInput::isActionPressed(int action)
+{
+	for (int i : kb_mouse_action_map[action]) {
+		if (isInputPressed(i)) return true;
+	}
+	return false;
+}
+
+bool LavaInput::isActionReleased(int action)
+{
+	for (int i : kb_mouse_action_map[action]) {
+		if (isInputReleased(i)) return true;
+	}
+	return false;
+}
+
+bool LavaInput::isActionUp(int action)
+{
+	for (int i : kb_mouse_action_map[action]) {
+		if (isInputUp(i)) return true;
+	}
+	return false;
+}
+
+bool LavaInput::isActionDown(int action)
+{
+	for (int i : kb_mouse_action_map[action]) {
+		if (isInputDown(i)) return true;
+	}
+	return false;
+}
+
+void LavaInput::BindActionToInput(int action, int key)
+{
+	//Find or Create the new Action
+	kb_mouse_action_map[action].insert(key);
+}
+
+void LavaInput::kb_mouse_callback(int key, int scancode, int action, int mods)
 {
 	int32_t aux_current_frame_properties = 0;
 	if (action & GLFW_PRESS) {
 		aux_current_frame_properties = aux_current_frame_properties | KEY_PRESS;
+		if(scancode == -1) aux_current_frame_properties = aux_current_frame_properties | SUSTAIN_TIL_RELEASE;
 	}
 	else if (action & GLFW_REPEAT) aux_current_frame_properties = aux_current_frame_properties | KEY_REPEAT;
 	else aux_current_frame_properties = aux_current_frame_properties | KEY_RELEASE;
-
 	//Find or Create the new key
-	input_properties_map[key].current_frame_properties = aux_current_frame_properties;
-	input_properties_map[key].last_action_time = glfwGetTime();
+	kb_mouse_input_properties_map[key].current_frame_properties = aux_current_frame_properties;
+	kb_mouse_input_properties_map[key].last_action_time = glfwGetTime();
 }
 
 void LavaInput::ProcessEndFrame()
 {
-	for(auto i = input_properties_map.begin(); i != input_properties_map.end(); i++) {
+	for(auto i = kb_mouse_input_properties_map.begin(); i != kb_mouse_input_properties_map.end(); i++) {
 		i->second.past_frame_properties = i->second.current_frame_properties;
-		i->second.current_frame_properties = 0;
+		if (i->second.current_frame_properties & SUSTAIN_TIL_RELEASE) i->second.current_frame_properties = SUSTAIN_TIL_RELEASE | KEY_REPEAT;
+		else i->second.current_frame_properties = 0;
 	}
 }
 
 void LavaInput::global_key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
-	input_map[window]->key_callback(key, scancode, action, mods);
+	input_map[window]->kb_mouse_callback(key, scancode, action, mods);
+}
+
+void LavaInput::global_mouse_callback(GLFWwindow* window, int button, int action, int mods)
+{
+	input_map[window]->kb_mouse_callback(button, -1, action, mods);
+}
+
+void LavaInput::global_joystick_callback(int jid, int event)
+{
+	printf("\n %d \n", jid);
 }
 
 void LavaInput::clean_bindings(GLFWwindow* window)
