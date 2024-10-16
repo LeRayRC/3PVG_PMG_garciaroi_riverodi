@@ -22,6 +22,7 @@
 #include "engine/lava_allocator.hpp"
 #include "engine/lava_frame_data.hpp"
 #include "engine/lava_inmediate_communication.hpp"
+#include "lava_input.hpp"
 
 
 struct DeletionQueue {
@@ -73,6 +74,7 @@ public:
 	bool stop_rendering = false;
 
 	DeletionQueue main_deletion_queue_;
+	static std::vector<std::function<void()>> end_frame_callbacks;
 
 	LavaWindow window_;
 	LavaInstance instance_;
@@ -83,7 +85,7 @@ public:
 	LavaSwapChain swap_chain_;
 	LavaFrameData frame_data_;
 	LavaInmediateCommunication inmediate_communication;
-	
+	LavaInput lava_input;
 
 	VkRenderPass render_pass_;
 	//VkPipelineLayout pipeline_layout_;	

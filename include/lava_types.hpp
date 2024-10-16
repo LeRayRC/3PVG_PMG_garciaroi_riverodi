@@ -25,6 +25,8 @@
 #include <glm/vec4.hpp>
 #include <glm/mat4x4.hpp>
 
+#pragma region VulkanGraphic
+
 struct ComputePushConstants {
 	glm::vec4 data1;
 	glm::vec4 data2;
@@ -71,5 +73,40 @@ struct GPUDrawPushConstants {
 	glm::mat4 world_matrix;
 	VkDeviceAddress vertex_buffer;
 };
+
+#pragma endregion
+
+#pragma region Input
+
+//Key Actions
+#define KEY_PRESS 0x0001
+#define KEY_RELEASE 0x0002
+#define KEY_REPEAT 0x0004
+
+//Redefine Keys for easy use(can use glfw key defines for those not included)
+#define KEY_SPACE 32
+#define KEY_ESCAPE 256
+#define KEY_ENTER 257
+#define KEY_TAB 258
+#define KEY_BACKSPACE 259
+#define KEY_RIGHT 262
+#define KEY_LEFT 263
+#define KEY_DOWN 264
+#define KEY_UP 265
+
+struct KeyProperties {
+	KeyProperties() {
+		current_frame_properties = 0;
+		past_frame_properties = 0;
+		last_action_time = 0;
+	}
+	int32_t current_frame_properties;
+	int32_t past_frame_properties;
+
+	double last_action_time;
+};
+
+#pragma endregion
+
 
 #endif // ! __LAVA_CUSTOM_TYPES_

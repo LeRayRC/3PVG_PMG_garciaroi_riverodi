@@ -12,6 +12,7 @@
 #include "lava_vulkan_helpers.hpp"
 #include "lava_vulkan_inits.hpp"
 #include "lava_pipelines.hpp"
+#include "lava_input.hpp"
 
 #define VMA_IMPLEMENTATION
 #include "vk_mem_alloc.h"
@@ -31,6 +32,7 @@ const std::vector<const char*> validationLayers = {
 };
 
 LavaEngine* loaded_engine = nullptr;
+std::vector<std::function<void()>> LavaEngine::end_frame_callbacks;
 
 LavaEngine::LavaEngine() :
 	surface_{ instance_.get_instance(), window_.get_window() },
@@ -41,7 +43,8 @@ LavaEngine::LavaEngine() :
 	allocator_{device_, instance_},
 	swap_chain_{ device_, surface_, window_extent_, allocator_.get_allocator()},
 	frame_data_{device_, surface_},
-	inmediate_communication{device_, surface_}
+	inmediate_communication{device_, surface_},
+	lava_input{window_.get_window()}
 {
 	//Singleton Functionality
 	assert(loaded_engine == nullptr);
@@ -49,6 +52,7 @@ LavaEngine::LavaEngine() :
 	is_initialized_ = false;
 	stop_rendering = false;
 	render_pass_ = VK_NULL_HANDLE;
+	
 }
 
 
@@ -61,7 +65,8 @@ LavaEngine::LavaEngine(unsigned int window_width, unsigned int window_height) :
 	allocator_{ device_, instance_ },
 	swap_chain_{ device_, surface_, window_extent_, allocator_.get_allocator() },
 	frame_data_{ device_, surface_ },
-	inmediate_communication{ device_, surface_ }
+	inmediate_communication{ device_, surface_ },
+	lava_input{ window_.get_window() }
 {
 	//Singleton Functionality
 	assert(loaded_engine == nullptr);
@@ -99,6 +104,9 @@ void LavaEngine::init() {
 
 void LavaEngine::mainLoop() {
   while (!glfwWindowShouldClose(get_window())) {
+	  if (lava_input.isKeyPressed(KEY_SPACE)) printf("\nSpace Down\n");
+	  if (lava_input.isKeyReleased(KEY_SPACE)) printf("\nSpace Released\n");
+
     glfwPollEvents();
 
 		ImGui_ImplVulkan_NewFrame();
@@ -125,6 +133,11 @@ void LavaEngine::mainLoop() {
 		ImGui::Render();
 
 		draw();
+
+		//End Frame Callbacks(NEEDS A WRAPER)
+		for (auto it = end_frame_callbacks.rbegin(); it != end_frame_callbacks.rend(); it++) {
+			(*it)();
+		}
   }
 }
 
