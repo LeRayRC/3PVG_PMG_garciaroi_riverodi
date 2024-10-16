@@ -21,6 +21,7 @@ int main(int argc, char* argv[]) {
 
 
 	engine.addPipeline(config);
+
 	engine.mainLoop();
 
 	return 0;

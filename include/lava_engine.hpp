@@ -24,6 +24,7 @@
 #include "engine/lava_inmediate_communication.hpp"
 #include "engine/lava_loader.hpp"
 #include "engine/lava_pipeline.hpp"
+#include "engine/lava_material.hpp"
 
 
 struct DeletionQueue {
