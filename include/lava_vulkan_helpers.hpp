@@ -80,7 +80,7 @@ void TransitionImage(VkCommandBuffer cmd, VkImage image,
 
 VkImageSubresourceRange  ImageSubresourceRange(VkImageAspectFlags aspectMask);
 
-bool LoadShader(const std::string& file_path,
+bool LoadShader(const char* file_path,
 	VkDevice device,
 	VkShaderModule* out_shader_module);
 VkShaderModule CreateShaderModule(VkDevice device,const std::vector<char>& code);

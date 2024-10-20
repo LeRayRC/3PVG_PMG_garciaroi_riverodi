@@ -120,6 +120,26 @@ void LavaSwapChain::createSwapChain(class LavaSurface& use_surface, VkExtent2D w
 		VK_SUCCESS) {
 		printf("Error creating image view!\n");
 	}
+
+	depth_image_.image_format = VK_FORMAT_D32_SFLOAT;
+	depth_image_.image_extent = draw_image_extent;
+	VkImageUsageFlags depth_image_usages{};
+	depth_image_usages |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+
+	VkImageCreateInfo depth_img_info = vkinit::ImageCreateInfo(depth_image_.image_format,
+		depth_image_usages, draw_image_extent);
+
+	//allocate and create the image
+	vmaCreateImage(allocator_, &depth_img_info, &rimg_allocinfo, &depth_image_.image, &depth_image_.allocation, nullptr);
+
+	//build a image-view for the draw image to use for rendering
+	VkImageViewCreateInfo depth_view_info = vkinit::ImageViewCreateInfo(depth_image_.image_format, depth_image_.image, VK_IMAGE_ASPECT_DEPTH_BIT);
+
+	if (vkCreateImageView(device_->get_device(), &depth_view_info, nullptr, &depth_image_.image_view) !=
+		VK_SUCCESS) {
+		printf("Error creating depth image view!\n");
+	}
+
 }
 
 void LavaSwapChain::createImageViews()
@@ -152,8 +172,11 @@ void LavaSwapChain::createImageViews()
 LavaSwapChain::~LavaSwapChain()
 {
 	//Destroy Swap Chain
+	vkDestroyImageView(device_->get_device(), depth_image_.image_view, nullptr);
+	vmaDestroyImage(allocator_, depth_image_.image, depth_image_.allocation);
 	vkDestroyImageView(device_->get_device(), draw_image_.image_view, nullptr);
 	vmaDestroyImage(allocator_, draw_image_.image, draw_image_.allocation);
+	
 
 	for (auto imageView : swap_chain_image_views_) {
 		vkDestroyImageView(device_->get_device(), imageView, nullptr);
