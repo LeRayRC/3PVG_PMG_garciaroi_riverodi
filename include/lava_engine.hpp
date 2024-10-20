@@ -22,7 +22,6 @@
 #include "engine/lava_allocator.hpp"
 #include "engine/lava_frame_data.hpp"
 #include "engine/lava_inmediate_communication.hpp"
-#include "engine/lava_loader.hpp"
 #include "engine/lava_pipeline.hpp"
 #include "engine/lava_material.hpp"
 #include "engine/lava_mesh.hpp"
@@ -112,7 +111,6 @@ public:
 	//void DrawGeometry(VkCommandBuffer command_buffer);
 	//void DrawGeometryWithProperties(VkCommandBuffer command_buffer);
 	void drawMeshes(VkCommandBuffer command_buffer);
-	void addPipeline(PipelineConfig config);
 	std::shared_ptr<class LavaMesh> addMesh(MeshProperties prop);
 	void createDescriptors();
 
@@ -123,19 +121,10 @@ public:
 	void createBackgroundPipelines();
 	void createBackgroundPipelinesImGui();
 
-	GPUMeshBuffers rectangle;
-
-	void initDefaultData();
-	//std::vector<std::unique_ptr<LavaPipeline>> pipelines_;
-
 	std::vector<std::shared_ptr<LavaMesh>> meshes_;
 
 	AllocatedBuffer createBuffer(size_t alloc_size, VkBufferUsageFlags usage, VmaMemoryUsage memory_usage);
-
 	void destroyBuffer(const AllocatedBuffer& buffer);
-
-	GPUMeshBuffers uploadMesh(std::span<uint32_t> indices, std::span<Vertex> vertices);
-
 ////////////////////////////////
 
 	void initImgui();

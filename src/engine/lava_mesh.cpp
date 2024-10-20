@@ -16,7 +16,7 @@
 #include "vk_mem_alloc.h"
 
 LavaMesh::LavaMesh(LavaEngine& engine, MeshProperties prop){
-  name_ = prop.name_;
+  name_ = prop.name;
   engine_ = &engine;
   material_ = nullptr;
   type_ = prop.type;
@@ -30,6 +30,9 @@ LavaMesh::LavaMesh(LavaEngine& engine, MeshProperties prop){
 		break;
 	case MESH_OBJ:
 		break;
+  case MESH_CUSTOM:
+    loadCustomMesh(prop);
+    break;
 	default:
 		printf("Mesh Type not provided, Select FBX, OBJ or GLTF!!");
 		exit(-1);
@@ -162,6 +165,15 @@ bool LavaMesh::loadAsGLTF(std::filesystem::path file_path){
     meshes_.emplace_back(std::make_shared<MeshAsset>(std::move(newmesh)));
   }
 
+  return true;
+}
+
+bool LavaMesh::loadCustomMesh(MeshProperties prop) {
+  MeshAsset newmesh;
+  GeoSurface surface = { 0,prop.index.size() };
+  newmesh.meshBuffers = upload(prop.index, prop.vertex);
+  newmesh.surfaces.push_back(surface);
+  meshes_.emplace_back(std::make_shared<MeshAsset>(std::move(newmesh)));
   return true;
 }
 

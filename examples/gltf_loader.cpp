@@ -1,9 +1,6 @@
-#include "examples/hellotriangle.hpp"
-
 #include "lava_types.hpp"
 #include "lava_engine.hpp"
 #include "lava_window_system.hpp"
-#include "engine/lava_loader.hpp"
 #include "engine/lava_pipeline.hpp"
 
 int main(int argc, char* argv[]) {
@@ -20,7 +17,7 @@ int main(int argc, char* argv[]) {
 	LavaMaterial basic_material(engine, mat_properties);
 
 	MeshProperties mesh_properties = {};
-	mesh_properties.name_ = "Shiba Mesh";
+	mesh_properties.name = "Shiba Mesh";
 	mesh_properties.type = MESH_GLTF;
 	mesh_properties.mesh_path = "../examples/assets/shiba/shiba.glb";
 	mesh_properties.material = &basic_material;

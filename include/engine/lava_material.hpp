@@ -7,7 +7,7 @@
 class LavaMaterial
 {
 public:
-	LavaMaterial(LavaEngine& engine, MaterialProperties prop);
+	LavaMaterial(class LavaEngine& engine, MaterialProperties prop);
 	~LavaMaterial();
 
 	std::string get_name() { return name_; }

@@ -55,7 +55,6 @@ struct AllocatedBuffer {
 };
 
 struct Vertex {
-
 	glm::vec3 position;
 	float uv_x;
 	glm::vec3 normal;
@@ -104,14 +103,17 @@ public:
 typedef enum MeshType {
 	MESH_FBX,
 	MESH_OBJ,
-	MESH_GLTF
+	MESH_GLTF,
+	MESH_CUSTOM,
 } MeshType;
 
 struct MeshProperties {
-	std::string name_;
+	std::string name;
 	MeshType type;
 	std::filesystem::path mesh_path;
 	class LavaMaterial* material;
+	std::vector<Vertex> vertex;
+	std::vector<uint32_t> index;
 };
 
 struct GeoSurface {
