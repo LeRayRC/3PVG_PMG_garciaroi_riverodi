@@ -10,6 +10,7 @@
 #include <set>
 #include <limits>
 #include <algorithm>
+#include <filesystem>
 #include <cstdint>
 #include <fstream>
 #include <vector>
@@ -75,5 +76,55 @@ struct GPUDrawPushConstants {
 	glm::mat4 world_matrix;
 	VkDeviceAddress vertex_buffer;
 };
+
+struct MaterialProperties {
+	std::string name;
+
+	int pipeline_flags = 0;
+	const char* vertex_shader_path;
+	const char* fragment_shader_path;
+};
+
+typedef enum PipelineFlags {
+	PIPELINE_USE_ATTRIBUTES = 1,					//0001
+	PIPELINE_USE_PUSHCONSTANTS = 1 << 1,	//0010
+	PIPELINE_USE_DESCRIPTOR_SET = 1 << 2,  //0100
+} PipelineFlags;
+
+struct PipelineConfig {
+public:
+	const char* vertex_shader_path;
+	const char* fragment_shader_path;
+	class LavaDevice* device;
+	class LavaSwapChain* swap_chain;
+	VkDescriptorSetLayout descriptor_set_layout;
+	int pipeline_flags;
+};
+
+typedef enum MeshType {
+	MESH_FBX,
+	MESH_OBJ,
+	MESH_GLTF
+} MeshType;
+
+struct MeshProperties {
+	std::string name_;
+	MeshType type;
+	std::filesystem::path mesh_path;
+	class LavaMaterial* material;
+};
+
+struct GeoSurface {
+	uint32_t start_index;
+	uint32_t count;
+};
+
+struct MeshAsset {
+	std::string name;
+	std::vector<GeoSurface> surfaces;
+	GPUMeshBuffers meshBuffers;
+};
+
+
 
 #endif // ! __LAVA_CUSTOM_TYPES_

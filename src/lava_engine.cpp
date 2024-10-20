@@ -13,7 +13,7 @@
 #include "lava_vulkan_inits.hpp"
 #include "engine/lava_pipeline_builder.hpp"
 
-#define VMA_IMPLEMENTATION
+//#define VMA_IMPLEMENTATION
 #include "vk_mem_alloc.h"
 
 #include "imgui.h"
@@ -50,9 +50,8 @@ LavaEngine::LavaEngine() :
 	loaded_engine = this;
 	is_initialized_ = false;
 	stop_rendering = false;
-	render_pass_ = VK_NULL_HANDLE;
+	//render_pass_ = VK_NULL_HANDLE;
 }
-
 
 LavaEngine::LavaEngine(unsigned int window_width, unsigned int window_height) :
 	window_{window_width, window_height, "LavaEngine"},
@@ -70,13 +69,13 @@ LavaEngine::LavaEngine(unsigned int window_width, unsigned int window_height) :
 	loaded_engine = this;
 	is_initialized_ = false;
 	stop_rendering = false;
-	render_pass_ = VK_NULL_HANDLE;
+	//render_pass_ = VK_NULL_HANDLE;
 }
 
 LavaEngine::~LavaEngine(){
 	vkDeviceWaitIdle(device_.get_device());
 
-	pipelines_.clear();
+	//pipelines_.clear();
 	main_deletion_queue_.flush();	
 }
 
@@ -135,7 +134,7 @@ void LavaEngine::initVulkan(){
 	//Despues de crear la instancia se configura el callback de las validation layers
 	//Tras seleccionar el dispositivo fisico ahora toca crear el logico
 	createDescriptors();
-	initDefaultData();
+	//initDefaultData();
 	//createPipelines();
 }
 
@@ -215,9 +214,11 @@ void LavaEngine::draw() {
 	TransitionImage(commandBuffer, swap_chain_.get_depth_image().image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
 
 	//DrawGeometry(commandBuffer);
-	if (!pipelines_.empty()) {
+	/*if (!pipelines_.empty()) {
 		DrawMesh(commandBuffer);
-	}
+	}*/
+	drawMeshes(commandBuffer);
+
 	//DrawGeometryWithProperties(commandBuffer);
 
 	//Cambiamos tanto la imagen del swapchain como la de 
@@ -282,8 +283,7 @@ if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
 
 }
 
-
-void LavaEngine::DrawMesh(VkCommandBuffer command_buffer)
+void LavaEngine::drawMeshes(VkCommandBuffer command_buffer)
 {
 	//begin a render pass  connected to our draw image
 	VkRenderingAttachmentInfo color_attachment = vkinit::AttachmentInfo(swap_chain_.get_draw_image().image_view, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
@@ -313,30 +313,35 @@ void LavaEngine::DrawMesh(VkCommandBuffer command_buffer)
 
 	vkCmdSetScissor(command_buffer, 0, 1, &scissor);
 
-	vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines_[0]->get_pipeline());
+	for (auto mesh : meshes_) {
 
-	GPUDrawPushConstants push_constants;
-	glm::mat4 model = glm::mat4(1.0f);
-	model = glm::translate(model, glm::vec3(0.0f, 0.0f, -5.0f));
-	model = glm::rotate(model, glm::radians( 0.01f * frame_data_.frame_number_) , glm::vec3(1.0f, 0.0f,0.0f));
-	model = glm::rotate(model, glm::radians(0.02f * frame_data_.frame_number_), glm::vec3(0.0f, 1.0f, 0.0f));
-	model = glm::rotate(model, glm::radians(0.03f * frame_data_.frame_number_), glm::vec3(0.0f, 0.0f, 1.0f));
-	glm::mat4 projection = glm::perspective(glm::radians(70.0f),
-		(float)swap_chain_.get_draw_extent().width/ (float)swap_chain_.get_draw_extent().height,10000.f,0.1f);
+		vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mesh->get_material()->get_pipeline().get_pipeline());
 
-	projection[1][1] *= -1;
+		GPUDrawPushConstants push_constants;
+		glm::mat4 model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(0.0f, 0.0f, -5.0f));
+		model = glm::rotate(model, glm::radians( 0.01f * frame_data_.frame_number_) , glm::vec3(1.0f, 0.0f,0.0f));
+		model = glm::rotate(model, glm::radians(0.02f * frame_data_.frame_number_), glm::vec3(0.0f, 1.0f, 0.0f));
+		model = glm::rotate(model, glm::radians(0.03f * frame_data_.frame_number_), glm::vec3(0.0f, 0.0f, 1.0f));
+		glm::mat4 projection = glm::perspective(glm::radians(70.0f),
+			(float)swap_chain_.get_draw_extent().width/ (float)swap_chain_.get_draw_extent().height,10000.f,0.1f);
+
+		projection[1][1] *= -1;
 
 
-	push_constants.world_matrix = projection * model;
-	push_constants.vertex_buffer = test_meshes[1]->meshBuffers.vertex_buffer_address;
+		push_constants.world_matrix = projection * model;
+		for (auto submesh : mesh->meshes_) {
+			push_constants.vertex_buffer = submesh->meshBuffers.vertex_buffer_address;
 
-	vkCmdPushConstants(command_buffer, pipelines_[0]->get_layout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &push_constants);
-	vkCmdBindIndexBuffer(command_buffer, test_meshes[1]->meshBuffers.index_buffer.buffer , 0, VK_INDEX_TYPE_UINT32);
+			vkCmdPushConstants(command_buffer, mesh->get_material()->get_pipeline().get_layout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &push_constants);
+			vkCmdBindIndexBuffer(command_buffer, submesh->meshBuffers.index_buffer.buffer , 0, VK_INDEX_TYPE_UINT32);
 
-	vkCmdDrawIndexed(command_buffer, test_meshes[1]->surfaces[0].count, 1, test_meshes[1]->surfaces[0].start_index, 0, 0);
+			vkCmdDrawIndexed(command_buffer, submesh->surfaces[0].count, 1, submesh->surfaces[0].start_index, 0, 0);
+		}
 
-	//launch a draw command to draw 3 vertices
-	vkCmdDraw(command_buffer, 3, 1, 0, 0);
+		//launch a draw command to draw 3 vertices
+		//vkCmdDraw(command_buffer, 3, 1, 0, 0);
+	}
 
 	vkCmdEndRendering(command_buffer);
 
@@ -508,7 +513,6 @@ void LavaEngine::createBackgroundPipelinesImGui()
 		});
 }
 
-
 void LavaEngine::initDefaultData()
 {
 	std::array<Vertex, 3> rect_vertices;
@@ -527,18 +531,18 @@ void LavaEngine::initDefaultData()
 	rect_indices[1] = 1;
 	rect_indices[2] = 2;
 
-	rectangle = uploadMesh(rect_indices, rect_vertices);
+	//rectangle = uploadMesh(rect_indices, rect_vertices);
 
-	test_meshes = LoadGLTFMesh(this, "../examples/assets/shiba/shiba.glb").value();
+	//test_meshes = LoadGLTFMesh(this, "../examples/assets/shiba/shiba.glb").value();
 
 	//delete the rectangle data on engine shutdown
 	main_deletion_queue_.push_function([&]() {
 		destroyBuffer(rectangle.index_buffer);
 		destroyBuffer(rectangle.vertex_buffer);
-		for (auto mesh : test_meshes) {
+		/*for (auto mesh : test_meshes) {
 			destroyBuffer(mesh->meshBuffers.index_buffer);
 			destroyBuffer(mesh->meshBuffers.vertex_buffer);
-		}
+		}*/
 		});
 }
 
@@ -572,54 +576,54 @@ void LavaEngine::destroyBuffer(const AllocatedBuffer& buffer)
 	vmaDestroyBuffer(allocator_.get_allocator(), buffer.buffer, buffer.allocation);
 }
 
-GPUMeshBuffers LavaEngine::uploadMesh(std::span<uint32_t> indices, std::span<Vertex> vertices)
-{
-	const size_t vertex_buffer_size = vertices.size() * sizeof(Vertex);
-	const size_t index_buffer_size = indices.size() * sizeof(uint32_t);
-
-	GPUMeshBuffers new_surface;
-
-	//create vertex buffer
-	new_surface.vertex_buffer = createBuffer(vertex_buffer_size, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-		VMA_MEMORY_USAGE_GPU_ONLY);
-
-	//find the adress of the vertex buffer
-	VkBufferDeviceAddressInfo deviceAdressInfo{ .sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO,.buffer = new_surface.vertex_buffer.buffer };
-	new_surface.vertex_buffer_address = vkGetBufferDeviceAddress(device_.get_device(), &deviceAdressInfo);
-
-	//create index buffer
-	new_surface.index_buffer = createBuffer(index_buffer_size, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-		VMA_MEMORY_USAGE_GPU_ONLY);
-
-	AllocatedBuffer staging = createBuffer(vertex_buffer_size + index_buffer_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY);
-
-	void* data = staging.allocation->GetMappedData();
-
-	// copy vertex buffer
-	memcpy(data, vertices.data(), vertex_buffer_size);
-	// copy index buffer
-	memcpy((char*)data + vertex_buffer_size, indices.data(), index_buffer_size);
-
-	immediate_submit([&](VkCommandBuffer cmd) {
-		VkBufferCopy vertexCopy{ 0 };
-		vertexCopy.dstOffset = 0;
-		vertexCopy.srcOffset = 0;
-		vertexCopy.size = vertex_buffer_size;
-
-		vkCmdCopyBuffer(cmd, staging.buffer, new_surface.vertex_buffer.buffer, 1, &vertexCopy);
-
-		VkBufferCopy indexCopy{ 0 };
-		indexCopy.dstOffset = 0;
-		indexCopy.srcOffset = vertex_buffer_size;
-		indexCopy.size = index_buffer_size;
-
-		vkCmdCopyBuffer(cmd, staging.buffer, new_surface.index_buffer.buffer, 1, &indexCopy);
-		});
-
-	destroyBuffer(staging);
-
-	return new_surface;
-}
+//GPUMeshBuffers LavaEngine::uploadMesh(std::span<uint32_t> indices, std::span<Vertex> vertices)
+//{
+//	const size_t vertex_buffer_size = vertices.size() * sizeof(Vertex);
+//	const size_t index_buffer_size = indices.size() * sizeof(uint32_t);
+//
+//	GPUMeshBuffers new_surface;
+//
+//	//create vertex buffer
+//	new_surface.vertex_buffer = createBuffer(vertex_buffer_size, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+//		VMA_MEMORY_USAGE_GPU_ONLY);
+//
+//	//find the adress of the vertex buffer
+//	VkBufferDeviceAddressInfo deviceAdressInfo{ .sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO,.buffer = new_surface.vertex_buffer.buffer };
+//	new_surface.vertex_buffer_address = vkGetBufferDeviceAddress(device_.get_device(), &deviceAdressInfo);
+//
+//	//create index buffer
+//	new_surface.index_buffer = createBuffer(index_buffer_size, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+//		VMA_MEMORY_USAGE_GPU_ONLY);
+//
+//	AllocatedBuffer staging = createBuffer(vertex_buffer_size + index_buffer_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY);
+//
+//	void* data = staging.allocation->GetMappedData();
+//
+//	// copy vertex buffer
+//	memcpy(data, vertices.data(), vertex_buffer_size);
+//	// copy index buffer
+//	memcpy((char*)data + vertex_buffer_size, indices.data(), index_buffer_size);
+//
+//	immediate_submit([&](VkCommandBuffer cmd) {
+//		VkBufferCopy vertexCopy{ 0 };
+//		vertexCopy.dstOffset = 0;
+//		vertexCopy.srcOffset = 0;
+//		vertexCopy.size = vertex_buffer_size;
+//
+//		vkCmdCopyBuffer(cmd, staging.buffer, new_surface.vertex_buffer.buffer, 1, &vertexCopy);
+//
+//		VkBufferCopy indexCopy{ 0 };
+//		indexCopy.dstOffset = 0;
+//		indexCopy.srcOffset = vertex_buffer_size;
+//		indexCopy.size = index_buffer_size;
+//
+//		vkCmdCopyBuffer(cmd, staging.buffer, new_surface.index_buffer.buffer, 1, &indexCopy);
+//		});
+//
+//	destroyBuffer(staging);
+//
+//	return new_surface;
+//}
 
 void LavaEngine::initImgui() {
 	
@@ -711,6 +715,12 @@ void LavaEngine::drawImgui(VkCommandBuffer command_buffer, VkImageView target_im
 	vkCmdEndRendering(command_buffer);
 }
 
-void LavaEngine::addPipeline(LavaPipeline::Config config){
-	pipelines_.push_back(std::make_unique<LavaPipeline>(config));
+//void LavaEngine::addPipeline(PipelineConfig config){
+//	pipelines_.push_back(std::make_unique<LavaPipeline>(config));
+//}
+
+std::shared_ptr<LavaMesh> LavaEngine::addMesh(MeshProperties prop){
+	std::shared_ptr<LavaMesh> mesh = std::make_shared<LavaMesh>(*this, prop);
+	meshes_.push_back(mesh);
+	return mesh;
 }

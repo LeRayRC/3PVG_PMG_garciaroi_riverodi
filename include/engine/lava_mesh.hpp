@@ -12,14 +12,29 @@
  *
  **/
 
+#include "engine/lava_material.hpp"
+#include "lava_engine.hpp"
+#include "lava_types.hpp"
+#include "engine/lava_loader.hpp"
+
 class LavaMesh
 {
 public:
-	LavaMesh();
+	LavaMesh(LavaEngine& engine, MeshProperties prop);
 	~LavaMesh();
 
-private:
+	GPUMeshBuffers upload(std::span<uint32_t> indices, std::span<Vertex> vertices);
+	bool loadAsGLTF(std::filesystem::path file_path);
 
+	LavaMaterial* get_material() { return material_; };
+	bool isLoaded() const { return is_loaded_; }
+	std::vector<std::shared_ptr<MeshAsset>> meshes_;
+private:
+	std::string name_;
+	MeshType type_;
+	bool is_loaded_; 
+	LavaMaterial* material_;
+	LavaEngine* engine_;
 };
 
 

@@ -25,6 +25,7 @@
 #include "engine/lava_loader.hpp"
 #include "engine/lava_pipeline.hpp"
 #include "engine/lava_material.hpp"
+#include "engine/lava_mesh.hpp"
 
 
 struct DeletionQueue {
@@ -88,10 +89,6 @@ public:
 	LavaInmediateCommunication inmediate_communication;
 	
 
-	VkRenderPass render_pass_;
-	//VkPipelineLayout pipeline_layout_;	
-	//VkPipeline graphics_pipeline_;
-
 	DescriptorAllocator global_descriptor_allocator_;
 	VkDescriptorSet draw_image_descriptor_set_;
 	VkDescriptorSetLayout draw_image_descriptor_set_layout_;
@@ -105,51 +102,33 @@ public:
 	int currentBackgroundEffect{ 0 };
 
 	
-
 	void init();
 	void initVulkan();
 	void mainLoop();
 	
 	void draw();
-	void drawBackground(VkCommandBuffer command_buffer);
-	void drawBackgroundImGui(VkCommandBuffer command_buffer);
-	void DrawGeometry(VkCommandBuffer command_buffer);
-	void DrawGeometryWithProperties(VkCommandBuffer command_buffer);
-	void DrawMesh(VkCommandBuffer command_buffer);
-	void addPipeline(LavaPipeline::Config config);
+	//void drawBackground(VkCommandBuffer command_buffer);
+	//void drawBackgroundImGui(VkCommandBuffer command_buffer);
+	//void DrawGeometry(VkCommandBuffer command_buffer);
+	//void DrawGeometryWithProperties(VkCommandBuffer command_buffer);
+	void drawMeshes(VkCommandBuffer command_buffer);
+	void addPipeline(PipelineConfig config);
+	std::shared_ptr<class LavaMesh> addMesh(MeshProperties prop);
 	void createDescriptors();
 
 	VkInstance get_instance() const;
 	GLFWwindow* get_window() const;
 	VkSurfaceKHR get_surface() const;
 
-///////////////PIPELINES/////////
-
-	//void createPipelines();
 	void createBackgroundPipelines();
 	void createBackgroundPipelinesImGui();
 
-	//Not use right now
-	//VkPipelineLayout _trianglePipelineLayout;
-	//VkPipeline _trianglePipeline;
-	//void createTrianglePipeline();
-	//
-
-	//VkPipelineLayout _meshPipelineLayout;
-	//VkPipeline _meshPipeline;
 	GPUMeshBuffers rectangle;
-	//void createMeshPipeline();
+
 	void initDefaultData();
-////////////////////////////////
-	std::vector<std::unique_ptr<LavaPipeline>> pipelines_;
+	//std::vector<std::unique_ptr<LavaPipeline>> pipelines_;
 
-	//meshes.emplace_back(std::make_shared<MeshAsset>(std::move(newmesh)));
-////////////PIPELINE//////////////
-
-////////////////////////////////
-	std::vector<std::shared_ptr<MeshAsset>> test_meshes;
-
-//////////////MESHES////////////
+	std::vector<std::shared_ptr<LavaMesh>> meshes_;
 
 	AllocatedBuffer createBuffer(size_t alloc_size, VkBufferUsageFlags usage, VmaMemoryUsage memory_usage);
 

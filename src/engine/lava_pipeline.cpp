@@ -5,7 +5,7 @@
 #include "lava_vulkan_helpers.hpp"
 
 
-LavaPipeline::LavaPipeline(Config& config){
+LavaPipeline::LavaPipeline(PipelineConfig config){
 
 	device_ = config.device->get_device();
 

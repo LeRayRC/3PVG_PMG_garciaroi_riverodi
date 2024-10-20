@@ -1,5 +1,6 @@
 #include "examples/hellotriangle.hpp"
 
+#include "lava_types.hpp"
 #include "lava_engine.hpp"
 #include "lava_window_system.hpp"
 #include "engine/lava_loader.hpp"
@@ -10,17 +11,21 @@ int main(int argc, char* argv[]) {
 	LavaEngine engine;
 	engine.init();
 
-	LavaPipeline::Config config = {};
-	config.device = &engine.device_;
-	config.swap_chain = &engine.swap_chain_;
-	config.descriptor_set_layout = engine.draw_image_descriptor_set_layout_;
-	config.pipeline_flags |= LavaPipeline::PIPELINE_USE_PUSHCONSTANTS;
-	config.fragment_shader_path = "../src/shaders/colored_triangle.frag.spv";
-	config.vertex_shader_path = "../src/shaders/colored_triangle_mesh.vert.spv";
-	
+	MaterialProperties mat_properties = {};
+	mat_properties.name = "Basic Material";
+	mat_properties.vertex_shader_path		= "../src/shaders/colored_triangle_mesh.vert.spv";
+	mat_properties.fragment_shader_path = "../src/shaders/colored_triangle.frag.spv";
+	mat_properties.pipeline_flags |= PipelineFlags::PIPELINE_USE_PUSHCONSTANTS;
 
+	LavaMaterial basic_material(engine, mat_properties);
 
-	engine.addPipeline(config);
+	MeshProperties mesh_properties = {};
+	mesh_properties.name_ = "Shiba Mesh";
+	mesh_properties.type = MESH_GLTF;
+	mesh_properties.mesh_path = "../examples/assets/shiba/shiba.glb";
+	mesh_properties.material = &basic_material;
+
+	std::shared_ptr<LavaMesh> mesh = engine.addMesh(mesh_properties);
 
 	engine.mainLoop();
 
