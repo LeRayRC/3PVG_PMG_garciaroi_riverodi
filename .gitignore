@@ -178,6 +178,7 @@ DocProject/Help/*.hhp
 DocProject/Help/Html2
 DocProject/Help/html
 doc/html/
+doc/latex/
 
 # Click-Once directory
 publish/
