@@ -113,6 +113,34 @@ struct KeyProperties {
 	double last_action_time;
 };
 
+typedef struct GamepadStateWrapper {
+	GamepadStateWrapper() {
+		for (int i = 0; i < 6; i++) {
+			state.axes[i] = 0;
+			state.buttons[i] = 0;
+		}
+		for (int i = 6; i < 15; i++) {
+			state.buttons[i] = 0;
+		}
+		is_active = false;
+	}
+	GLFWgamepadstate state;
+	bool is_active;
+}GamepadState;
+
+typedef struct GamePadActionWrapper {
+	GamePadActionWrapper(int game_pad_, int game_pad_button_) {
+		game_pad = game_pad_;
+		game_pad_button = game_pad_button_;
+	}
+	GamePadActionWrapper() {
+		game_pad = 0;
+		game_pad_button = 0;
+	}
+	int game_pad;
+	int game_pad_button;
+}GamePadAction;
+
 #pragma endregion
 
 

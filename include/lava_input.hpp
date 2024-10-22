@@ -36,7 +36,19 @@ public:
 	void BindActionToInput(int action, int key);
 
 	// Gamepad Implementation
-		  //TO DO//
+	bool isGamePadButtonPressed(int game_pad, int button);
+
+	bool isGamePadButtonReleased(int game_pad, int button);
+
+	bool isGamePadButtonUp(int game_pad, int button);
+
+	bool isGamePadButtonDown(int game_pad, int button);
+
+	float getGamePadAxis(int game_pad, int axis);
+
+	void BindActionToGamePadButton(int action, int game_pad, int button);
+
+	void BindActionToGamePadAxis(int action, int game_pad, int axis);
 
 	// Action Implementation
 
@@ -47,6 +59,8 @@ public:
 	bool isActionUp(int action);
 
 	bool isActionDown(int action);
+
+	float getActionAxis(int action);
 
 private:
 
@@ -60,7 +74,9 @@ private:
 	void kb_mouse_callback(int key, int scancode, int action, int mods);
 
 	// GamePad Implementation
-	GLFWgamepadstate game_pad_state;
+	std::map<int, GamepadState> game_pad_states;
+	std::map<int, std::vector<GamePadAction>> gamepad_action_map;
+	std::map<int, GamePadAction> gamepad_axis_action_map;
 
 	void ProcessEndFrame();
 
@@ -71,8 +87,6 @@ private:
 	static void global_key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 
 	static void global_mouse_callback(GLFWwindow* window, int button, int action, int mods);
-
-	static void global_joystick_callback(int jid, int event);
 
 	static void clean_bindings(GLFWwindow* window);
 
