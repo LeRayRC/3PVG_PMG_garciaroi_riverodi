@@ -12,6 +12,7 @@
 #include "lava_vulkan_helpers.hpp"
 #include "lava_vulkan_inits.hpp"
 #include "engine/lava_pipeline_builder.hpp"
+#include "lava_transform.hpp"
 
 //#define VMA_IMPLEMENTATION
 #include "vk_mem_alloc.h"
@@ -314,11 +315,15 @@ void LavaEngine::drawMeshes(VkCommandBuffer command_buffer)
 		vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mesh->get_material()->get_pipeline().get_pipeline());
 
 		GPUDrawPushConstants push_constants;
+
+
 		glm::mat4 model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(0.0f, 0.0f, -5.0f));
-		model = glm::rotate(model, glm::radians( 0.01f * frame_data_.frame_number_) , glm::vec3(1.0f, 0.0f,0.0f));
-		model = glm::rotate(model, glm::radians(0.02f * frame_data_.frame_number_), glm::vec3(0.0f, 1.0f, 0.0f));
-		model = glm::rotate(model, glm::radians(0.03f * frame_data_.frame_number_), glm::vec3(0.0f, 0.0f, 1.0f));
+		LavaTransform& transform = mesh->get_transform();
+
+		model = LavaTransform::TranslationMatrix(model, transform);
+		model = LavaTransform::RotateMatrix(model, transform);
+		model = LavaTransform::ScaleMatrix(model, transform);
+
 		glm::mat4 projection = glm::perspective(glm::radians(70.0f),
 			(float)swap_chain_.get_draw_extent().width/ (float)swap_chain_.get_draw_extent().height,10000.f,0.1f);
 

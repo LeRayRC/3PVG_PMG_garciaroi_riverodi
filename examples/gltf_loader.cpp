@@ -22,7 +22,11 @@ int main(int argc, char* argv[]) {
 	mesh_properties.mesh_path = "../examples/assets/shiba/shiba.glb";
 	mesh_properties.material = &basic_material;
 
+	
+
 	std::shared_ptr<LavaMesh> mesh = engine.addMesh(mesh_properties);
+	mesh->get_transform().set_pos(glm::vec3(0.0f, 0.0f, -10.0f));
+	mesh->get_transform().set_scale(glm::vec3(5.0f, 5.0f, 5.0f));
 
 	engine.mainLoop();
 
