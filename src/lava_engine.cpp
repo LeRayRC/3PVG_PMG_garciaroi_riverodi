@@ -45,8 +45,7 @@ LavaEngine::LavaEngine() :
 	allocator_{device_, instance_},
 	swap_chain_{ device_, surface_, window_extent_, allocator_.get_allocator()},
 	frame_data_{device_, surface_},
-	inmediate_communication{device_, surface_},
-	lava_input{window_.get_window()}
+	inmediate_communication{device_, surface_}
 {
 	//Singleton Functionality
 	assert(loaded_engine == nullptr);
@@ -65,8 +64,7 @@ LavaEngine::LavaEngine(unsigned int window_width, unsigned int window_height) :
 	allocator_{ device_, instance_ },
 	swap_chain_{ device_, surface_, window_extent_, allocator_.get_allocator() },
 	frame_data_{ device_, surface_ },
-	inmediate_communication{ device_, surface_ },
-	lava_input{ window_.get_window() }
+	inmediate_communication{ device_, surface_ }
 {
 	//Singleton Functionality
 	assert(loaded_engine == nullptr);

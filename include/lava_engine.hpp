@@ -87,7 +87,6 @@ public:
 	LavaSwapChain swap_chain_;
 	LavaFrameData frame_data_;
 	LavaInmediateCommunication inmediate_communication;
-	LavaInput lava_input;
 
 	DescriptorAllocator global_descriptor_allocator_;
 	VkDescriptorSet draw_image_descriptor_set_;
