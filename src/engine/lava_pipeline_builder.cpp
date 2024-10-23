@@ -1,4 +1,4 @@
-#include "lava_pipelines.hpp"
+#include "engine/lava_pipeline_builder.hpp"
 #include "lava_vulkan_inits.hpp"
 
 void PipelineBuilder::Clear()
@@ -46,7 +46,6 @@ VkPipeline PipelineBuilder::BuildPipeline(VkDevice device)
 
     // completely clear VertexInputStateCreateInfo, as we have no need for it
     VkPipelineVertexInputStateCreateInfo _vertex_input_info = { .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO };
-
     // build the actual pipeline
     // we now use all of the info structs we have been writing into into this one
     // to create the pipeline
@@ -169,6 +168,18 @@ void PipelineBuilder::DisableDepthtest()
     _depth_stencil.depthTestEnable = VK_FALSE;
     _depth_stencil.depthWriteEnable = VK_FALSE;
     _depth_stencil.depthCompareOp = VK_COMPARE_OP_NEVER;
+    _depth_stencil.depthBoundsTestEnable = VK_FALSE;
+    _depth_stencil.stencilTestEnable = VK_FALSE;
+    _depth_stencil.front = {};
+    _depth_stencil.back = {};
+    _depth_stencil.minDepthBounds = 0.f;
+    _depth_stencil.maxDepthBounds = 1.f;
+}
+
+void PipelineBuilder::EnableDepthTest(bool depthWriteEnable, VkCompareOp op) {
+    _depth_stencil.depthTestEnable = VK_TRUE;
+    _depth_stencil.depthWriteEnable = depthWriteEnable;
+    _depth_stencil.depthCompareOp = op;
     _depth_stencil.depthBoundsTestEnable = VK_FALSE;
     _depth_stencil.stencilTestEnable = VK_FALSE;
     _depth_stencil.front = {};

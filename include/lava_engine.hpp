@@ -22,7 +22,9 @@
 #include "engine/lava_allocator.hpp"
 #include "engine/lava_frame_data.hpp"
 #include "engine/lava_inmediate_communication.hpp"
-#include "lava_input.hpp"
+#include "engine/lava_pipeline.hpp"
+#include "engine/lava_material.hpp"
+#include "engine/lava_mesh.hpp"
 
 
 struct DeletionQueue {
@@ -87,15 +89,11 @@ public:
 	LavaInmediateCommunication inmediate_communication;
 	LavaInput lava_input;
 
-	VkRenderPass render_pass_;
-	//VkPipelineLayout pipeline_layout_;	
-	//VkPipeline graphics_pipeline_;
-
 	DescriptorAllocator global_descriptor_allocator_;
 	VkDescriptorSet draw_image_descriptor_set_;
 	VkDescriptorSetLayout draw_image_descriptor_set_layout_;
 
-	VkPipeline gradient_pipeline_;
+	//VkPipeline gradient_pipeline_;
 
 	DescriptorAllocator imgui_descriptor_alloc;
 
@@ -104,51 +102,30 @@ public:
 	int currentBackgroundEffect{ 0 };
 
 	
-
 	void init();
 	void initVulkan();
 	void mainLoop();
 	
 	void draw();
-	void drawBackground(VkCommandBuffer command_buffer);
-	void drawBackgroundImGui(VkCommandBuffer command_buffer);
-	void DrawGeometry(VkCommandBuffer command_buffer);
-	void DrawGeometryWithProperties(VkCommandBuffer command_buffer);
-	
+	//void drawBackground(VkCommandBuffer command_buffer);
+	//void drawBackgroundImGui(VkCommandBuffer command_buffer);
+	//void DrawGeometry(VkCommandBuffer command_buffer);
+	//void DrawGeometryWithProperties(VkCommandBuffer command_buffer);
+	void drawMeshes(VkCommandBuffer command_buffer);
+	std::shared_ptr<class LavaMesh> addMesh(MeshProperties prop);
 	void createDescriptors();
 
 	VkInstance get_instance() const;
 	GLFWwindow* get_window() const;
 	VkSurfaceKHR get_surface() const;
 
-///////////////PIPELINES/////////
-
-	void createPipelines();
 	void createBackgroundPipelines();
 	void createBackgroundPipelinesImGui();
 
-	//Not use right now
-	VkPipelineLayout _trianglePipelineLayout;
-	VkPipeline _trianglePipeline;
-	void createTrianglePipeline();
-	//
-
-	VkPipelineLayout _meshPipelineLayout;
-	VkPipeline _meshPipeline;
-	GPUMeshBuffers rectangle;
-	void createMeshPipeline();
-	void initDefaultData();
-
-////////////////////////////////
-
-//////////////MESHES////////////
+	std::vector<std::shared_ptr<LavaMesh>> meshes_;
 
 	AllocatedBuffer createBuffer(size_t alloc_size, VkBufferUsageFlags usage, VmaMemoryUsage memory_usage);
-
 	void destroyBuffer(const AllocatedBuffer& buffer);
-
-	GPUMeshBuffers uploadMesh(std::span<uint32_t> indices, std::span<Vertex> vertices);
-
 ////////////////////////////////
 
 	void initImgui();

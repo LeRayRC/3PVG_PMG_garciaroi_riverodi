@@ -11,15 +11,17 @@
 #include "lava_engine.hpp"
 #include "lava_vulkan_helpers.hpp"
 #include "lava_vulkan_inits.hpp"
-#include "lava_pipelines.hpp"
-#include "lava_input.hpp"
+#include "engine/lava_pipeline_builder.hpp"
+#include "lava_transform.hpp"
 
-#define VMA_IMPLEMENTATION
+//#define VMA_IMPLEMENTATION
 #include "vk_mem_alloc.h"
 
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_vulkan.h"
+
+
 
 #ifdef NDEBUG
 constexpr bool enableValidationLayers = false;
@@ -51,10 +53,8 @@ LavaEngine::LavaEngine() :
 	loaded_engine = this;
 	is_initialized_ = false;
 	stop_rendering = false;
-	render_pass_ = VK_NULL_HANDLE;
-	
+	//render_pass_ = VK_NULL_HANDLE;
 }
-
 
 LavaEngine::LavaEngine(unsigned int window_width, unsigned int window_height) :
 	window_{window_width, window_height, "LavaEngine"},
@@ -73,13 +73,13 @@ LavaEngine::LavaEngine(unsigned int window_width, unsigned int window_height) :
 	loaded_engine = this;
 	is_initialized_ = false;
 	stop_rendering = false;
-	render_pass_ = VK_NULL_HANDLE;
-
+	//render_pass_ = VK_NULL_HANDLE;
 }
 
 LavaEngine::~LavaEngine(){
 	vkDeviceWaitIdle(device_.get_device());
 
+	//pipelines_.clear();
 	main_deletion_queue_.flush();	
 }
 
@@ -104,10 +104,6 @@ void LavaEngine::init() {
 
 void LavaEngine::mainLoop() {
   while (!glfwWindowShouldClose(get_window())) {
-	  if (lava_input.isGamePadButtonPressed(0,0)) printf("\nSpace Pressed\n");
-	  if (lava_input.isGamePadButtonReleased(0,0)) printf("\nSpace Released\n");
-
-	  printf("\n x:%f  y:%f\n", lava_input.getMousePosition().x, lava_input.getMousePosition().y);
 
     glfwPollEvents();
 
@@ -116,7 +112,7 @@ void LavaEngine::mainLoop() {
 
 		ImGui::NewFrame();
 
-		ImGui::Begin("Lava window");
+		/*ImGui::Begin("Lava window");
 		ComputeEffect& selected = backgroundEffects[currentBackgroundEffect];
 
 		ImGui::Text("Selected effect: %s", selected.name);
@@ -128,7 +124,7 @@ void LavaEngine::mainLoop() {
 			ImGui::InputFloat4("data3", (float*)&selected.data.data3);
 			ImGui::InputFloat4("data4", (float*)&selected.data.data4);
 		}
-		ImGui::End();
+		ImGui::End();*/
 
 		//ImGui::ShowDemoWindow();
 
@@ -145,11 +141,7 @@ void LavaEngine::mainLoop() {
 
 void LavaEngine::initVulkan(){
 
-	//Despues de crear la instancia se configura el callback de las validation layers
-	//Tras seleccionar el dispositivo fisico ahora toca crear el logico
 	createDescriptors();
-	initDefaultData();
-	createPipelines();
 }
 
 void LavaEngine::draw() {
@@ -212,18 +204,34 @@ void LavaEngine::draw() {
 	TransitionImage(commandBuffer, swap_chain_.get_draw_image().image,
 		VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
 
-	drawBackground(commandBuffer);
+	//Limpiamos la imagen con un clear color
+	VkClearColorValue clearValue;
+	clearValue = { {0.0f,0.0f,0.0f,0.0f} };
+
+	//Seleccionamos un rango de la imagen sobre la que actuar
+	VkImageSubresourceRange clearRange = ImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT);
+
+	//Aplicamos el clear color a una imagen 
+	vkCmdClearColorImage(commandBuffer, swap_chain_.get_draw_image().image,VK_IMAGE_LAYOUT_GENERAL, &clearValue, 1, &clearRange);
+
+	//drawBackground(commandBuffer);
 
 	TransitionImage(commandBuffer, swap_chain_.get_draw_image().image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+	TransitionImage(commandBuffer, swap_chain_.get_depth_image().image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
 
-	DrawGeometry(commandBuffer);
+	//DrawGeometry(commandBuffer);
+	/*if (!pipelines_.empty()) {
+		DrawMesh(commandBuffer);
+	}*/
+	drawMeshes(commandBuffer);
+
 	//DrawGeometryWithProperties(commandBuffer);
 
 	//Cambiamos tanto la imagen del swapchain como la de 
 	// dibujado al mismo estado para copiar la informacion
 	TransitionImage(commandBuffer, swap_chain_.get_draw_image().image ,
 		VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
-	//Cambiamos la imagen a tipo presentable para enseñarla en la superficie
+	//Cambiamos la imagen a tipo presentable para enseÃ±arla en la superficie
 	TransitionImage(commandBuffer, swap_chain_.get_swap_chain_images()[swap_chain_image_index],
 		VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
@@ -281,180 +289,69 @@ if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
 
 }
 
-void LavaEngine::drawBackground(VkCommandBuffer command_buffer) {
-
-	//Se sustituye todo esto por el compute shader
-//	//Limpiamos la imagen con un clear color
-//	VkClearColorValue clearValue;
-//	clearValue = { {1.0f,0.0f,0.0f,0.0f} };
-//
-//	//Seleccionamos un rango de la imagen sobre la que actuar
-//	VkImageSubresourceRange clearRange = ImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT);
-//
-//	//Aplicamos el clear color a una imagen 
-//vkCmdClearColorImage(command_buffer, draw_image_.image,
-//	VK_IMAGE_LAYOUT_GENERAL, &clearValue, 1, &clearRange);
-
-
-	//// bind the gradient drawing compute pipeline
-	//vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_COMPUTE, gradient_pipeline_);
+void LavaEngine::drawMeshes(VkCommandBuffer command_buffer)
+{
+	//begin a render pass  connected to our draw image
+	VkRenderingAttachmentInfo color_attachment = vkinit::AttachmentInfo(swap_chain_.get_draw_image().image_view, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+	VkRenderingAttachmentInfo depth_attachment = vkinit::DepthAttachmentInfo(swap_chain_.get_depth_image().image_view, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
 	//
-	////IMPORTANT
-	////Importante recordar esto cuando tengamos que hacer binding de description sets en otros shaders
-	//// bind the descriptor set containing the draw image for the compute pipeline
-	//vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_COMPUTE, gradient_pipeline_layout_, 0, 1, &draw_image_descriptor_set_, 0, nullptr);
-	//
-	//// execute the compute pipeline dispatch. We are using 16x16 workgroup size so we need to divide by it
-	//vkCmdDispatch(command_buffer, std::ceil(draw_image_.image_extent.width / 16.0), std::ceil(draw_image_.image_extent.height / 16.0), 1);
+	VkRenderingInfo renderInfo = vkinit::RenderingInfo(swap_chain_.get_draw_extent(), &color_attachment, &depth_attachment);
+	vkCmdBeginRendering(command_buffer, &renderInfo);
+
+	//vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _trianglePipeline);
+
+	//set dynamic viewport and scissor
+	VkViewport viewport = {};
+	viewport.x = 0;
+	viewport.y = 0;
+	viewport.width = swap_chain_.get_draw_extent().width;
+	viewport.height = swap_chain_.get_draw_extent().height;
+	viewport.minDepth = 0.f;
+	viewport.maxDepth = 1.f;
+
+	vkCmdSetViewport(command_buffer, 0, 1, &viewport);
+
+	VkRect2D scissor = {};
+	scissor.offset.x = 0;
+	scissor.offset.y = 0;
+	scissor.extent.width = swap_chain_.get_draw_extent().width;
+	scissor.extent.height = swap_chain_.get_draw_extent().height;
+
+	vkCmdSetScissor(command_buffer, 0, 1, &scissor);
+
+	for (auto mesh : meshes_) {
+
+		vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mesh->get_material()->get_pipeline().get_pipeline());
+
+		GPUDrawPushConstants push_constants;
 
 
-	ComputeEffect& effect = backgroundEffects[currentBackgroundEffect];
+		glm::mat4 model = glm::mat4(1.0f);
+		LavaTransform& transform = mesh->get_transform();
 
-	// bind the background compute pipeline
-	vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_COMPUTE, effect.pipeline);
+		model = LavaTransform::TranslationMatrix(model, transform);
+		model = LavaTransform::RotateMatrix(model, transform);
+		model = LavaTransform::ScaleMatrix(model, transform);
 
-	// bind the descriptor set containing the draw image for the compute pipeline
-	vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_COMPUTE, effect.layout, 0, 1, &draw_image_descriptor_set_, 0, nullptr);
+		glm::mat4 projection = glm::perspective(glm::radians(70.0f),
+			(float)swap_chain_.get_draw_extent().width/ (float)swap_chain_.get_draw_extent().height,10000.f,0.1f);
 
-	if (effect.use_push_constants) {
-		vkCmdPushConstants(command_buffer, effect.layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(ComputePushConstants), &effect.data);
+		projection[1][1] *= -1;
+
+
+		push_constants.world_matrix = projection * model;
+		for (std::shared_ptr<MeshAsset> submesh : mesh->meshes_) {
+			push_constants.vertex_buffer = submesh->meshBuffers.vertex_buffer_address;
+
+			vkCmdPushConstants(command_buffer, mesh->get_material()->get_pipeline().get_layout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &push_constants);
+			vkCmdBindIndexBuffer(command_buffer, submesh->meshBuffers.index_buffer.buffer , 0, VK_INDEX_TYPE_UINT32);
+
+			vkCmdDrawIndexed(command_buffer, submesh->surfaces[0].count, 1, submesh->surfaces[0].start_index, 0, 0);
+		}
 	}
-	// execute the compute pipeline dispatch. We are using 16x16 workgroup size so we need to divide by it
-	vkCmdDispatch(command_buffer, std::ceil(swap_chain_.get_draw_image().image_extent.width / 16.0), std::ceil(swap_chain_.get_draw_image().image_extent.height / 16.0), 1);
-
-}
-
-void LavaEngine::drawBackgroundImGui(VkCommandBuffer command_buffer) {
-
-	//Se sustituye todo esto por el compute shader
-//	//Limpiamos la imagen con un clear color
-//	VkClearColorValue clearValue;
-//	clearValue = { {1.0f,0.0f,0.0f,0.0f} };
-//
-//	//Seleccionamos un rango de la imagen sobre la que actuar
-//	VkImageSubresourceRange clearRange = ImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT);
-//
-//	//Aplicamos el clear color a una imagen 
-//vkCmdClearColorImage(command_buffer, draw_image_.image,
-//	VK_IMAGE_LAYOUT_GENERAL, &clearValue, 1, &clearRange);
-
-
-	// bind the gradient drawing compute pipeline
-	//vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_COMPUTE, gradient_pipeline_);
-	//
-	////IMPORTANT
-	////Importante recordar esto cuando tengamos que hacer binding de description sets en otros shaders
-	//// bind the descriptor set containing the draw image for the compute pipeline
-	//vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_COMPUTE, gradient_pipeline_layout_, 0, 1, &draw_image_descriptor_set_, 0, nullptr);
-	//
-	//ComputePushConstants pc;
-	//pc.data1 = glm::vec4(1, 0, 0, 1);
-	//pc.data2 = glm::vec4(0, 0, 1, 1);
-	//
-	//vkCmdPushConstants(command_buffer, gradient_pipeline_layout_, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(ComputePushConstants), &pc);
-	//
-	//// execute the compute pipeline dispatch. We are using 16x16 workgroup size so we need to divide by it
-	//vkCmdDispatch(command_buffer, std::ceil(draw_image_.image_extent.width / 16.0), std::ceil(draw_image_.image_extent.height / 16.0), 1);
-
-}
-
-void LavaEngine::DrawGeometry(VkCommandBuffer command_buffer)
-{
-	//begin a render pass  connected to our draw image
-	VkRenderingAttachmentInfo colorAttachment = vkinit::AttachmentInfo(swap_chain_.get_draw_image().image_view, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-	//
-	VkRenderingInfo renderInfo = vkinit::RenderingInfo(swap_chain_.get_draw_extent(), &colorAttachment, nullptr);
-	vkCmdBeginRendering(command_buffer, &renderInfo);
-	
-	//vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _trianglePipeline);
-
-	//set dynamic viewport and scissor
-	VkViewport viewport = {};
-	viewport.x = 0;
-	viewport.y = 0;
-	viewport.width = swap_chain_.get_draw_extent().width;
-	viewport.height = swap_chain_.get_draw_extent().height;
-	viewport.minDepth = 0.f;
-	viewport.maxDepth = 1.f;
-	
-	vkCmdSetViewport(command_buffer, 0, 1, &viewport);
-	
-	VkRect2D scissor = {};
-	scissor.offset.x = 0;
-	scissor.offset.y = 0;
-	scissor.extent.width = swap_chain_.get_draw_extent().width;
-	scissor.extent.height = swap_chain_.get_draw_extent().height;
-	
-	vkCmdSetScissor(command_buffer, 0, 1, &scissor);
-
-	vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _meshPipeline);
-
-	GPUDrawPushConstants push_constants;
-	push_constants.world_matrix = glm::mat4{ 1.f };
-	push_constants.vertex_buffer = rectangle.vertex_buffer_address;
-
-	vkCmdPushConstants(command_buffer, _meshPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &push_constants);
-	vkCmdBindIndexBuffer(command_buffer, rectangle.index_buffer.buffer, 0, VK_INDEX_TYPE_UINT32);
-
-	vkCmdDrawIndexed(command_buffer, 3, 1, 0, 0, 0);
-	
-	//launch a draw command to draw 3 vertices
-	vkCmdDraw(command_buffer, 3, 1, 0, 0);
 
 	vkCmdEndRendering(command_buffer);
 
-		//launch a draw command to draw 3 vertices
-
-}
-
-void LavaEngine::DrawGeometryWithProperties(VkCommandBuffer command_buffer)
-{
-	//begin a render pass  connected to our draw image
-	VkRenderingAttachmentInfo colorAttachment = vkinit::AttachmentInfo(swap_chain_.get_draw_image().image_view, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-	//
-	VkRenderingInfo renderInfo = vkinit::RenderingInfo(swap_chain_.get_draw_extent(), &colorAttachment, nullptr);
-	vkCmdBeginRendering(command_buffer, &renderInfo);
-
-	//vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _trianglePipeline);
-
-	//set dynamic viewport and scissor
-	VkViewport viewport = {};
-	viewport.x = 0;
-	viewport.y = 0;
-	viewport.width = swap_chain_.get_draw_extent().width;
-	viewport.height = swap_chain_.get_draw_extent().height;
-	viewport.minDepth = 0.f;
-	viewport.maxDepth = 1.f;
-
-	vkCmdSetViewport(command_buffer, 0, 1, &viewport);
-
-	VkRect2D scissor = {};
-	scissor.offset.x = 0;
-	scissor.offset.y = 0;
-	scissor.extent.width = swap_chain_.get_draw_extent().width;
-	scissor.extent.height = swap_chain_.get_draw_extent().height;
-
-	vkCmdSetScissor(command_buffer, 0, 1, &scissor);
-
-	vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _meshPipeline);
-
-	GPUDrawPushConstants push_constants;
-	push_constants.world_matrix = glm::mat4{ 1.f };
-	//push_constants.vertex_buffer = rectangle.vertex_buffer_address;
-
-	vkCmdPushConstants(command_buffer, _meshPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &push_constants);
-	VkDeviceSize offsets[] = { 0 };
-	vkCmdBindVertexBuffers(command_buffer, 0, 1, &rectangle.vertex_buffer.buffer, offsets);
-	vkCmdBindIndexBuffer(command_buffer, rectangle.index_buffer.buffer, 0, VK_INDEX_TYPE_UINT32);
-
-	vkCmdDrawIndexed(command_buffer, 3, 1, 0, 0, 0);
-
-	//launch a draw command to draw 3 vertices
-	vkCmdDraw(command_buffer, 3, 1, 0, 0);
-
-	vkCmdEndRendering(command_buffer);
-
-	//launch a draw command to draw 3 vertices
 }
 
 void LavaEngine::createDescriptors() {
@@ -498,13 +395,6 @@ void LavaEngine::createDescriptors() {
 		global_descriptor_allocator_.destroy_pool(device_.get_device());
 		vkDestroyDescriptorSetLayout(device_.get_device(), draw_image_descriptor_set_layout_, nullptr);
 		});
-}
-
-void LavaEngine::createPipelines() {
-	createBackgroundPipelines();
-	createBackgroundPipelinesImGui();
-	createTrianglePipeline();
-	createMeshPipeline();
 }
 
 void LavaEngine::createBackgroundPipelines() {
@@ -630,174 +520,6 @@ void LavaEngine::createBackgroundPipelinesImGui()
 		});
 }
 
-void LavaEngine::createTrianglePipeline()
-{
-	VkShaderModule triangleFragShader;
-	if (!LoadShader("../src/shaders/colored_triangle.frag.spv", device_.get_device(), &triangleFragShader)) {
-		printf("Error when building the triangle fragment shader module");
-	}
-	else {
-		printf("Triangle fragment shader succesfully loaded");
-	}
-
-	VkShaderModule triangleVertexShader;
-	if (!LoadShader("../src/shaders/colored_triangle.vert.spv", device_.get_device(), &triangleVertexShader)) {
-		printf("Error when building the triangle vertex shader module");
-	}
-	else {
-		printf("Triangle vertex shader succesfully loaded");
-	}
-
-	//build the pipeline layout that controls the inputs/outputs of the shader
-	//we are not using descriptor sets or other systems yet, so no need to use anything other than empty default
-	VkPipelineLayoutCreateInfo pipeline_layout_info{};
-	pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	pipeline_layout_info.pNext = nullptr;
-	pipeline_layout_info.pSetLayouts = &draw_image_descriptor_set_layout_;
-	pipeline_layout_info.setLayoutCount = 1;
-
-	if (vkCreatePipelineLayout(device_.get_device(), &pipeline_layout_info, nullptr, &_trianglePipelineLayout)) {
-#ifndef NDEBUG
-		printf("Compute pipeline creation failed!");
-#endif // !NDEBUG
-	}
-
-	PipelineBuilder pipeline_builder;
-
-	//use the triangle layout we created
-	pipeline_builder._pipeline_layout = _trianglePipelineLayout;
-	//connecting the vertex and pixel shaders to the pipeline
-	pipeline_builder.SetShaders(triangleVertexShader, triangleFragShader);
-	//it will draw triangles
-	pipeline_builder.SetInputTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
-	//filled triangles
-	pipeline_builder.SetPolygonMode(VK_POLYGON_MODE_FILL);
-	//no backface culling
-	pipeline_builder.SetCullMode(VK_CULL_MODE_NONE, VK_FRONT_FACE_CLOCKWISE);
-	//no multisampling
-	pipeline_builder.SetMultisamplingNone();
-	//no blending
-	pipeline_builder.DisableBlending();
-	//no depth testing
-	pipeline_builder.DisableDepthtest();
-
-	//connect the image format we will draw into, from draw image
-	pipeline_builder.SetColorAttachmentFormat(swap_chain_.get_draw_image().image_format);
-	pipeline_builder.SetDepthFormat(VK_FORMAT_UNDEFINED);
-
-	//finally build the pipeline
-	_trianglePipeline = pipeline_builder.BuildPipeline(device_.get_device());
-
-	//clean structures
-	vkDestroyShaderModule(device_.get_device(), triangleFragShader, nullptr);
-	vkDestroyShaderModule(device_.get_device(), triangleVertexShader, nullptr);
-
-	main_deletion_queue_.push_function([&]() {
-		vkDestroyPipelineLayout(device_.get_device(), _trianglePipelineLayout, nullptr);
-		vkDestroyPipeline(device_.get_device(), _trianglePipeline, nullptr);
-	});
-}
-
-void LavaEngine::createMeshPipeline()
-{
-	VkShaderModule triangleFragShader;
-	if (!LoadShader("../src/shaders/colored_triangle.frag.spv", device_.get_device(), &triangleFragShader)) {
-		printf("Error when building the triangle fragment shader module");
-	}
-	else {
-		printf("Triangle fragment shader succesfully loaded");
-	}
-
-	VkShaderModule triangleVertexShader;
-	if (!LoadShader("../src/shaders/colored_triangle_mesh.vert.spv", device_.get_device(), &triangleVertexShader)) {
-		printf("Error when building the triangle vertex shader module");
-	}
-	else {
-		printf("Triangle vertex shader succesfully loaded");
-	}
-
-	VkPushConstantRange buffer_range{};
-	buffer_range.offset = 0;
-	buffer_range.size = sizeof(GPUDrawPushConstants);
-	buffer_range.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-
-	VkPipelineLayoutCreateInfo pipeline_layout_info{};
-	pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	pipeline_layout_info.pNext = nullptr;
-	pipeline_layout_info.pSetLayouts = &draw_image_descriptor_set_layout_;
-	pipeline_layout_info.setLayoutCount = 1;
-	pipeline_layout_info.pPushConstantRanges = &buffer_range;
-	pipeline_layout_info.pushConstantRangeCount = 1;
-
-	if (vkCreatePipelineLayout(device_.get_device(), &pipeline_layout_info, nullptr, &_meshPipelineLayout)) {
-#ifndef NDEBUG
-		printf("Compute pipeline creation failed!");
-#endif // !NDEBUG
-	}
-
-	PipelineBuilder pipeline_builder;
-
-	//use the triangle layout we created
-	pipeline_builder._pipeline_layout = _meshPipelineLayout;
-	//connecting the vertex and pixel shaders to the pipeline
-	pipeline_builder.SetShaders(triangleVertexShader, triangleFragShader);
-	//it will draw triangles
-	pipeline_builder.SetInputTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
-	//filled triangles
-	pipeline_builder.SetPolygonMode(VK_POLYGON_MODE_FILL);
-	//no backface culling
-	pipeline_builder.SetCullMode(VK_CULL_MODE_NONE, VK_FRONT_FACE_CLOCKWISE);
-	//no multisampling
-	pipeline_builder.SetMultisamplingNone();
-	//no blending
-	pipeline_builder.DisableBlending();
-	//no depth testing
-	pipeline_builder.DisableDepthtest();
-
-	//connect the image format we will draw into, from draw image
-	pipeline_builder.SetColorAttachmentFormat(swap_chain_.get_draw_image().image_format);
-	pipeline_builder.SetDepthFormat(VK_FORMAT_UNDEFINED);
-
-	//finally build the pipeline
-	_meshPipeline = pipeline_builder.BuildPipeline(device_.get_device());
-
-	//clean structures
-	vkDestroyShaderModule(device_.get_device(), triangleFragShader, nullptr);
-	vkDestroyShaderModule(device_.get_device(), triangleVertexShader, nullptr);
-
-	main_deletion_queue_.push_function([&]() {
-		vkDestroyPipelineLayout(device_.get_device(), _meshPipelineLayout, nullptr);
-		vkDestroyPipeline(device_.get_device(), _meshPipeline, nullptr);
-		});
-}
-
-void LavaEngine::initDefaultData()
-{
-	std::array<Vertex, 3> rect_vertices;
-
-	rect_vertices[0].position = { 0.5,0.5, 0 };
-	rect_vertices[1].position = { 0.0,-0.5, 0 };
-	rect_vertices[2].position = { -0.5,0.5, 0 };
-
-	rect_vertices[0].color = { 0,0, 0,1 };
-	rect_vertices[1].color = { 0.5,0.5,0.5 ,1 };
-	rect_vertices[2].color = { 1,0, 0,1 };
-
-	std::array<uint32_t, 3> rect_indices;
-
-	rect_indices[0] = 0;
-	rect_indices[1] = 1;
-	rect_indices[2] = 2;
-
-	rectangle = uploadMesh(rect_indices, rect_vertices);
-
-	//delete the rectangle data on engine shutdown
-	main_deletion_queue_.push_function([&]() {
-		destroyBuffer(rectangle.index_buffer);
-		destroyBuffer(rectangle.vertex_buffer);
-		});
-}
-
 AllocatedBuffer LavaEngine::createBuffer(size_t alloc_size, VkBufferUsageFlags usage, VmaMemoryUsage memory_usage)
 {
 	// allocate buffer
@@ -826,55 +548,6 @@ AllocatedBuffer LavaEngine::createBuffer(size_t alloc_size, VkBufferUsageFlags u
 void LavaEngine::destroyBuffer(const AllocatedBuffer& buffer)
 {
 	vmaDestroyBuffer(allocator_.get_allocator(), buffer.buffer, buffer.allocation);
-}
-
-GPUMeshBuffers LavaEngine::uploadMesh(std::span<uint32_t> indices, std::span<Vertex> vertices)
-{
-	const size_t vertex_buffer_size = vertices.size() * sizeof(Vertex);
-	const size_t index_buffer_size = indices.size() * sizeof(uint32_t);
-
-	GPUMeshBuffers new_surface;
-
-	//create vertex buffer
-	new_surface.vertex_buffer = createBuffer(vertex_buffer_size, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-		VMA_MEMORY_USAGE_GPU_ONLY);
-
-	//find the adress of the vertex buffer
-	VkBufferDeviceAddressInfo deviceAdressInfo{ .sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO,.buffer = new_surface.vertex_buffer.buffer };
-	new_surface.vertex_buffer_address = vkGetBufferDeviceAddress(device_.get_device(), &deviceAdressInfo);
-
-	//create index buffer
-	new_surface.index_buffer = createBuffer(index_buffer_size, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-		VMA_MEMORY_USAGE_GPU_ONLY);
-
-	AllocatedBuffer staging = createBuffer(vertex_buffer_size + index_buffer_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY);
-
-	void* data = staging.allocation->GetMappedData();
-
-	// copy vertex buffer
-	memcpy(data, vertices.data(), vertex_buffer_size);
-	// copy index buffer
-	memcpy((char*)data + vertex_buffer_size, indices.data(), index_buffer_size);
-
-	immediate_submit([&](VkCommandBuffer cmd) {
-		VkBufferCopy vertexCopy{ 0 };
-		vertexCopy.dstOffset = 0;
-		vertexCopy.srcOffset = 0;
-		vertexCopy.size = vertex_buffer_size;
-
-		vkCmdCopyBuffer(cmd, staging.buffer, new_surface.vertex_buffer.buffer, 1, &vertexCopy);
-
-		VkBufferCopy indexCopy{ 0 };
-		indexCopy.dstOffset = 0;
-		indexCopy.srcOffset = vertex_buffer_size;
-		indexCopy.size = index_buffer_size;
-
-		vkCmdCopyBuffer(cmd, staging.buffer, new_surface.index_buffer.buffer, 1, &indexCopy);
-		});
-
-	destroyBuffer(staging);
-
-	return new_surface;
 }
 
 void LavaEngine::initImgui() {
@@ -968,3 +641,8 @@ void LavaEngine::drawImgui(VkCommandBuffer command_buffer, VkImageView target_im
 }
 
 
+std::shared_ptr<LavaMesh> LavaEngine::addMesh(MeshProperties prop){
+	std::shared_ptr<LavaMesh> mesh = std::make_shared<LavaMesh>(*this, prop);
+	meshes_.push_back(mesh);
+	return mesh;
+}

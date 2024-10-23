@@ -12,6 +12,10 @@ LavaDevice::~LavaDevice(){
 	vkDestroyDevice(device_, nullptr);
 }
 
+void LavaDevice::operator=(LavaDevice& device) {
+	device_ = device.device_;
+}
+
 void LavaDevice::pickPhysicalDevice(LavaInstance& instance, LavaSurface& surface) {
 	uint32_t deviceCount = 0;
 	//Primero se obtienen la cantidad de GPUs disponibles en el equipo
