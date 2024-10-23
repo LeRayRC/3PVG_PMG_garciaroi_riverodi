@@ -62,7 +62,9 @@ public:
 	*/
 	bool isInputDown(int key);
 
-
+	/*
+	* @brief Return the mouse position in a vector(glm:vec2)
+	*/
 	glm::vec2 getMousePosition();
 
 	/**
@@ -227,7 +229,7 @@ private:
 	* @brief Update the value of the cursor position
 	*
 	* @param xpos Cursor's X position
-	* @param ypos Cursor's X position
+	* @param ypos Cursor's Y position
 	*/
 	void cursor_position_callback(double xpos, double ypos);
 
