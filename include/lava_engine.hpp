@@ -76,6 +76,7 @@ public:
 	bool stop_rendering = false;
 
 	DeletionQueue main_deletion_queue_;
+	static std::vector<std::function<void()>> end_frame_callbacks;
 
 	LavaWindow window_;
 	LavaInstance instance_;
@@ -86,7 +87,7 @@ public:
 	LavaSwapChain swap_chain_;
 	LavaFrameData frame_data_;
 	LavaInmediateCommunication inmediate_communication;
-	
+	LavaInput lava_input;
 
 	DescriptorAllocator global_descriptor_allocator_;
 	VkDescriptorSet draw_image_descriptor_set_;

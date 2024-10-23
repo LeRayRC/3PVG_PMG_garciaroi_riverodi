@@ -34,6 +34,7 @@ const std::vector<const char*> validationLayers = {
 };
 
 LavaEngine* loaded_engine = nullptr;
+std::vector<std::function<void()>> LavaEngine::end_frame_callbacks;
 
 LavaEngine::LavaEngine() :
 	surface_{ instance_.get_instance(), window_.get_window() },
@@ -44,7 +45,8 @@ LavaEngine::LavaEngine() :
 	allocator_{device_, instance_},
 	swap_chain_{ device_, surface_, window_extent_, allocator_.get_allocator()},
 	frame_data_{device_, surface_},
-	inmediate_communication{device_, surface_}
+	inmediate_communication{device_, surface_},
+	lava_input{window_.get_window()}
 {
 	//Singleton Functionality
 	assert(loaded_engine == nullptr);
@@ -63,7 +65,8 @@ LavaEngine::LavaEngine(unsigned int window_width, unsigned int window_height) :
 	allocator_{ device_, instance_ },
 	swap_chain_{ device_, surface_, window_extent_, allocator_.get_allocator() },
 	frame_data_{ device_, surface_ },
-	inmediate_communication{ device_, surface_ }
+	inmediate_communication{ device_, surface_ },
+	lava_input{ window_.get_window() }
 {
 	//Singleton Functionality
 	assert(loaded_engine == nullptr);
@@ -101,6 +104,7 @@ void LavaEngine::init() {
 
 void LavaEngine::mainLoop() {
   while (!glfwWindowShouldClose(get_window())) {
+
     glfwPollEvents();
 
 		ImGui_ImplVulkan_NewFrame();
@@ -127,6 +131,11 @@ void LavaEngine::mainLoop() {
 		ImGui::Render();
 
 		draw();
+
+		//End Frame Callbacks(NEEDS A WRAPER)
+		for (auto it = end_frame_callbacks.rbegin(); it != end_frame_callbacks.rend(); it++) {
+			(*it)();
+		}
   }
 }
 
@@ -222,7 +231,7 @@ void LavaEngine::draw() {
 	// dibujado al mismo estado para copiar la informacion
 	TransitionImage(commandBuffer, swap_chain_.get_draw_image().image ,
 		VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
-	//Cambiamos la imagen a tipo presentable para enseñarla en la superficie
+	//Cambiamos la imagen a tipo presentable para enseÃ±arla en la superficie
 	TransitionImage(commandBuffer, swap_chain_.get_swap_chain_images()[swap_chain_image_index],
 		VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
