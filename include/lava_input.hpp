@@ -62,6 +62,9 @@ public:
 	*/
 	bool isInputDown(int key);
 
+
+	glm::vec2 getMousePosition();
+
 	/**
 	* @brief Bind the recieve action to a key from mouse or keyboard. (ONLY FOR KEYBOARD AND MOUSE)
 	*
@@ -190,6 +193,11 @@ private:
 	*/
 	void ProcessEndFrame();
 
+	/**
+	* @brief Cursor position updated to the curren value
+	*/
+	glm::vec2 cursor_pos_;
+
 
 	/****************** Keys & Mouse Implementation **************/
 
@@ -214,6 +222,14 @@ private:
 	* @param mods Bit field describing which modifier keys were held down.
 	*/
 	void kb_mouse_callback(int key, int input_type, int action, int mods);
+
+	/**
+	* @brief Update the value of the cursor position
+	*
+	* @param xpos Cursor's X position
+	* @param ypos Cursor's X position
+	*/
+	void cursor_position_callback(double xpos, double ypos);
 
 
 	/****************** Gamepad Implementation **************/
@@ -267,6 +283,17 @@ private:
 	* @param mods Bit field describing which modifier keys were held down.
 	*/
 	static void global_mouse_callback(GLFWwindow* window, int button, int action, int mods);
+
+
+	/**
+	* @brief Call the specific function associated to the recive window
+	*		 assigning cursor's postition value, checking the action value. (FOR MOUSE)
+	*
+	* @param window The window to call
+	* @param xpos Cursor's X position
+	* @param ypos Cursor's X position
+	*/
+	static void global_cursor_position_callback(GLFWwindow* window, double xpos, double ypos);
 
 	/**
 	* @brief Clear the specific input associated to the recive window

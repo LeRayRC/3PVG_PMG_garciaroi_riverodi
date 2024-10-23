@@ -21,12 +21,14 @@ LavaInput::LavaInput(GLFWwindow* window) : window_{window}
 	glfwSetKeyCallback(window_, global_key_callback);
 	glfwSetMouseButtonCallback(window_, global_mouse_callback);
 	glfwSetWindowCloseCallback(window_, clean_bindings);
+	glfwSetCursorPosCallback(window_, global_cursor_position_callback);
 
 	//If this is the first window add the end frame callback to the engine
 	if(s_input_map_.empty()) LavaEngine::end_frame_callbacks.push_back(end_frame);
 
 	//Add this window to the map
 	s_input_map_.emplace(window_, this);
+	cursor_pos_ = glm::vec2(0,0);
 }
 
 LavaInput::~LavaInput()
@@ -55,6 +57,11 @@ bool LavaInput::isInputDown(int key)
 {
 	return kb_mouse_input_properties_map_[key].past_frame_properties & KEY_PRESS ||
 		kb_mouse_input_properties_map_[key].past_frame_properties & KEY_REPEAT;
+}
+
+glm::vec2 LavaInput::getMousePosition()
+{
+	return cursor_pos_;
 }
 
 bool LavaInput::isActionPressed(int action)
@@ -188,6 +195,12 @@ void LavaInput::kb_mouse_callback(int key, int input_type, int action, int mods)
 	kb_mouse_input_properties_map_[key].last_action_time = glfwGetTime();
 }
 
+void LavaInput::cursor_position_callback(double xpos, double ypos)
+{
+	cursor_pos_.x = (float)xpos;
+	cursor_pos_.y = (float)ypos;
+}
+
 void LavaInput::ProcessEndFrame()
 {
 	//Process al keys in kb_mouse_input_properties_map_(keyboard and mouse)
@@ -205,17 +218,17 @@ void LavaInput::ProcessEndFrame()
 		GLFWgamepadstate aux = i->second.state;
 		if (glfwGetGamepadState(i->first, &i->second.state) == GLFW_TRUE) { // If gamepad is connected process the state
 			i->second.is_active = true;
-			for (int j = 0; j < 15; j++) {
-				if (aux.buttons[j] == GLFW_RELEASE && i->second.state.buttons[j] == GLFW_PRESS) {
+			for (int j = 0; j < 15; j++) {	//Process all buttons
+				if (aux.buttons[j] == 0 && i->second.state.buttons[j] == GLFW_PRESS) { // If past state is 0 and current is Press set Press property
 					i->second.state.buttons[j] = KEY_PRESS;
 				}
-				else if (aux.buttons[j] == KEY_PRESS || aux.buttons[j] == KEY_REPEAT) {
-					if(i->second.state.buttons[j] == GLFW_PRESS) i->second.state.buttons[j] = KEY_REPEAT;
-					else i->second.state.buttons[j] = KEY_RELEASE;
+				else if (aux.buttons[j] == KEY_PRESS || aux.buttons[j] == KEY_REPEAT) {	// If past state is PRESS or REPEAT
+					if(i->second.state.buttons[j] == GLFW_PRESS) i->second.state.buttons[j] = KEY_REPEAT;	// If current state is press set Repeat property
+					else i->second.state.buttons[j] = KEY_RELEASE;	// else(curren state is Release) set current state as release
 				}
 			}
 		}
-		else i->second.is_active = false;  // If gamepad is not conected set is active to fasle
+		else i->second.is_active = false;  // If gamepad is not conected set is_active to false
 	}
 }
 
@@ -227,6 +240,11 @@ void LavaInput::global_key_callback(GLFWwindow* window, int key, int scancode, i
 void LavaInput::global_mouse_callback(GLFWwindow* window, int button, int action, int mods)
 {
 	s_input_map_[window]->kb_mouse_callback(button, -1, action, mods);
+}
+
+void LavaInput::global_cursor_position_callback(GLFWwindow* window, double xpos, double ypos)
+{
+	s_input_map_[window]->cursor_position_callback(xpos, ypos);
 }
 
 void LavaInput::clean_bindings(GLFWwindow* window)

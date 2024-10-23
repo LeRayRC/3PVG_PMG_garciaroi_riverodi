@@ -107,6 +107,7 @@ void LavaEngine::mainLoop() {
 	  if (lava_input.isGamePadButtonPressed(0,0)) printf("\nSpace Pressed\n");
 	  if (lava_input.isGamePadButtonReleased(0,0)) printf("\nSpace Released\n");
 
+	  printf("\n x:%f  y:%f\n", lava_input.getMousePosition().x, lava_input.getMousePosition().y);
 
     glfwPollEvents();
 
