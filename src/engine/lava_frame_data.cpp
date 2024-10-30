@@ -15,8 +15,13 @@
 #include "engine/lava_device.hpp"
 #include "engine/lava_surface.hpp"
 
-LavaFrameData::LavaFrameData(LavaDevice& use_device, LavaSurface& use_surface)
-{
+const std::vector<LavaDescriptorManager::PoolSizeRatio> pool_ratios = {
+	{VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 2},
+};
+
+const unsigned int initial_sets = 1000;
+
+LavaFrameData::LavaFrameData(LavaDevice& use_device, LavaSurface& use_surface){
 	device_ = &use_device;
 	frame_number_ = 0;
 
@@ -43,6 +48,8 @@ LavaFrameData::LavaFrameData(LavaDevice& use_device, LavaSurface& use_surface)
 	semaphore_info.pNext = nullptr;
 
 	for (int i = 0; i < FRAME_OVERLAP; i++) {
+		frames_[i].descriptor_manager = { use_device.get_device(), initial_sets, pool_ratios };
+
 		if (vkCreateCommandPool(use_device.get_device(), &command_pool_info, nullptr,
 			&frames_[i].command_pool) != VK_SUCCESS) {
 			exit(-1);

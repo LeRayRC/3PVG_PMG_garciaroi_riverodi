@@ -14,6 +14,7 @@
 #define __LAVA_FRAME_DATA_H__ 1
 
 #include "lava_types.hpp"
+#include "engine/lava_descriptor_manager.hpp"
 
 struct FrameData {
 	VkCommandPool command_pool;
@@ -21,6 +22,7 @@ struct FrameData {
 	VkSemaphore swap_chain_semaphore; //GPU <-> GPU
 	VkSemaphore render_semaphore; //GPU <-> GPU
 	VkFence render_fence; // CPU <-> GPU
+	LavaDescriptorManager descriptor_manager;
 	//	DeletionQueue deletion_queue;
 };
 
@@ -39,9 +41,10 @@ public:
 	uint64_t  frame_number_;
 private:
 	FrameData frames_[FRAME_OVERLAP];
-
+	
 	//Require Device for creation and destruction
 	class LavaDevice* device_;
+
 };
 
 #endif //__LAVA_FRAME_DATA_H__

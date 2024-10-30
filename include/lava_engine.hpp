@@ -25,6 +25,7 @@
 #include "engine/lava_pipeline.hpp"
 #include "engine/lava_material.hpp"
 #include "engine/lava_mesh.hpp"
+#include "engine/lava_descriptor_manager.hpp"
 
 
 struct DeletionQueue {
@@ -87,7 +88,7 @@ public:
 	LavaFrameData frame_data_;
 	LavaInmediateCommunication inmediate_communication;
 	
-
+	
 	DescriptorAllocator global_descriptor_allocator_;
 	VkDescriptorSet draw_image_descriptor_set_;
 	VkDescriptorSetLayout draw_image_descriptor_set_layout_;

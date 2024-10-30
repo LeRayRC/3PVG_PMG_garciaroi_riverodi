@@ -32,6 +32,8 @@ const std::vector<const char*> validationLayers = {
 	"VK_LAYER_KHRONOS_validation"
 };
 
+
+
 LavaEngine* loaded_engine = nullptr;
 
 LavaEngine::LavaEngine() :
