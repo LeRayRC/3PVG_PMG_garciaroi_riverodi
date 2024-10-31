@@ -16,7 +16,7 @@
 #include "engine/lava_surface.hpp"
 
 const std::vector<LavaDescriptorManager::PoolSizeRatio> pool_ratios = {
-	{VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 2},
+	{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2},
 };
 
 const unsigned int initial_sets = 1000;

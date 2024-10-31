@@ -1,39 +1,6 @@
 #include "lava_descriptors.hpp"
 
-void DescriptorLayoutBuilder::addBinding(uint32_t binding, VkDescriptorType type) {
-  VkDescriptorSetLayoutBinding bind{};
-  bind.binding = binding;
-  bind.descriptorCount = 1;
-  bind.descriptorType = type;
-  bindings_.push_back(bind);
-}
 
-void DescriptorLayoutBuilder::clear() {
-  bindings_.clear();
-}
-VkDescriptorSetLayout DescriptorLayoutBuilder::build(VkDevice device, 
-  VkShaderStageFlags shader_stages,
-  void* pnext, 
-  VkDescriptorSetLayoutCreateFlags flags) {
-  for (auto& b : bindings_) {
-    b.stageFlags |= shader_stages;
-  }
-  VkDescriptorSetLayoutCreateInfo info{};
-  info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-  info.pNext = pnext;
-  info.pBindings = bindings_.data();
-  info.bindingCount = (uint32_t)bindings_.size();
-  info.flags = flags;
-
-  VkDescriptorSetLayout set;
-  if (vkCreateDescriptorSetLayout(device, &info, nullptr, &set) != VK_SUCCESS) {
-#ifndef NDEBUG
-    printf("Descriptor set layout creation failed!");
-#endif // !NDEBUG
-  };
-
-  return set;
-}
 
 void DescriptorAllocator::init_pool(VkDevice device, 
   uint32_t max_sets, std::span<PoolSizeRatio> pool_ratios){

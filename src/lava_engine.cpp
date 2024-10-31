@@ -12,6 +12,7 @@
 #include "lava_vulkan_helpers.hpp"
 #include "lava_vulkan_inits.hpp"
 #include "engine/lava_pipeline_builder.hpp"
+#include "engine/lava_image.hpp"
 
 //#define VMA_IMPLEMENTATION
 #include "vk_mem_alloc.h"
@@ -311,6 +312,9 @@ void LavaEngine::drawMeshes(VkCommandBuffer command_buffer)
 
 	vkCmdSetScissor(command_buffer, 0, 1, &scissor);
 
+	//Clean Descriptor sets for current frame
+
+	frame_data_.getCurrentFrame().descriptor_manager.clearPools();
 	for (auto mesh : meshes_) {
 
 		vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mesh->get_material()->get_pipeline().get_pipeline());
@@ -326,6 +330,23 @@ void LavaEngine::drawMeshes(VkCommandBuffer command_buffer)
 
 		projection[1][1] *= -1;
 
+		//De momento obtenemos solo el primer descriptor set 
+		VkDescriptorSet image_set =
+			frame_data_.getCurrentFrame().descriptor_manager.allocate(
+				mesh->get_material()->get_pipeline().get_descriptor_set_layouts()[0]);
+		
+		frame_data_.getCurrentFrame().descriptor_manager.writeImage(
+			0,
+			mesh->get_material()->get_image(0).diffuse->get_allocated_image().image_view,
+			mesh->get_material()->get_image(0).diffuse->get_sampler(),
+			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+
+		frame_data_.getCurrentFrame().descriptor_manager.updateSet(image_set);
+
+		vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+			mesh->get_material()->get_pipeline().get_layout(),
+			0, 1, &image_set, 0, nullptr);
 
 		push_constants.world_matrix = projection * model;
 		for (std::shared_ptr<MeshAsset> submesh : mesh->meshes_) {
@@ -343,53 +364,53 @@ void LavaEngine::drawMeshes(VkCommandBuffer command_buffer)
 }
 
 void LavaEngine::createDescriptors() {
-	//Se crean 10 descriptor sets, cada uno con una imagen
-	std::vector<DescriptorAllocator::PoolSizeRatio> sizes = {
-		{VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1}
-	};
+	////Se crean 10 descriptor sets, cada uno con una imagen
+	//std::vector<DescriptorAllocator::PoolSizeRatio> sizes = {
+	//	{VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1}
+	//};
 
-	global_descriptor_allocator_.init_pool(device_.get_device(), 10, sizes);
+	//global_descriptor_allocator_.init_pool(device_.get_device(), 10, sizes);
 
-	{
-		DescriptorLayoutBuilder builder;
-		builder.addBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
-		draw_image_descriptor_set_layout_ = builder.build(device_.get_device(), VK_SHADER_STAGE_COMPUTE_BIT);
-	}
+	//{
+	//	DescriptorLayoutBuilder builder;
+	//	builder.addBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+	//	draw_image_descriptor_set_layout_ = builder.build(device_.get_device(), VK_SHADER_STAGE_COMPUTE_BIT);
+	//}
 
-	//Ahora se reserva el description set
-	draw_image_descriptor_set_ =
-		global_descriptor_allocator_.allocate(device_.get_device(), draw_image_descriptor_set_layout_);
+	////Ahora se reserva el description set
+	//draw_image_descriptor_set_ =
+	//	global_descriptor_allocator_.allocate(device_.get_device(), draw_image_descriptor_set_layout_);
 
-	VkDescriptorImageInfo img_info{};
-	img_info.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-	//La imagen que se creo con anterioridad 
-	// fuera del swap chain para poder dibujar sobre ella
-	img_info.imageView = swap_chain_.get_draw_image().image_view;
+	//VkDescriptorImageInfo img_info{};
+	//img_info.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+	////La imagen que se creo con anterioridad 
+	//// fuera del swap chain para poder dibujar sobre ella
+	//img_info.imageView = swap_chain_.get_draw_image().image_view;
 
-	VkWriteDescriptorSet draw_image_write{};
-	draw_image_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-	draw_image_write.pNext = nullptr;
+	//VkWriteDescriptorSet draw_image_write{};
+	//draw_image_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	//draw_image_write.pNext = nullptr;
 
-	draw_image_write.dstBinding = 0;
-	draw_image_write.dstSet = draw_image_descriptor_set_;
-	draw_image_write.descriptorCount = 1;
-	draw_image_write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-	draw_image_write.pImageInfo = &img_info;
+	//draw_image_write.dstBinding = 0;
+	//draw_image_write.dstSet = draw_image_descriptor_set_;
+	//draw_image_write.descriptorCount = 1;
+	//draw_image_write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+	//draw_image_write.pImageInfo = &img_info;
 
-	vkUpdateDescriptorSets(device_.get_device(), 1, &draw_image_write, 0, nullptr);
-	
-	//make sure both the descriptor allocator and the new layout get cleaned up properly
-	main_deletion_queue_.push_function([&]() {
-		global_descriptor_allocator_.destroy_pool(device_.get_device());
-		vkDestroyDescriptorSetLayout(device_.get_device(), draw_image_descriptor_set_layout_, nullptr);
-		});
+	//vkUpdateDescriptorSets(device_.get_device(), 1, &draw_image_write, 0, nullptr);
+	//
+	////make sure both the descriptor allocator and the new layout get cleaned up properly
+	//main_deletion_queue_.push_function([&]() {
+	//	global_descriptor_allocator_.destroy_pool(device_.get_device());
+	//	vkDestroyDescriptorSetLayout(device_.get_device(), draw_image_descriptor_set_layout_, nullptr);
+	//	});
 }
 
 void LavaEngine::createBackgroundPipelines() {
 	VkPipelineLayoutCreateInfo compute_layout{};
 	compute_layout.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 	compute_layout.pNext = nullptr;
-	compute_layout.pSetLayouts = &draw_image_descriptor_set_layout_;
+	//compute_layout.pSetLayouts = &draw_image_descriptor_set_layout_;
 	compute_layout.setLayoutCount = 1;
 	ComputeEffect gradient;
 	if (vkCreatePipelineLayout(device_.get_device(), &compute_layout, nullptr, &gradient.layout) != VK_SUCCESS) {
@@ -445,7 +466,7 @@ void LavaEngine::createBackgroundPipelinesImGui()
 	VkPipelineLayoutCreateInfo compute_layout{};
 	compute_layout.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 	compute_layout.pNext = nullptr;
-	compute_layout.pSetLayouts = &draw_image_descriptor_set_layout_;
+	//compute_layout.pSetLayouts = &draw_image_descriptor_set_layout_;
 	compute_layout.setLayoutCount = 1;
 
 	VkPushConstantRange push_constant{};

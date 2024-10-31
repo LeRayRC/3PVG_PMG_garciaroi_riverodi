@@ -91,7 +91,7 @@ public:
 	
 	DescriptorAllocator global_descriptor_allocator_;
 	VkDescriptorSet draw_image_descriptor_set_;
-	VkDescriptorSetLayout draw_image_descriptor_set_layout_;
+	VkDescriptorSetLayout generic_descriptor_set_layout_;
 
 	//VkPipeline gradient_pipeline_;
 

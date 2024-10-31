@@ -34,11 +34,20 @@ LavaImage::LavaImage(LavaEngine* engine,void* data, VkExtent3D size, VkFormat fo
 		});
 
 	engine->destroyBuffer(upload_buffer);
+
+	VkSamplerCreateInfo sampler_info = {};
+	sampler_info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+	sampler_info.magFilter = VK_FILTER_LINEAR;
+	sampler_info.minFilter = VK_FILTER_LINEAR;
+
+	vkCreateSampler(engine->device_.get_device(), &sampler_info, nullptr, &sampler_);
 }
 
 LavaImage::~LavaImage(){
+	vkDestroySampler(engine_->device_.get_device(), sampler_, nullptr);
 	vkDestroyImageView(engine_->device_.get_device(), image_.image_view, nullptr);
 	vmaDestroyImage(engine_->allocator_.get_allocator(), image_.image, image_.allocation);
+
 }
 
 

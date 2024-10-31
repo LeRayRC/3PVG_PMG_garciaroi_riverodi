@@ -4,6 +4,24 @@
 #include "lava_types.hpp"
 #include "lava_engine.hpp"
 
+struct LavaMaterialImage {
+	bool active;
+	class LavaImage* diffuse;
+	class LavaImage* normal;
+
+	LavaMaterialImage() {
+		active = false;
+		diffuse = nullptr;
+		normal = nullptr;
+	}
+	LavaMaterialImage(bool active, class LavaImage* diffuse, class LavaImage* normal) {
+		this->active = active;
+		this->diffuse = diffuse;
+		this->normal = normal;
+	}
+
+};
+
 class LavaMaterial
 {
 public:
@@ -14,9 +32,13 @@ public:
 	
 	LavaPipeline& get_pipeline() { return pipeline_; }
 
+	static const unsigned int material_images_count = 10;
+	LavaMaterialImage get_image(unsigned int index);
+	void set_image(unsigned int index, LavaMaterialImage image); 
 private:
 	std::string name_;
 	LavaPipeline pipeline_;
+	std::array<LavaMaterialImage, material_images_count > images_;
 };
 
 

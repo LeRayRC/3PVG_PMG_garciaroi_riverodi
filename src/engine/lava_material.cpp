@@ -5,12 +5,25 @@ LavaMaterial::LavaMaterial(LavaEngine& engine, MaterialProperties prop) :
               prop.fragment_shader_path,
               &engine.device_,
               &engine.swap_chain_,
-              engine.draw_image_descriptor_set_layout_,
+              VK_NULL_HANDLE,
               prop.pipeline_flags) } {
 
   name_ = prop.name;
   
 
+}
+
+LavaMaterialImage LavaMaterial::get_image(unsigned int index) {
+  if (index > images_.size()) index = images_.size() - 1;
+  return images_[index];
+}
+
+void LavaMaterial::set_image(unsigned int index, LavaMaterialImage temp_image) {
+  if (index > images_.size()) index = images_.size() - 1;
+  LavaMaterialImage& image = images_[index];
+  image.active = temp_image.active;
+  image.diffuse = temp_image.diffuse;
+  image.normal = temp_image.normal;
 }
 
 

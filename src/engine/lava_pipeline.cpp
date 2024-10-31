@@ -3,6 +3,7 @@
 #include "engine/lava_pipeline_builder.hpp"
 #include "lava_types.hpp"
 #include "lava_vulkan_helpers.hpp"
+#include "engine/lava_descriptor_manager.hpp"
 
 
 LavaPipeline::LavaPipeline(PipelineConfig config){
@@ -29,9 +30,11 @@ LavaPipeline::LavaPipeline(PipelineConfig config){
 	VkPipelineLayoutCreateInfo pipeline_layout_info{};
 	pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 	pipeline_layout_info.pNext = nullptr;
+
+	//Create Generic pipeline layouts 10 descriptor sets with two textures each 
 	
 	if ((config.pipeline_flags & PipelineFlags::PIPELINE_USE_DESCRIPTOR_SET) != 0) {
-		configureDescriptorSet(&pipeline_layout_info, config.descriptor_set_layout);
+		configureDescriptorSet(&pipeline_layout_info);
 	}
 	else {
 		pipeline_layout_info.setLayoutCount = 0;
@@ -84,6 +87,9 @@ LavaPipeline::~LavaPipeline() {
 	vkDeviceWaitIdle(device_);
 	vkDestroyPipeline(device_, pipeline_, nullptr);
 	vkDestroyPipelineLayout(device_, layout_, nullptr);
+	for (int i = 0; i < descriptor_set_layouts_.size(); i++) {
+		vkDestroyDescriptorSetLayout(device_, descriptor_set_layouts_[i], nullptr);
+	}
 }
 
 void LavaPipeline::configurePushConstants(VkPipelineLayoutCreateInfo* info,
@@ -91,9 +97,15 @@ void LavaPipeline::configurePushConstants(VkPipelineLayoutCreateInfo* info,
 	info->pPushConstantRanges = range;
 	info->pushConstantRangeCount = 1;
 }
-void LavaPipeline::configureDescriptorSet(VkPipelineLayoutCreateInfo* info, VkDescriptorSetLayout layout) {
-	info->pSetLayouts = &layout;
-	info->setLayoutCount = 1;
+void LavaPipeline::configureDescriptorSet(VkPipelineLayoutCreateInfo* info) {
+	DescriptorLayoutBuilder builder;
+	builder.addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+	builder.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+	for (int i = 0; i < 10; i++) {
+		descriptor_set_layouts_[i] = builder.build(device_, VK_SHADER_STAGE_FRAGMENT_BIT);
+	}
+	info->pSetLayouts = descriptor_set_layouts_.data();
+	info->setLayoutCount = descriptor_set_layouts_.size();
 }
 void LavaPipeline::configureAttributes(VkPipelineLayoutCreateInfo* info) {
 	//To implement

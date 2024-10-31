@@ -10,9 +10,18 @@ public:
 	LavaImage(LavaEngine* engine,void* data, VkExtent3D size, VkFormat format, VkImageUsageFlags usage, bool mipmapped=false);
 	~LavaImage();
 
+	AllocatedImage get_allocated_image() {
+		return image_;
+	}
+
+	VkSampler get_sampler() {
+		return sampler_;
+	}
+
 private:
 	void allocate(VkExtent3D size, VkFormat format, VkImageUsageFlags usage, bool mipmapped=false);
 	AllocatedImage image_;
+	VkSampler sampler_;
 	LavaEngine* engine_;
 };
 
