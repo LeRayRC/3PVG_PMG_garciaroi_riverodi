@@ -54,6 +54,14 @@ struct AllocatedBuffer {
 	VmaAllocationInfo info;
 };
 
+struct AllocatedImage {
+	VkImage image;
+	VkImageView image_view;
+	VmaAllocation allocation;
+	VkExtent3D image_extent;
+	VkFormat image_format;
+};
+
 struct Vertex {
 	glm::vec3 position;
 	float uv_x;
@@ -61,6 +69,8 @@ struct Vertex {
 	float uv_y;
 	glm::vec4 color;
 };
+
+
 
 // holds the resources needed for a mesh
 struct GPUMeshBuffers {

@@ -5,7 +5,6 @@ layout (location = 0) out vec3 outColor;
 layout (location = 1) out vec2 outUV;
 
 struct Vertex {
-
 	vec3 position;
 	float uv_x;
 	vec3 normal;
@@ -23,6 +22,8 @@ layout( push_constant ) uniform constants
 	mat4 render_matrix;
 	VertexBuffer vertexBuffer;
 } PushConstants;
+
+
 
 void main() 
 {	
