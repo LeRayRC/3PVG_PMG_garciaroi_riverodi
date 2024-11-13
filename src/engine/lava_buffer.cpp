@@ -1,0 +1,57 @@
+#include "engine/lava_buffer.hpp"
+#include "engine/lava_allocator.hpp"
+
+#define VMA_IMPLEMENTATION
+#include "vk_mem_alloc.h"
+
+
+LavaBuffer::LavaBuffer() {
+	printf("Default constructor for LavaBuffer\n");
+	initialized_ = false;
+}
+
+
+
+LavaBuffer::LavaBuffer(LavaAllocator& allocator, size_t alloc_size, VkBufferUsageFlags usage, VmaMemoryUsage memory_usage)
+{
+	allocator_ = &allocator;
+	// allocate buffer
+	VkBufferCreateInfo buffer_info = { .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+	buffer_info.pNext = nullptr;
+	buffer_info.size = alloc_size;
+
+	buffer_info.usage = usage;
+
+	VmaAllocationCreateInfo vmaalloc_info = {};
+	vmaalloc_info.usage = memory_usage;
+	vmaalloc_info.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT;
+
+	// allocate the buffer
+	if (vmaCreateBuffer(allocator_->get_allocator(), &buffer_info, &vmaalloc_info, &buffer_.buffer, &buffer_.allocation,
+		&buffer_.info)) {
+#ifndef NDEBUG
+		printf("Mesh Buffer creation fail!");
+#endif // !NDEBUG
+	}
+	initialized_ = true;
+	mapped_ = false;
+}
+
+
+LavaBuffer::~LavaBuffer(){
+	if (initialized_) {
+		if (mapped_) {
+			vmaUnmapMemory(allocator_->get_allocator(), buffer_.allocation);
+		}
+		vmaDestroyBuffer(allocator_->get_allocator(), buffer_.buffer, buffer_.allocation);
+	}
+	
+}
+
+void LavaBuffer::setMappedData(void* data) {
+
+	void* mapped_data;
+	vmaMapMemory(allocator_->get_allocator(), buffer_.allocation, &mapped_data);
+	memcpy(mapped_data, data, sizeof(GlobalSceneData));
+	mapped_ = true;
+}

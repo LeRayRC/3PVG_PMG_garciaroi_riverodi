@@ -29,6 +29,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/mat4x4.hpp>
 #include <glm/gtx/quaternion.hpp>
+#include "engine/lava_buffer.hpp"
 
 struct ComputePushConstants {
 	glm::vec4 data1;
@@ -48,11 +49,6 @@ struct ComputeEffect {
 	ComputePushConstants data;
 };
 
-struct AllocatedBuffer {
-	VkBuffer buffer;
-	VmaAllocation allocation;
-	VmaAllocationInfo info;
-};
 
 struct AllocatedImage {
 	VkImage image;
@@ -71,14 +67,12 @@ struct Vertex {
 };
 
 
-
-// holds the resources needed for a mesh
 struct GPUMeshBuffers {
-
-	AllocatedBuffer index_buffer;
-	AllocatedBuffer vertex_buffer;
+	std::unique_ptr<LavaBuffer> index_buffer;
+	std::unique_ptr<LavaBuffer> vertex_buffer;
 	VkDeviceAddress vertex_buffer_address;
 };
+
 
 // push constants for our mesh object draws
 struct GPUDrawPushConstants {
@@ -135,6 +129,13 @@ struct MeshAsset {
 	std::string name;
 	std::vector<GeoSurface> surfaces;
 	GPUMeshBuffers meshBuffers;
+};
+
+struct GlobalSceneData {
+	glm::mat4 view;
+	glm::mat4 proj;
+	glm::mat4 viewproj;
+	glm::vec4 ambientColor;
 };
 
 

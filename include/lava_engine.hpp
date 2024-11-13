@@ -77,6 +77,7 @@ public:
 	bool stop_rendering = false;
 
 	DeletionQueue main_deletion_queue_;
+	GlobalSceneData global_scene_data_;
 
 	LavaWindow window_;
 	LavaInstance instance_;
@@ -88,12 +89,8 @@ public:
 	LavaFrameData frame_data_;
 	LavaInmediateCommunication inmediate_communication;
 	
-	
-	DescriptorAllocator global_descriptor_allocator_;
-	VkDescriptorSet draw_image_descriptor_set_;
-	VkDescriptorSetLayout generic_descriptor_set_layout_;
-
-	//VkPipeline gradient_pipeline_;
+	LavaDescriptorManager global_descriptor_allocator_;
+	VkDescriptorSetLayout global_descriptor_set_layout_;
 
 	DescriptorAllocator imgui_descriptor_alloc;
 
@@ -124,8 +121,8 @@ public:
 
 	std::vector<std::shared_ptr<LavaMesh>> meshes_;
 
-	AllocatedBuffer createBuffer(size_t alloc_size, VkBufferUsageFlags usage, VmaMemoryUsage memory_usage);
-	void destroyBuffer(const AllocatedBuffer& buffer);
+	//AllocatedBuffer createBuffer(size_t alloc_size, VkBufferUsageFlags usage, VmaMemoryUsage memory_usage);
+	//void destroyBuffer(const AllocatedBuffer& buffer);
 ////////////////////////////////
 
 	void initImgui();

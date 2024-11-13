@@ -16,13 +16,28 @@
 #include "engine/lava_surface.hpp"
 
 const std::vector<LavaDescriptorManager::PoolSizeRatio> pool_ratios = {
-	{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2},
+	{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 3 },
+	{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 3 },
+	{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 3 },
+	{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 4 },
 };
 
 const unsigned int initial_sets = 1000;
 
-LavaFrameData::LavaFrameData(LavaDevice& use_device, LavaSurface& use_surface){
+void FrameData::initGlobalDescriptorSet(VkDescriptorSetLayout layout) {
+	global_descriptor_set_ = descriptor_manager.allocate(layout);
+}
+
+void LavaFrameData::initGlobalDescriptorSet(VkDescriptorSetLayout layout) {
+	for (int i = 0; i < FRAME_OVERLAP; i++) {
+		frames_[i].initGlobalDescriptorSet(layout);
+	}
+}
+
+LavaFrameData::LavaFrameData(LavaDevice& use_device, LavaSurface& use_surface, LavaAllocator& allocator, GlobalSceneData* scene_data){
+	
 	device_ = &use_device;
+	allocator_ = &allocator;
 	frame_number_ = 0;
 
 	QueueFamilyIndices queueFamilyIndices =
@@ -79,6 +94,8 @@ LavaFrameData::LavaFrameData(LavaDevice& use_device, LavaSurface& use_surface){
 			exit(-1);
 		}
 
+		frames_[i].global_data_buffer = std::make_unique<LavaBuffer>(allocator, sizeof(GlobalSceneData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
+		frames_[i].global_data_buffer->setMappedData(scene_data);
 	}
 }
 
@@ -91,3 +108,5 @@ LavaFrameData::~LavaFrameData()
 		vkDestroySemaphore(device_->get_device(), frames_[i].swap_chain_semaphore, nullptr);
 	}
 }
+
+

@@ -38,6 +38,7 @@ const std::vector<const char*> validationLayers = {
 LavaEngine* loaded_engine = nullptr;
 
 LavaEngine::LavaEngine() :
+	global_scene_data_{ glm::mat4(0.0f),glm::mat4(0.0f),glm::mat4(0.0f),glm::vec4(0.0f)},
 	surface_{ instance_.get_instance(), window_.get_window() },
 	instance_{ validationLayers },
 	window_{ 1280, 720, "LavaEngine" },
@@ -45,7 +46,7 @@ LavaEngine::LavaEngine() :
 	window_extent_{ 1280, 720 },
 	allocator_{device_, instance_},
 	swap_chain_{ device_, surface_, window_extent_, allocator_.get_allocator()},
-	frame_data_{device_, surface_},
+	frame_data_{device_, surface_, allocator_, &global_scene_data_},
 	inmediate_communication{device_, surface_}
 {
 	//Singleton Functionality
@@ -53,10 +54,15 @@ LavaEngine::LavaEngine() :
 	loaded_engine = this;
 	is_initialized_ = false;
 	stop_rendering = false;
-	//render_pass_ = VK_NULL_HANDLE;
+	//Descriptor Sets
+	DescriptorLayoutBuilder builder;
+	builder.addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+	global_descriptor_set_layout_ = builder.build(device_.get_device(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
+	frame_data_.initGlobalDescriptorSet(global_descriptor_set_layout_);
 }
 
 LavaEngine::LavaEngine(unsigned int window_width, unsigned int window_height) :
+	global_scene_data_{ glm::mat4(0.0f),glm::mat4(0.0f),glm::mat4(0.0f),glm::vec4(0.0f) },
 	window_{window_width, window_height, "LavaEngine"},
 	instance_{validationLayers},
 	surface_{instance_.get_instance(), window_.get_window()},
@@ -64,7 +70,7 @@ LavaEngine::LavaEngine(unsigned int window_width, unsigned int window_height) :
 	window_extent_{window_width, window_height},
 	allocator_{ device_, instance_ },
 	swap_chain_{ device_, surface_, window_extent_, allocator_.get_allocator() },
-	frame_data_{ device_, surface_ },
+	frame_data_{ device_, surface_, allocator_, &global_scene_data_ },
 	inmediate_communication{ device_, surface_ }
 {
 	//Singleton Functionality
@@ -72,12 +78,16 @@ LavaEngine::LavaEngine(unsigned int window_width, unsigned int window_height) :
 	loaded_engine = this;
 	is_initialized_ = false;
 	stop_rendering = false;
-	//render_pass_ = VK_NULL_HANDLE;
+	//Descriptor Sets
+	DescriptorLayoutBuilder builder;
+	builder.addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+	global_descriptor_set_layout_ = builder.build(device_.get_device(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
+	frame_data_.initGlobalDescriptorSet(global_descriptor_set_layout_);
 }
 
 LavaEngine::~LavaEngine(){
 	vkDeviceWaitIdle(device_.get_device());
-
+	vkDestroyDescriptorSetLayout(device_.get_device(), global_descriptor_set_layout_, nullptr);
 	//pipelines_.clear();
 	main_deletion_queue_.flush();	
 }
@@ -297,8 +307,8 @@ void LavaEngine::drawMeshes(VkCommandBuffer command_buffer)
 	VkViewport viewport = {};
 	viewport.x = 0;
 	viewport.y = 0;
-	viewport.width = swap_chain_.get_draw_extent().width;
-	viewport.height = swap_chain_.get_draw_extent().height;
+	viewport.width = (float)swap_chain_.get_draw_extent().width;
+	viewport.height = (float)swap_chain_.get_draw_extent().height;
 	viewport.minDepth = 0.f;
 	viewport.maxDepth = 1.f;
 
@@ -353,7 +363,7 @@ void LavaEngine::drawMeshes(VkCommandBuffer command_buffer)
 			push_constants.vertex_buffer = submesh->meshBuffers.vertex_buffer_address;
 
 			vkCmdPushConstants(command_buffer, mesh->get_material()->get_pipeline().get_layout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &push_constants);
-			vkCmdBindIndexBuffer(command_buffer, submesh->meshBuffers.index_buffer.buffer , 0, VK_INDEX_TYPE_UINT32);
+			vkCmdBindIndexBuffer(command_buffer, submesh->meshBuffers.index_buffer->get_buffer().buffer, 0, VK_INDEX_TYPE_UINT32);
 
 			vkCmdDrawIndexed(command_buffer, submesh->surfaces[0].count, 1, submesh->surfaces[0].start_index, 0, 0);
 		}
@@ -529,35 +539,35 @@ void LavaEngine::createBackgroundPipelinesImGui()
 		});
 }
 
-AllocatedBuffer LavaEngine::createBuffer(size_t alloc_size, VkBufferUsageFlags usage, VmaMemoryUsage memory_usage)
-{
-	// allocate buffer
-	VkBufferCreateInfo buffer_info = { .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
-	buffer_info.pNext = nullptr;
-	buffer_info.size = alloc_size;
+//AllocatedBuffer LavaEngine::createBuffer(size_t alloc_size, VkBufferUsageFlags usage, VmaMemoryUsage memory_usage)
+//{
+//	// allocate buffer
+//	VkBufferCreateInfo buffer_info = { .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+//	buffer_info.pNext = nullptr;
+//	buffer_info.size = alloc_size;
+//
+//	buffer_info.usage = usage;
+//
+//	VmaAllocationCreateInfo vmaalloc_info = {};
+//	vmaalloc_info.usage = memory_usage;
+//	vmaalloc_info.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT;
+//	AllocatedBuffer new_buffer;
+//
+//	// allocate the buffer
+//	if (vmaCreateBuffer(allocator_.get_allocator(), &buffer_info, &vmaalloc_info, &new_buffer.buffer, &new_buffer.allocation,
+//		&new_buffer.info)) {
+//#ifndef NDEBUG
+//		printf("Mesh Buffer creation fail!");
+//#endif // !NDEBUG
+//	}
+//
+//	return new_buffer;
+//}
 
-	buffer_info.usage = usage;
-
-	VmaAllocationCreateInfo vmaalloc_info = {};
-	vmaalloc_info.usage = memory_usage;
-	vmaalloc_info.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT;
-	AllocatedBuffer new_buffer;
-
-	// allocate the buffer
-	if (vmaCreateBuffer(allocator_.get_allocator(), &buffer_info, &vmaalloc_info, &new_buffer.buffer, &new_buffer.allocation,
-		&new_buffer.info)) {
-#ifndef NDEBUG
-		printf("Mesh Buffer creation fail!");
-#endif // !NDEBUG
-	}
-
-	return new_buffer;
-}
-
-void LavaEngine::destroyBuffer(const AllocatedBuffer& buffer)
-{
-	vmaDestroyBuffer(allocator_.get_allocator(), buffer.buffer, buffer.allocation);
-}
+//void LavaEngine::destroyBuffer(const AllocatedBuffer& buffer)
+//{
+//	vmaDestroyBuffer(allocator_.get_allocator(), buffer.buffer, buffer.allocation);
+//}
 
 void LavaEngine::initImgui() {
 	

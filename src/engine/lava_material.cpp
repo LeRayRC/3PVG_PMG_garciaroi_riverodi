@@ -14,12 +14,12 @@ LavaMaterial::LavaMaterial(LavaEngine& engine, MaterialProperties prop) :
 }
 
 LavaMaterialImage LavaMaterial::get_image(unsigned int index) {
-  if (index > images_.size()) index = images_.size() - 1;
+  if (index > (unsigned int)images_.size()) index = (unsigned int)images_.size() - 1;
   return images_[index];
 }
 
 void LavaMaterial::set_image(unsigned int index, LavaMaterialImage temp_image) {
-  if (index > images_.size()) index = images_.size() - 1;
+  if (index > images_.size()) index = (unsigned int)(images_.size() - 1);
   LavaMaterialImage& image = images_[index];
   image.active = temp_image.active;
   image.diffuse = temp_image.diffuse;

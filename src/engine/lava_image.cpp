@@ -1,13 +1,14 @@
 #include "engine/lava_image.hpp"
 #include "lava_vulkan_inits.hpp"
 #include "lava_vulkan_helpers.hpp"
+#include "engine/lava_buffer.hpp"
 
 LavaImage::LavaImage(LavaEngine* engine,void* data, VkExtent3D size, VkFormat format, VkImageUsageFlags usage, bool mipmapped){
 	engine_ = engine;
 	size_t data_size = size.depth * size.width * size.height * 4;
-	AllocatedBuffer upload_buffer = engine_->createBuffer(data_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
+	LavaBuffer upload_buffer = LavaBuffer(engine->allocator_,data_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
 
-	memcpy(upload_buffer.info.pMappedData, data, data_size);
+	memcpy(upload_buffer.get_buffer().info.pMappedData, data, data_size);
 
 	allocate(size,format, usage, mipmapped);
 
@@ -26,14 +27,12 @@ LavaImage::LavaImage(LavaEngine* engine,void* data, VkExtent3D size, VkFormat fo
 		copy_region.imageExtent = size;
 
 		// copy the buffer into the image
-		vkCmdCopyBufferToImage(cmd, upload_buffer.buffer, image_.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1,
+		vkCmdCopyBufferToImage(cmd, upload_buffer.get_buffer().buffer, image_.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1,
 			&copy_region);
 
 		TransitionImage(cmd, image_.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 		});
-
-	engine->destroyBuffer(upload_buffer);
 
 	VkSamplerCreateInfo sampler_info = {};
 	sampler_info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
