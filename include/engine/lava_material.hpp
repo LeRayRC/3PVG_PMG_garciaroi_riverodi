@@ -32,7 +32,7 @@ public:
 	
 	LavaPipeline& get_pipeline() { return pipeline_; }
 
-	static const unsigned int material_images_count = 10;
+	static const unsigned int material_images_count = 1;
 	LavaMaterialImage get_image(unsigned int index);
 	void set_image(unsigned int index, LavaMaterialImage image); 
 private:

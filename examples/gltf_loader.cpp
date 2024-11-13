@@ -10,15 +10,8 @@ int main(int argc, char* argv[]) {
 	LavaEngine engine;
 	engine.init();
 
-	uint32_t  red = glm::packUnorm4x8(glm::vec4(1, 0, 0, 1));
-	uint32_t  white = glm::packUnorm4x8(glm::vec4(1, 1, 1, 1));
-	std::array<uint32_t, 16 * 16> pixels;
-	for (int x = 0; x < 16; x++) {
-		for (int y = 0; y < 16; y++) {
-			pixels[x + y * 16] = ((x % 2) ^ (y % 2)) ? white : red;
-		}
-	}
-	LavaImage checker_board_image = LavaImage(&engine, pixels.data(), VkExtent3D{ 16, 16, 1 }, VK_FORMAT_R8G8B8A8_UNORM,
+	uint32_t  pink = glm::packUnorm4x8(glm::vec4(1, 0, 1, 1));
+	LavaImage checker_board_image = LavaImage(&engine, (void*)&pink, VkExtent3D{ 1, 1, 1 }, VK_FORMAT_R8G8B8A8_UNORM,
 		VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
 
 

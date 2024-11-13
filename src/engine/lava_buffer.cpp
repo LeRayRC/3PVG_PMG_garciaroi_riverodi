@@ -23,8 +23,8 @@ LavaBuffer::LavaBuffer(LavaAllocator& allocator, size_t alloc_size, VkBufferUsag
 	buffer_info.usage = usage;
 
 	VmaAllocationCreateInfo vmaalloc_info = {};
-	vmaalloc_info.usage = memory_usage;
-	vmaalloc_info.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT;
+	vmaalloc_info.usage = memory_usage ; 
+	vmaalloc_info.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
 
 	// allocate the buffer
 	if (vmaCreateBuffer(allocator_->get_allocator(), &buffer_info, &vmaalloc_info, &buffer_.buffer, &buffer_.allocation,
@@ -35,6 +35,8 @@ LavaBuffer::LavaBuffer(LavaAllocator& allocator, size_t alloc_size, VkBufferUsag
 	}
 	initialized_ = true;
 	mapped_ = false;
+
+	//setMappedData();
 }
 
 
@@ -48,10 +50,11 @@ LavaBuffer::~LavaBuffer(){
 	
 }
 
-void LavaBuffer::setMappedData(void* data) {
-
-	void* mapped_data;
-	vmaMapMemory(allocator_->get_allocator(), buffer_.allocation, &mapped_data);
-	memcpy(mapped_data, data, sizeof(GlobalSceneData));
+void LavaBuffer::setMappedData() {
+	vmaMapMemory(allocator_->get_allocator(), buffer_.allocation, &mapped_data_);
 	mapped_ = true;
+}
+
+void LavaBuffer::updateBufferData(void* data, size_t size){
+	memcpy(mapped_data_, data, size);
 }

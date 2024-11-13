@@ -94,8 +94,9 @@ LavaFrameData::LavaFrameData(LavaDevice& use_device, LavaSurface& use_surface, L
 			exit(-1);
 		}
 
-		frames_[i].global_data_buffer = std::make_unique<LavaBuffer>(allocator, sizeof(GlobalSceneData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
-		frames_[i].global_data_buffer->setMappedData(scene_data);
+		frames_[i].global_data_buffer = std::make_unique<LavaBuffer>(allocator, sizeof(GlobalSceneData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
+		frames_[i].global_data_buffer->setMappedData();
+
 	}
 }
 

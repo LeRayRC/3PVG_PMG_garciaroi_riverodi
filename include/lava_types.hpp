@@ -100,6 +100,7 @@ public:
 	const char* fragment_shader_path;
 	class LavaDevice* device;
 	class LavaSwapChain* swap_chain;
+
 	VkDescriptorSetLayout descriptor_set_layout;
 	int pipeline_flags;
 };
@@ -138,6 +139,9 @@ struct GlobalSceneData {
 	glm::vec4 ambientColor;
 };
 
+struct CameraParameters {
+	float fov;
+};
 
 
 #endif // ! __LAVA_CUSTOM_TYPES_

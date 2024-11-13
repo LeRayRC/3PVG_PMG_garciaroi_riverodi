@@ -21,11 +21,14 @@ public:
 	~LavaBuffer();
 
 	AllocatedBuffer get_buffer() { return buffer_; }
-	void setMappedData(void* data);
+	void setMappedData();
+	void updateBufferData(void* data, size_t size);
+
 	AllocatedBuffer buffer_;
 	
 private:
 	class LavaAllocator* allocator_;
+	void* mapped_data_;
 	bool initialized_;
 	bool mapped_;
 };

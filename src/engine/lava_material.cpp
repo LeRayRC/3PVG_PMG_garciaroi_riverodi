@@ -5,7 +5,7 @@ LavaMaterial::LavaMaterial(LavaEngine& engine, MaterialProperties prop) :
               prop.fragment_shader_path,
               &engine.device_,
               &engine.swap_chain_,
-              VK_NULL_HANDLE,
+              engine.global_descriptor_set_layout_,
               prop.pipeline_flags) } {
 
   name_ = prop.name;

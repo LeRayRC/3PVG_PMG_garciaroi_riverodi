@@ -78,6 +78,7 @@ public:
 
 	DeletionQueue main_deletion_queue_;
 	GlobalSceneData global_scene_data_;
+	CameraParameters camera_parameters_;
 
 	LavaWindow window_;
 	LavaInstance instance_;
@@ -100,7 +101,6 @@ public:
 
 	
 	void init();
-	void initVulkan();
 	void mainLoop();
 	
 	void draw();
@@ -110,7 +110,6 @@ public:
 	//void DrawGeometryWithProperties(VkCommandBuffer command_buffer);
 	void drawMeshes(VkCommandBuffer command_buffer);
 	std::shared_ptr<class LavaMesh> addMesh(MeshProperties prop);
-	void createDescriptors();
 
 	VkInstance get_instance() const;
 	GLFWwindow* get_window() const;
@@ -120,10 +119,6 @@ public:
 	void createBackgroundPipelinesImGui();
 
 	std::vector<std::shared_ptr<LavaMesh>> meshes_;
-
-	//AllocatedBuffer createBuffer(size_t alloc_size, VkBufferUsageFlags usage, VmaMemoryUsage memory_usage);
-	//void destroyBuffer(const AllocatedBuffer& buffer);
-////////////////////////////////
 
 	void initImgui();
 	void drawImgui(VkCommandBuffer cmd, VkImageView targetImageView);
