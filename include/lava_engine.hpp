@@ -26,6 +26,7 @@
 #include "engine/lava_material.hpp"
 #include "engine/lava_mesh.hpp"
 #include "engine/lava_descriptor_manager.hpp"
+#include "engine/lava_image.hpp"
 
 
 struct DeletionQueue {
@@ -95,21 +96,14 @@ public:
 	VkDescriptorSetLayout global_descriptor_set_layout_;
 	VkDescriptorSet global_descriptor_set_;
 
+	uint32_t pink_color_;
+	std::shared_ptr<LavaImage> default_texture_image_;
+
 	DescriptorAllocator imgui_descriptor_alloc;
-
-	//Differents Effects
-	std::vector<ComputeEffect> backgroundEffects;
-	int currentBackgroundEffect{ 0 };
-
 	
-	void init();
 	void mainLoop();
 	
 	void draw();
-	//void drawBackground(VkCommandBuffer command_buffer);
-	//void drawBackgroundImGui(VkCommandBuffer command_buffer);
-	//void DrawGeometry(VkCommandBuffer command_buffer);
-	//void DrawGeometryWithProperties(VkCommandBuffer command_buffer);
 	void drawMeshes(VkCommandBuffer command_buffer);
 	std::shared_ptr<class LavaMesh> addMesh(MeshProperties prop);
 
@@ -117,11 +111,9 @@ public:
 	GLFWwindow* get_window() const;
 	VkSurfaceKHR get_surface() const;
 
-	void createBackgroundPipelines();
-	void createBackgroundPipelinesImGui();
-
 	std::vector<std::shared_ptr<LavaMesh>> meshes_;
 
+	void initGlobalData();
 	void initImgui();
 	void drawImgui(VkCommandBuffer cmd, VkImageView targetImageView);
 	void immediate_submit(std::function<void(VkCommandBuffer)>&& function);

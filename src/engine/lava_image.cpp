@@ -2,6 +2,7 @@
 #include "lava_vulkan_inits.hpp"
 #include "lava_vulkan_helpers.hpp"
 #include "engine/lava_buffer.hpp"
+#include "lava_engine.hpp"
 
 LavaImage::LavaImage(LavaEngine* engine,void* data, VkExtent3D size, VkFormat format, VkImageUsageFlags usage, bool mipmapped){
 	engine_ = engine;

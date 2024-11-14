@@ -2,12 +2,12 @@
 #define __LAVA_IMAGE_H__ 1
 
 #include "lava_types.hpp"
-#include "lava_engine.hpp"
+//#include "lava_engine.hpp"
 
 class LavaImage
 {
 public:
-	LavaImage(LavaEngine* engine,void* data, VkExtent3D size, VkFormat format, VkImageUsageFlags usage, bool mipmapped=false);
+	LavaImage(class LavaEngine* engine,void* data, VkExtent3D size, VkFormat format, VkImageUsageFlags usage, bool mipmapped=false);
 	~LavaImage();
 
 	AllocatedImage get_allocated_image() {
@@ -22,7 +22,7 @@ private:
 	void allocate(VkExtent3D size, VkFormat format, VkImageUsageFlags usage, bool mipmapped=false);
 	AllocatedImage image_;
 	VkSampler sampler_;
-	LavaEngine* engine_;
+	class LavaEngine* engine_;
 };
 
 

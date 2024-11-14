@@ -8,12 +8,6 @@
 int main(int argc, char* argv[]) {
 	std::shared_ptr<LavaWindowSystem>  lava_system = LavaWindowSystem::Get();
 	LavaEngine engine;
-	engine.init();
-
-	uint32_t  pink = glm::packUnorm4x8(glm::vec4(1, 0, 1, 1));
-	LavaImage checker_board_image = LavaImage(&engine, (void*)&pink, VkExtent3D{ 1, 1, 1 }, VK_FORMAT_R8G8B8A8_UNORM,
-		VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
-
 
 	MaterialProperties mat_properties = {};
 	mat_properties.name = "Basic Material";
@@ -22,7 +16,6 @@ int main(int argc, char* argv[]) {
 	mat_properties.pipeline_flags = PipelineFlags::PIPELINE_USE_PUSHCONSTANTS | PipelineFlags::PIPELINE_USE_DESCRIPTOR_SET;
 
 	LavaMaterial basic_material(engine, mat_properties);
-	basic_material.set_image(0, { true,&checker_board_image,&checker_board_image });
 	
 	MeshProperties mesh_properties = {};
 	mesh_properties.name = "Shiba Mesh";
@@ -31,8 +24,6 @@ int main(int argc, char* argv[]) {
 	mesh_properties.material = &basic_material;
 
 	std::shared_ptr<LavaMesh> mesh = engine.addMesh(mesh_properties);
-
-
 
 	engine.mainLoop();
 

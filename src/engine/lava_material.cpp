@@ -15,6 +15,8 @@ LavaMaterial::LavaMaterial(LavaEngine& engine, MaterialProperties prop) :
   name_ = prop.name;
   descriptor_set_ = descriptor_manager_.allocate(pipeline_.get_descriptor_set_layouts()[1]);
   
+
+  set_image(0, { true,engine.default_texture_image_.get(), engine.default_texture_image_.get()});
 }
 
 LavaMaterialImage LavaMaterial::get_image(unsigned int index) {
