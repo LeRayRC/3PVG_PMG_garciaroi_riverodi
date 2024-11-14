@@ -17,6 +17,7 @@ public:
 	VkDescriptorSetLayout* get_descriptor_set_layouts() {
 		return descriptor_set_layouts_;
 	}
+	
 
 
 private:
@@ -25,7 +26,7 @@ private:
 	VkPipeline pipeline_;
 	VkDevice device_;
 	VkDescriptorSetLayout descriptor_set_layouts_[2];
-
+	
 	void configurePushConstants(VkPipelineLayoutCreateInfo* info,
 		VkPushConstantRange* range);
 	void configureDescriptorSet(VkPipelineLayoutCreateInfo* info, VkDescriptorSetLayout layout);

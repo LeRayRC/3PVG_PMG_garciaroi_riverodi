@@ -15,24 +15,17 @@
 #include "engine/lava_device.hpp"
 #include "engine/lava_surface.hpp"
 
-const std::vector<LavaDescriptorManager::PoolSizeRatio> pool_ratios = {
-	{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 3 },
-	{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 3 },
-	{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 3 },
-	{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 4 },
-};
 
-const unsigned int initial_sets = 1000;
 
-void FrameData::initGlobalDescriptorSet(VkDescriptorSetLayout layout) {
-	global_descriptor_set_ = descriptor_manager.allocate(layout);
-}
-
-void LavaFrameData::initGlobalDescriptorSet(VkDescriptorSetLayout layout) {
-	for (int i = 0; i < FRAME_OVERLAP; i++) {
-		frames_[i].initGlobalDescriptorSet(layout);
-	}
-}
+//void FrameData::initGlobalDescriptorSet(VkDescriptorSetLayout layout) {
+//	global_descriptor_set_ = descriptor_manager.allocate(layout);
+//}
+//
+//void LavaFrameData::initGlobalDescriptorSet(VkDescriptorSetLayout layout) {
+//	for (int i = 0; i < FRAME_OVERLAP; i++) {
+//		frames_[i].initGlobalDescriptorSet(layout);
+//	}
+//}
 
 LavaFrameData::LavaFrameData(LavaDevice& use_device, LavaSurface& use_surface, LavaAllocator& allocator, GlobalSceneData* scene_data){
 	
@@ -63,7 +56,7 @@ LavaFrameData::LavaFrameData(LavaDevice& use_device, LavaSurface& use_surface, L
 	semaphore_info.pNext = nullptr;
 
 	for (int i = 0; i < FRAME_OVERLAP; i++) {
-		frames_[i].descriptor_manager = { use_device.get_device(), initial_sets, pool_ratios };
+		frames_[i].descriptor_manager = { use_device.get_device(), LavaDescriptorManager::initial_sets,LavaDescriptorManager::pool_ratios };
 
 		if (vkCreateCommandPool(use_device.get_device(), &command_pool_info, nullptr,
 			&frames_[i].command_pool) != VK_SUCCESS) {
@@ -94,8 +87,8 @@ LavaFrameData::LavaFrameData(LavaDevice& use_device, LavaSurface& use_surface, L
 			exit(-1);
 		}
 
-		frames_[i].global_data_buffer = std::make_unique<LavaBuffer>(allocator, sizeof(GlobalSceneData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
-		frames_[i].global_data_buffer->setMappedData();
+		/*frames_[i].global_data_buffer = std::make_unique<LavaBuffer>(allocator, sizeof(GlobalSceneData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
+		frames_[i].global_data_buffer->setMappedData();*/
 
 	}
 }

@@ -82,6 +82,9 @@ LavaPipeline::LavaPipeline(PipelineConfig config){
 	//clean structures
 	vkDestroyShaderModule(device_, fragment_shader, nullptr);
 	vkDestroyShaderModule(device_, vertex_shader, nullptr);
+
+	//Create descriptor set that will be destroyed when the engine gets stopped
+	
 }
 
 LavaPipeline::~LavaPipeline() {

@@ -100,7 +100,7 @@ public:
 	const char* fragment_shader_path;
 	class LavaDevice* device;
 	class LavaSwapChain* swap_chain;
-
+	class LavaDescriptorManager* descriptor_manager;
 	VkDescriptorSetLayout descriptor_set_layout;
 	int pipeline_flags;
 };

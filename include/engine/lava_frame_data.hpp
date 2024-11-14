@@ -24,10 +24,6 @@ struct FrameData {
 	VkSemaphore render_semaphore; //GPU <-> GPU
 	VkFence render_fence; // CPU <-> GPU
 	LavaDescriptorManager descriptor_manager;
-	std::unique_ptr<LavaBuffer> global_data_buffer;
-	VkDescriptorSet global_descriptor_set_;
-
-	void initGlobalDescriptorSet(VkDescriptorSetLayout layout);
 };
 
  //Numero de buffers en paralelo (double-buffering)
@@ -43,9 +39,11 @@ public:
 								);
 	~LavaFrameData();
 
+
+
 	FrameData& getCurrentFrame() { return frames_[frame_number_ % FRAME_OVERLAP]; };
 	
-	void initGlobalDescriptorSet(VkDescriptorSetLayout layout);
+	//void initGlobalDescriptorSet(VkDescriptorSetLayout layout);
 	void increaseFrameNumber() { frame_number_++; };
 	uint64_t  frame_number_;
 private:

@@ -36,9 +36,16 @@ VkDescriptorSetLayout DescriptorLayoutBuilder::build(VkDevice device,
   return set;
 }
 
+const std::vector<LavaDescriptorManager::PoolSizeRatio> LavaDescriptorManager::pool_ratios = {
+{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 3 },
+{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 3 },
+{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 3 },
+{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 4 },
+};
+
 
 LavaDescriptorManager::LavaDescriptorManager(VkDevice device, 
-  uint32_t initial_sets, 
+  const uint32_t initial_sets, 
   std::vector<struct PoolSizeRatio> pool_ratios){
   device_ = device;
   setsPerPool_ = initial_sets;

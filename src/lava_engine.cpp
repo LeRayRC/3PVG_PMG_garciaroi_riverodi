@@ -47,18 +47,25 @@ LavaEngine::LavaEngine() :
 	allocator_{device_, instance_},
 	swap_chain_{ device_, surface_, window_extent_, allocator_.get_allocator()},
 	frame_data_{device_, surface_, allocator_, &global_scene_data_},
-	inmediate_communication{device_, surface_}
+	inmediate_communication{device_, surface_},
+	global_descriptor_allocator_{device_.get_device(),LavaDescriptorManager::initial_sets,LavaDescriptorManager::pool_ratios}
 {
 	//Singleton Functionality
 	assert(loaded_engine == nullptr);
 	loaded_engine = this;
 	is_initialized_ = false;
 	stop_rendering = false;
-	//Descriptor Sets
+	//GLOBAL DATA
 	DescriptorLayoutBuilder builder;
 	builder.addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
 	global_descriptor_set_layout_ = builder.build(device_.get_device(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
-	frame_data_.initGlobalDescriptorSet(global_descriptor_set_layout_);
+	global_descriptor_set_ = global_descriptor_allocator_.allocate(global_descriptor_set_layout_);
+	global_data_buffer_ = std::make_unique<LavaBuffer>(allocator_, sizeof(GlobalSceneData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
+	global_data_buffer_->setMappedData();
+	global_descriptor_allocator_.writeBuffer(0, global_data_buffer_->buffer_.buffer, sizeof(GlobalSceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+	global_descriptor_allocator_.updateSet(global_descriptor_set_);
+	global_descriptor_allocator_.clear();
+
 
 	//Build proj and view matrix
 	camera_parameters_.fov = 90.0f;
@@ -66,7 +73,7 @@ LavaEngine::LavaEngine() :
 		(float)swap_chain_.get_draw_extent().width / (float)swap_chain_.get_draw_extent().height, 10000.f, 0.1f);
 	global_scene_data_.proj[1][1] *= -1;
 	global_scene_data_.view = glm::mat4(1.0f);
-	global_scene_data_.viewproj = global_scene_data_.proj;
+	global_scene_data_.viewproj = global_scene_data_.proj * global_scene_data_.view;
 
 }
 
@@ -80,25 +87,31 @@ LavaEngine::LavaEngine(unsigned int window_width, unsigned int window_height) :
 	allocator_{ device_, instance_ },
 	swap_chain_{ device_, surface_, window_extent_, allocator_.get_allocator() },
 	frame_data_{ device_, surface_, allocator_, &global_scene_data_ },
-	inmediate_communication{ device_, surface_ }
+	inmediate_communication{ device_, surface_ },
+	global_descriptor_allocator_{ device_.get_device(),LavaDescriptorManager::initial_sets,LavaDescriptorManager::pool_ratios }
 {
 	//Singleton Functionality
 	assert(loaded_engine == nullptr);
 	loaded_engine = this;
 	is_initialized_ = false;
 	stop_rendering = false;
-	//Descriptor Sets
+	//GLOBAL DATA
 	DescriptorLayoutBuilder builder;
 	builder.addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
 	global_descriptor_set_layout_ = builder.build(device_.get_device(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
-	frame_data_.initGlobalDescriptorSet(global_descriptor_set_layout_);
+	global_descriptor_set_ = global_descriptor_allocator_.allocate(global_descriptor_set_layout_);
+	global_data_buffer_ = std::make_unique<LavaBuffer>(allocator_, sizeof(GlobalSceneData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
+	global_data_buffer_->setMappedData();
+	global_descriptor_allocator_.writeBuffer(0, global_data_buffer_->buffer_.buffer, sizeof(GlobalSceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+	global_descriptor_allocator_.updateSet(global_descriptor_set_);
+	global_descriptor_allocator_.clear();
 
 	camera_parameters_.fov = 90.0f;
 	global_scene_data_.proj = glm::perspective(glm::radians(camera_parameters_.fov),
 		(float)swap_chain_.get_draw_extent().width / (float)swap_chain_.get_draw_extent().height, 10000.f, 0.1f);
 	global_scene_data_.proj[1][1] *= -1;
-	//global_scene_data_.view = glm::mat4(1.0f);
-	global_scene_data_.viewproj = global_scene_data_.proj;
+	global_scene_data_.view = glm::mat4(1.0f);
+	global_scene_data_.viewproj = global_scene_data_.proj * global_scene_data_.view;
 }
 
 LavaEngine::~LavaEngine(){
@@ -127,7 +140,9 @@ void LavaEngine::init() {
 }
 
 void LavaEngine::mainLoop() {
+	
   while (!glfwWindowShouldClose(get_window())) {
+		
     glfwPollEvents();
 
 		ImGui_ImplVulkan_NewFrame();
@@ -138,8 +153,7 @@ void LavaEngine::mainLoop() {
 		ImGui::Begin("Global Data");
 
 
-		if (ImGui::DragFloat("FOV", &camera_parameters_.fov)) {
-
+		if (ImGui::DragFloat("FOV", &camera_parameters_.fov, 0.1f, 0.0f, 180.0f)) {
 			global_scene_data_.proj = glm::perspective(glm::radians(camera_parameters_.fov),
 				(float)swap_chain_.get_draw_extent().width / (float)swap_chain_.get_draw_extent().height, 10000.f, 0.1f);
 			global_scene_data_.proj[1][1] *= -1;
@@ -148,13 +162,14 @@ void LavaEngine::mainLoop() {
 		}
 
 		if (ImGui::DragFloat3("Ambient", &global_scene_data_.ambientColor.r, 0.01f, 0.0f, 1.0f)) {
-			frame_data_.getCurrentFrame().global_data_buffer->updateBufferData(&global_scene_data_, sizeof(GlobalSceneData));
 
 		}
 			
 	
 
 		ImGui::End();
+
+		//ImGui::ShowDemoWindow();
 
 		/*ImGui::Begin("Lava window");
 		ComputeEffect& selected = backgroundEffects[currentBackgroundEffect];
@@ -186,7 +201,6 @@ void LavaEngine::draw() {
 		printf("Fence timeout excedeed!");
 #endif // !NDEBUG
 	}
-	//getCurrentFrame().deletion_queue.flush();
 
 	//Reseteamos el fence
 	if (vkResetFences(device_.get_device(), 1, &frame_data_.getCurrentFrame().render_fence) != VK_SUCCESS) {
@@ -248,18 +262,10 @@ void LavaEngine::draw() {
 	//Aplicamos el clear color a una imagen 
 	vkCmdClearColorImage(commandBuffer, swap_chain_.get_draw_image().image,VK_IMAGE_LAYOUT_GENERAL, &clearValue, 1, &clearRange);
 
-	//drawBackground(commandBuffer);
-
 	TransitionImage(commandBuffer, swap_chain_.get_draw_image().image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 	TransitionImage(commandBuffer, swap_chain_.get_depth_image().image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
 
-	//DrawGeometry(commandBuffer);
-	/*if (!pipelines_.empty()) {
-		DrawMesh(commandBuffer);
-	}*/
 	drawMeshes(commandBuffer);
-
-	//DrawGeometryWithProperties(commandBuffer);
 
 	//Cambiamos tanto la imagen del swapchain como la de 
 	// dibujado al mismo estado para copiar la informacion
@@ -269,8 +275,6 @@ void LavaEngine::draw() {
 	TransitionImage(commandBuffer, swap_chain_.get_swap_chain_images()[swap_chain_image_index],
 		VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
-	// -> FIN PRIMER DIBUJADO
-	// -> INICIO IMGUI DIBUJADO
 	// Devolvemos la imagen al swapchain
 	CopyImageToImage(commandBuffer, swap_chain_.get_draw_image().image,
 		swap_chain_.get_swap_chain_images()[swap_chain_image_index], swap_chain_.get_draw_extent(), window_extent_);
@@ -282,7 +286,6 @@ void LavaEngine::draw() {
 	//draw imgui into the swapchain image
 	drawImgui(commandBuffer, swap_chain_.get_swap_chain_image_views()[swap_chain_image_index]);
 	
-	// -> FIN IMGUI DIBUJADO
 	//Se cambia la imagen al layout presentable
 	TransitionImage(commandBuffer, swap_chain_.get_swap_chain_images()[swap_chain_image_index],
 		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
@@ -357,11 +360,11 @@ void LavaEngine::drawMeshes(VkCommandBuffer command_buffer)
 	FrameData& frame_data = frame_data_.getCurrentFrame();
 	frame_data.descriptor_manager.clear();
 	//The first descriptor sets references the global data
-	frame_data.descriptor_manager.writeBuffer(0, frame_data.global_data_buffer->buffer_.buffer, sizeof(GlobalSceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-	frame_data.descriptor_manager.updateSet(frame_data.global_descriptor_set_);
+	/*frame_data.descriptor_manager.writeBuffer(0, frame_data.global_data_buffer->buffer_.buffer, sizeof(GlobalSceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+	frame_data.descriptor_manager.updateSet(global_descriptor_set_);
 	frame_data.descriptor_manager.clear();
-
-	//frame_data.global_data_buffer->updateBufferData(&global_scene_data_, sizeof(GlobalSceneData));
+	*/
+	global_data_buffer_->updateBufferData(&global_scene_data_, sizeof(GlobalSceneData));
 
 	GPUDrawPushConstants push_constants;
 	glm::mat4 model = glm::mat4(1.0f);
@@ -375,31 +378,18 @@ void LavaEngine::drawMeshes(VkCommandBuffer command_buffer)
 
 		vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mesh->get_material()->get_pipeline().get_pipeline());
 
-		//De momento obtenemos solo el primer descriptor set 
-		VkDescriptorSet image_set =
-			frame_data_.getCurrentFrame().descriptor_manager.allocate(
-				mesh->get_material()->get_pipeline().get_descriptor_set_layouts()[1]);
-		
-		frame_data_.getCurrentFrame().descriptor_manager.writeImage(
-			0,
-			mesh->get_material()->get_image(0).diffuse->get_allocated_image().image_view,
-			mesh->get_material()->get_image(0).diffuse->get_sampler(),
-			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-			VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-
-		frame_data_.getCurrentFrame().descriptor_manager.updateSet(image_set);
-
+		VkDescriptorSet image_set = mesh->get_material()->get_descriptor_set();
 	
 		//Bind both descriptor sets on the mesh
 		vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
 			mesh->get_material()->get_pipeline().get_layout(),
-			0, 1, &frame_data_.getCurrentFrame().global_descriptor_set_, 0, nullptr);
+			0, 1, &global_descriptor_set_, 0, nullptr);
 
 		vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
 			mesh->get_material()->get_pipeline().get_layout(),
 			1, 1, &image_set, 0, nullptr);
 
-		push_constants.world_matrix = global_scene_data_.viewproj * model;
+		push_constants.world_matrix = model; // global_scene_data_.viewproj* model;
 		for (std::shared_ptr<MeshAsset> submesh : mesh->meshes_) {
 			push_constants.vertex_buffer = submesh->meshBuffers.vertex_buffer_address;
 

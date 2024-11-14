@@ -91,7 +91,9 @@ public:
 	LavaInmediateCommunication inmediate_communication;
 	
 	LavaDescriptorManager global_descriptor_allocator_;
+	std::unique_ptr<LavaBuffer> global_data_buffer_;
 	VkDescriptorSetLayout global_descriptor_set_layout_;
+	VkDescriptorSet global_descriptor_set_;
 
 	DescriptorAllocator imgui_descriptor_alloc;
 

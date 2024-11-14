@@ -35,10 +35,16 @@ public:
 	static const unsigned int material_images_count = 1;
 	LavaMaterialImage get_image(unsigned int index);
 	void set_image(unsigned int index, LavaMaterialImage image); 
+	VkDescriptorSet get_descriptor_set() {
+		return descriptor_set_;
+	}
 private:
 	std::string name_;
 	LavaPipeline pipeline_;
+	VkDescriptorSet descriptor_set_;
+	LavaDescriptorManager& descriptor_manager_;
 	std::array<LavaMaterialImage, material_images_count > images_;
+	LavaEngine *engine;
 };
 
 

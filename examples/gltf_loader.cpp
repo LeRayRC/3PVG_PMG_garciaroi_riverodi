@@ -22,7 +22,7 @@ int main(int argc, char* argv[]) {
 	mat_properties.pipeline_flags = PipelineFlags::PIPELINE_USE_PUSHCONSTANTS | PipelineFlags::PIPELINE_USE_DESCRIPTOR_SET;
 
 	LavaMaterial basic_material(engine, mat_properties);
-	basic_material.set_image(0, { true,&checker_board_image,nullptr });
+	basic_material.set_image(0, { true,&checker_board_image,&checker_board_image });
 	
 	MeshProperties mesh_properties = {};
 	mesh_properties.name = "Shiba Mesh";

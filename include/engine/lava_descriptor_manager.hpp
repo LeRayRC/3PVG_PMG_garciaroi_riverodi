@@ -19,7 +19,7 @@ public:
 		float ratio;
 	};
 	LavaDescriptorManager();
-	LavaDescriptorManager(VkDevice device, uint32_t initial_sets, std::vector<PoolSizeRatio> pool_ratios);
+	LavaDescriptorManager(VkDevice device,const uint32_t initial_sets, std::vector<PoolSizeRatio> pool_ratios);
 	~LavaDescriptorManager();
 
 	void clearPools();
@@ -33,6 +33,11 @@ public:
 	void updateSet(VkDescriptorSet set);
 	VkDescriptorPool getPool();
 	VkDescriptorPool createPool(uint32_t set_count);
+
+
+	static const std::vector<PoolSizeRatio> pool_ratios;
+	static const uint32_t initial_sets = 1000;
+
 private:
 
 	std::vector<PoolSizeRatio> ratios_;
