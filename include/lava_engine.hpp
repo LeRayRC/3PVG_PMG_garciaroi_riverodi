@@ -80,6 +80,7 @@ public:
 	DeletionQueue main_deletion_queue_;
 	GlobalSceneData global_scene_data_;
 	CameraParameters camera_parameters_;
+	static std::vector<std::function<void()>> end_frame_callbacks;
 
 	LavaWindow window_;
 	LavaInstance instance_;
