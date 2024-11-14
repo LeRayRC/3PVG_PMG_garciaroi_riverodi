@@ -15,6 +15,8 @@
 #include "engine/lava_material.hpp"
 #include "lava_engine.hpp"
 #include "lava_types.hpp"
+#include "lava_transform.hpp"
+
 
 class LavaMesh
 {
@@ -29,12 +31,15 @@ public:
 	LavaMaterial* get_material() { return material_; };
 	bool isLoaded() const { return is_loaded_; }
 	std::vector<std::shared_ptr<MeshAsset>> meshes_;
+	LavaTransform& get_transform() { return transform_; }
+
 private:
 	std::string name_;
 	MeshType type_;
 	bool is_loaded_; 
 	class LavaMaterial* material_;
 	class LavaEngine* engine_;
+	class LavaTransform transform_;
 };
 
 

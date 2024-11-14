@@ -12,7 +12,11 @@
 #include "lava_vulkan_helpers.hpp"
 #include "lava_vulkan_inits.hpp"
 #include "engine/lava_pipeline_builder.hpp"
+
 #include "engine/lava_image.hpp"
+
+#include "lava_transform.hpp"
+
 
 //#define VMA_IMPLEMENTATION
 #include "vk_mem_alloc.h"
@@ -34,6 +38,7 @@ const std::vector<const char*> validationLayers = {
 };
 
 LavaEngine* loaded_engine = nullptr;
+std::vector<std::function<void()>> LavaEngine::end_frame_callbacks;
 
 LavaEngine::LavaEngine() :
 	global_scene_data_{ glm::mat4(1.0f),glm::mat4(1.0f),glm::mat4(1.0f),glm::vec4(0.0f)},
@@ -148,7 +153,7 @@ void LavaEngine::initGlobalData() {
 void LavaEngine::mainLoop() {
 	
   while (!glfwWindowShouldClose(get_window())) {
-		
+
     glfwPollEvents();
 
 		ImGui_ImplVulkan_NewFrame();
@@ -197,6 +202,11 @@ void LavaEngine::mainLoop() {
 		ImGui::Render();
 
 		draw();
+
+		//End Frame Callbacks(NEEDS A WRAPER)
+		for (auto it = end_frame_callbacks.rbegin(); it != end_frame_callbacks.rend(); it++) {
+			(*it)();
+		}
   }
 }
 
@@ -278,7 +288,7 @@ void LavaEngine::draw() {
 	// dibujado al mismo estado para copiar la informacion
 	TransitionImage(commandBuffer, swap_chain_.get_draw_image().image ,
 		VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
-	//Cambiamos la imagen a tipo presentable para enseñarla en la superficie
+	//Cambiamos la imagen a tipo presentable para enseÃ±arla en la superficie
 	TransitionImage(commandBuffer, swap_chain_.get_swap_chain_images()[swap_chain_image_index],
 		VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
@@ -379,12 +389,14 @@ void LavaEngine::drawMeshes(VkCommandBuffer command_buffer)
 
 		vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mesh->get_material()->get_pipeline().get_pipeline());
 
+
 		VkDescriptorSet image_set = mesh->get_material()->get_descriptor_set();
 	
 		//Bind both descriptor sets on the mesh
 		vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
 			mesh->get_material()->get_pipeline().get_layout(),
 			0, 1, &global_descriptor_set_, 0, nullptr);
+
 
 		vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
 			mesh->get_material()->get_pipeline().get_layout(),

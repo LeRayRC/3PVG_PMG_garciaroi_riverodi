@@ -78,8 +78,12 @@ public:
 	bool stop_rendering = false;
 
 	DeletionQueue main_deletion_queue_;
+
 	GlobalSceneData global_scene_data_;
 	CameraParameters camera_parameters_;
+
+	static std::vector<std::function<void()>> end_frame_callbacks;
+
 
 	LavaWindow window_;
 	LavaInstance instance_;
@@ -90,11 +94,13 @@ public:
 	LavaSwapChain swap_chain_;
 	LavaFrameData frame_data_;
 	LavaInmediateCommunication inmediate_communication;
+
 	
 	LavaDescriptorManager global_descriptor_allocator_;
 	std::unique_ptr<LavaBuffer> global_data_buffer_;
 	VkDescriptorSetLayout global_descriptor_set_layout_;
 	VkDescriptorSet global_descriptor_set_;
+
 
 	uint32_t pink_color_;
 	std::shared_ptr<LavaImage> default_texture_image_;
