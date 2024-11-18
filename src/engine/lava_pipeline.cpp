@@ -3,6 +3,7 @@
 #include "engine/lava_pipeline_builder.hpp"
 #include "lava_types.hpp"
 #include "lava_vulkan_helpers.hpp"
+#include "engine/lava_descriptor_manager.hpp"
 
 
 LavaPipeline::LavaPipeline(PipelineConfig config){
@@ -29,12 +30,15 @@ LavaPipeline::LavaPipeline(PipelineConfig config){
 	VkPipelineLayoutCreateInfo pipeline_layout_info{};
 	pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 	pipeline_layout_info.pNext = nullptr;
+
+	//Create Generic pipeline layouts 10 descriptor sets with two textures each 
 	
 	if ((config.pipeline_flags & PipelineFlags::PIPELINE_USE_DESCRIPTOR_SET) != 0) {
 		configureDescriptorSet(&pipeline_layout_info, config.descriptor_set_layout);
 	}
 	else {
 		pipeline_layout_info.setLayoutCount = 0;
+		pipeline_layout_info.pSetLayouts = VK_NULL_HANDLE;
 	}
 
 	if ((config.pipeline_flags & PipelineFlags::PIPELINE_USE_PUSHCONSTANTS) != 0) {
@@ -78,12 +82,18 @@ LavaPipeline::LavaPipeline(PipelineConfig config){
 	//clean structures
 	vkDestroyShaderModule(device_, fragment_shader, nullptr);
 	vkDestroyShaderModule(device_, vertex_shader, nullptr);
+
+	//Create descriptor set that will be destroyed when the engine gets stopped
+	
 }
 
 LavaPipeline::~LavaPipeline() {
 	vkDeviceWaitIdle(device_);
 	vkDestroyPipeline(device_, pipeline_, nullptr);
 	vkDestroyPipelineLayout(device_, layout_, nullptr);
+	//First descriptor set is global and it is destroyed by the engine
+	vkDestroyDescriptorSetLayout(device_, descriptor_set_layouts_[1], nullptr);
+	
 }
 
 void LavaPipeline::configurePushConstants(VkPipelineLayoutCreateInfo* info,
@@ -91,9 +101,22 @@ void LavaPipeline::configurePushConstants(VkPipelineLayoutCreateInfo* info,
 	info->pPushConstantRanges = range;
 	info->pushConstantRangeCount = 1;
 }
-void LavaPipeline::configureDescriptorSet(VkPipelineLayoutCreateInfo* info, VkDescriptorSetLayout layout) {
-	info->pSetLayouts = &layout;
-	info->setLayoutCount = 1;
+void LavaPipeline::configureDescriptorSet(VkPipelineLayoutCreateInfo* info, VkDescriptorSetLayout global_layout) {
+	//Include global descriptor set also
+
+	
+	descriptor_set_layouts_[0] = global_layout;
+
+	//By default every material can hold two images: diffuse and normal
+	//TODO include Uniform buffer as another binding
+	DescriptorLayoutBuilder builder;
+	builder.addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+	builder.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+	descriptor_set_layouts_[1] = builder.build(device_, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT);
+	
+
+	info->pSetLayouts = descriptor_set_layouts_;
+	info->setLayoutCount = 2;
 }
 void LavaPipeline::configureAttributes(VkPipelineLayoutCreateInfo* info) {
 	//To implement

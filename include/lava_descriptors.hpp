@@ -11,14 +11,7 @@
 
 #include "lava_types.hpp"
 
-struct DescriptorLayoutBuilder {
-  std::vector<VkDescriptorSetLayoutBinding> bindings_;
 
-  void addBinding(uint32_t binding, VkDescriptorType type);
-  void clear();
-  VkDescriptorSetLayout build(VkDevice device, VkShaderStageFlags shader_stages,
-    void* pnext = nullptr, VkDescriptorSetLayoutCreateFlags flags = 0);
-};
 
 struct DescriptorAllocator {
   struct PoolSizeRatio {

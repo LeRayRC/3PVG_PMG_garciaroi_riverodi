@@ -7,13 +7,12 @@
 #include "stb_image.h"
 
 #include "lava_vulkan_inits.hpp"
+#include "engine/lava_buffer.hpp"
 
 #include <fastgltf/glm_element_traits.hpp>
 #include <fastgltf/core.hpp>
 #include <fastgltf/tools.hpp>
 
-#define VMA_IMPLEMENTATION
-#include "vk_mem_alloc.h"
 
 LavaMesh::LavaMesh(LavaEngine& engine, MeshProperties prop){
   name_ = prop.name;
@@ -43,10 +42,10 @@ LavaMesh::LavaMesh(LavaEngine& engine, MeshProperties prop){
 }
 
 LavaMesh::~LavaMesh(){
-  for (auto mesh : meshes_) {
+  /*for (auto mesh : meshes_) {
     engine_->destroyBuffer(mesh->meshBuffers.index_buffer);
     engine_->destroyBuffer(mesh->meshBuffers.vertex_buffer);
-  }
+  }*/
 }
 
 bool LavaMesh::loadAsGLTF(std::filesystem::path file_path){
@@ -66,7 +65,7 @@ bool LavaMesh::loadAsGLTF(std::filesystem::path file_path){
     gltf = std::move(load.get());
   }
   else {
-    printf("Failed to load glTF: %d \n", fastgltf::to_underlying(load.error()));
+    //printf("Failed to load glTF: %d \n", fastgltf::to_underlying(load.error()));
     return false;
   }
 
@@ -100,7 +99,7 @@ bool LavaMesh::loadAsGLTF(std::filesystem::path file_path){
 
         fastgltf::iterateAccessor<std::uint32_t>(gltf, indexaccessor,
           [&](std::uint32_t idx) {
-            indices.push_back(idx + initial_vtx);
+            indices.push_back(idx + (uint32_t)initial_vtx);
           });
       }
 
@@ -185,20 +184,22 @@ GPUMeshBuffers LavaMesh::upload(std::span<uint32_t> indices, std::span<Vertex> v
     GPUMeshBuffers new_surface;
 
     //create vertex buffer
-    new_surface.vertex_buffer = engine_->createBuffer(vertex_buffer_size, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+    new_surface.vertex_buffer = std::make_unique<LavaBuffer>(engine_->allocator_,vertex_buffer_size, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
       VMA_MEMORY_USAGE_GPU_ONLY);
 
     //find the adress of the vertex buffer
-    VkBufferDeviceAddressInfo deviceAdressInfo{ .sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO,.buffer = new_surface.vertex_buffer.buffer };
+    VkBufferDeviceAddressInfo deviceAdressInfo{ .sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO,.buffer = new_surface.vertex_buffer->buffer_.buffer };
+    
     new_surface.vertex_buffer_address = vkGetBufferDeviceAddress(engine_->device_.get_device(), &deviceAdressInfo);
 
     //create index buffer
-    new_surface.index_buffer = engine_->createBuffer(index_buffer_size, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+    new_surface.index_buffer = std::make_unique<LavaBuffer>(engine_->allocator_, index_buffer_size, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
       VMA_MEMORY_USAGE_GPU_ONLY);
 
-    AllocatedBuffer staging = engine_->createBuffer(vertex_buffer_size + index_buffer_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY);
+    LavaBuffer staging = LavaBuffer(engine_->allocator_, vertex_buffer_size + index_buffer_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY);
 
-    void* data = staging.allocation->GetMappedData();
+    void* data;// = staging.get_buffer().allocation;
+    vmaMapMemory(engine_->allocator_.get_allocator(), staging.get_buffer().allocation, &data);
 
     // copy vertex buffer
     memcpy(data, vertices.data(), vertex_buffer_size);
@@ -211,18 +212,17 @@ GPUMeshBuffers LavaMesh::upload(std::span<uint32_t> indices, std::span<Vertex> v
       vertexCopy.srcOffset = 0;
       vertexCopy.size = vertex_buffer_size;
 
-      vkCmdCopyBuffer(cmd, staging.buffer, new_surface.vertex_buffer.buffer, 1, &vertexCopy);
+      vkCmdCopyBuffer(cmd, staging.get_buffer().buffer, new_surface.vertex_buffer->get_buffer().buffer, 1, &vertexCopy);
 
       VkBufferCopy indexCopy{ 0 };
       indexCopy.dstOffset = 0;
       indexCopy.srcOffset = vertex_buffer_size;
       indexCopy.size = index_buffer_size;
 
-      vkCmdCopyBuffer(cmd, staging.buffer, new_surface.index_buffer.buffer, 1, &indexCopy);
+      vkCmdCopyBuffer(cmd, staging.get_buffer().buffer, new_surface.index_buffer->get_buffer().buffer, 1, &indexCopy);
       });
 
-    engine_->destroyBuffer(staging);
-
+    vmaUnmapMemory(engine_->allocator_.get_allocator(), staging.get_buffer().allocation);
     return new_surface;
   
 }

@@ -164,3 +164,71 @@
 //		vkDestroyPipeline(device_.get_device(), _meshPipeline, nullptr);
 //		});
 //}
+
+//void LavaEngine::createBackgroundPipelinesImGui()
+//{
+//	VkPipelineLayoutCreateInfo compute_layout{};
+//	compute_layout.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+//	compute_layout.pNext = nullptr;
+//	//compute_layout.pSetLayouts = &draw_image_descriptor_set_layout_;
+//	compute_layout.setLayoutCount = 1;
+//
+//	VkPushConstantRange push_constant{};
+//	push_constant.offset = 0;
+//	push_constant.size = sizeof(ComputePushConstants);
+//	push_constant.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+//
+//	compute_layout.pPushConstantRanges = &push_constant;
+//	compute_layout.pushConstantRangeCount = 1;
+//	ComputeEffect gradient_imgui;
+//	if (vkCreatePipelineLayout(device_.get_device(), &compute_layout, nullptr, &gradient_imgui.layout) != VK_SUCCESS) {
+//#ifndef NDEBUG
+//		printf("Pipeline layout creation failed!");
+//#endif // !NDEBUG
+//	}
+//
+//	//layout code
+//	VkShaderModule compute_draw_shader;
+//	if (!LoadShader("../src/shaders/gradient_imgui.comp.spv", device_.get_device(), &compute_draw_shader))
+//	{
+//		printf("Error when building the compute shader \n");
+//	}
+//
+//	VkPipelineShaderStageCreateInfo stage_info{};
+//	stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+//	stage_info.pNext = nullptr;
+//	stage_info.stage = VK_SHADER_STAGE_COMPUTE_BIT;
+//	stage_info.module = compute_draw_shader;
+//	stage_info.pName = "main";
+//
+//	VkComputePipelineCreateInfo compute_pipeline_create_info{};
+//	compute_pipeline_create_info.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+//	compute_pipeline_create_info.pNext = nullptr;
+//	compute_pipeline_create_info.layout = gradient_imgui.layout;
+//	compute_pipeline_create_info.stage = stage_info;
+//
+//
+//	//gradient_imgui.layout = gradient_imgui_pipeline_layout_;
+//	gradient_imgui.name = "ImGui gradient";
+//	gradient_imgui.data = {};
+//	gradient_imgui.use_push_constants = true;
+//
+//	//default colors
+//	gradient_imgui.data.data1 = glm::vec4(1, 0, 0, 1);
+//	gradient_imgui.data.data2 = glm::vec4(0, 0, 1, 1);
+//
+//	if (vkCreateComputePipelines(device_.get_device(), VK_NULL_HANDLE, 1, &compute_pipeline_create_info, nullptr, &gradient_imgui.pipeline) != VK_SUCCESS) {
+//#ifndef NDEBUG
+//		printf("Compute pipeline creation failed!");
+//#endif // !NDEBUG
+//	}
+//
+//	backgroundEffects.push_back(gradient_imgui);
+//
+//	vkDestroyShaderModule(device_.get_device(), compute_draw_shader, nullptr);
+//	main_deletion_queue_.push_function([&]() {
+//		//vkDestroyPipelineLayout(device_, gradient_imgui_pipeline_layout_, nullptr);
+//		vkDestroyPipelineLayout(device_.get_device(), backgroundEffects[1].layout, nullptr);
+//		vkDestroyPipeline(device_.get_device(), backgroundEffects[1].pipeline, nullptr);
+//		});
+//}

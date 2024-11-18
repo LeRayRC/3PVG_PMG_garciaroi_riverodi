@@ -24,6 +24,7 @@ namespace vkinit {
 
   VkRenderingAttachmentInfo DepthAttachmentInfo(
     VkImageView view, VkImageLayout layout /*= VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL*/);
+
 }
 
 #endif // !__CUSTOM_VULKAN_INITSH

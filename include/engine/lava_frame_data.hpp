@@ -14,6 +14,8 @@
 #define __LAVA_FRAME_DATA_H__ 1
 
 #include "lava_types.hpp"
+#include "engine/lava_descriptor_manager.hpp"
+#include "engine/lava_buffer.hpp"
 
 struct FrameData {
 	VkCommandPool command_pool;
@@ -21,7 +23,7 @@ struct FrameData {
 	VkSemaphore swap_chain_semaphore; //GPU <-> GPU
 	VkSemaphore render_semaphore; //GPU <-> GPU
 	VkFence render_fence; // CPU <-> GPU
-	//	DeletionQueue deletion_queue;
+	LavaDescriptorManager descriptor_manager;
 };
 
  //Numero de buffers en paralelo (double-buffering)
@@ -30,18 +32,27 @@ constexpr unsigned int FRAME_OVERLAP = 2;
 class LavaFrameData {
 
 public:
-	LavaFrameData(class LavaDevice& use_device, class LavaSurface& use_surface);
+	LavaFrameData(class LavaDevice& use_device, 
+							  class LavaSurface& use_surface, 
+								class LavaAllocator& allocator, 
+								GlobalSceneData* scene_data
+								);
 	~LavaFrameData();
 
-	FrameData& getCurrentFrame() { return frames_[frame_number_ % FRAME_OVERLAP]; };
 
+
+	FrameData& getCurrentFrame() { return frames_[frame_number_ % FRAME_OVERLAP]; };
+	
+	//void initGlobalDescriptorSet(VkDescriptorSetLayout layout);
 	void increaseFrameNumber() { frame_number_++; };
 	uint64_t  frame_number_;
 private:
 	FrameData frames_[FRAME_OVERLAP];
-
+	
 	//Require Device for creation and destruction
 	class LavaDevice* device_;
+	class LavaAllocator* allocator_;
+
 };
 
 #endif //__LAVA_FRAME_DATA_H__

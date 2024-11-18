@@ -15,9 +15,22 @@
 #include "engine/lava_device.hpp"
 #include "engine/lava_surface.hpp"
 
-LavaFrameData::LavaFrameData(LavaDevice& use_device, LavaSurface& use_surface)
-{
+
+
+//void FrameData::initGlobalDescriptorSet(VkDescriptorSetLayout layout) {
+//	global_descriptor_set_ = descriptor_manager.allocate(layout);
+//}
+//
+//void LavaFrameData::initGlobalDescriptorSet(VkDescriptorSetLayout layout) {
+//	for (int i = 0; i < FRAME_OVERLAP; i++) {
+//		frames_[i].initGlobalDescriptorSet(layout);
+//	}
+//}
+
+LavaFrameData::LavaFrameData(LavaDevice& use_device, LavaSurface& use_surface, LavaAllocator& allocator, GlobalSceneData* scene_data){
+	
 	device_ = &use_device;
+	allocator_ = &allocator;
 	frame_number_ = 0;
 
 	QueueFamilyIndices queueFamilyIndices =
@@ -43,6 +56,8 @@ LavaFrameData::LavaFrameData(LavaDevice& use_device, LavaSurface& use_surface)
 	semaphore_info.pNext = nullptr;
 
 	for (int i = 0; i < FRAME_OVERLAP; i++) {
+		frames_[i].descriptor_manager = { use_device.get_device(), LavaDescriptorManager::initial_sets,LavaDescriptorManager::pool_ratios };
+
 		if (vkCreateCommandPool(use_device.get_device(), &command_pool_info, nullptr,
 			&frames_[i].command_pool) != VK_SUCCESS) {
 			exit(-1);
@@ -72,6 +87,9 @@ LavaFrameData::LavaFrameData(LavaDevice& use_device, LavaSurface& use_surface)
 			exit(-1);
 		}
 
+		/*frames_[i].global_data_buffer = std::make_unique<LavaBuffer>(allocator, sizeof(GlobalSceneData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
+		frames_[i].global_data_buffer->setMappedData();*/
+
 	}
 }
 
@@ -84,3 +102,5 @@ LavaFrameData::~LavaFrameData()
 		vkDestroySemaphore(device_->get_device(), frames_[i].swap_chain_semaphore, nullptr);
 	}
 }
+
+

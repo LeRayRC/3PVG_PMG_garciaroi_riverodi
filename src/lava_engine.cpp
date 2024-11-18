@@ -12,7 +12,9 @@
 #include "lava_vulkan_helpers.hpp"
 #include "lava_vulkan_inits.hpp"
 #include "engine/lava_pipeline_builder.hpp"
+#include "engine/lava_image.hpp"
 #include "lava_transform.hpp"
+
 
 //#define VMA_IMPLEMENTATION
 #include "vk_mem_alloc.h"
@@ -37,6 +39,7 @@ LavaEngine* loaded_engine = nullptr;
 std::vector<std::function<void()>> LavaEngine::end_frame_callbacks;
 
 LavaEngine::LavaEngine() :
+	global_scene_data_{ glm::mat4(1.0f),glm::mat4(1.0f),glm::mat4(1.0f),glm::vec4(0.0f)},
 	surface_{ instance_.get_instance(), window_.get_window() },
 	instance_{ validationLayers },
 	window_{ 1280, 720, "LavaEngine" },
@@ -44,18 +47,40 @@ LavaEngine::LavaEngine() :
 	window_extent_{ 1280, 720 },
 	allocator_{device_, instance_},
 	swap_chain_{ device_, surface_, window_extent_, allocator_.get_allocator()},
-	frame_data_{device_, surface_},
-	inmediate_communication{device_, surface_}
+	frame_data_{device_, surface_, allocator_, &global_scene_data_},
+	inmediate_communication{device_, surface_},
+	global_descriptor_allocator_{device_.get_device(),LavaDescriptorManager::initial_sets,LavaDescriptorManager::pool_ratios}
+	
 {
 	//Singleton Functionality
 	assert(loaded_engine == nullptr);
 	loaded_engine = this;
 	is_initialized_ = false;
 	stop_rendering = false;
-	//render_pass_ = VK_NULL_HANDLE;
+	//GLOBAL DATA
+	initGlobalData();
+
+
+	//Build proj and view matrix
+	camera_parameters_.fov = 90.0f;
+	global_scene_data_.proj = glm::perspective(glm::radians(camera_parameters_.fov),
+		(float)swap_chain_.get_draw_extent().width / (float)swap_chain_.get_draw_extent().height, 10000.f, 0.1f);
+	global_scene_data_.proj[1][1] *= -1;
+	global_scene_data_.view = glm::mat4(1.0f);
+	global_scene_data_.viewproj = global_scene_data_.proj * global_scene_data_.view;
+
+
+	//Default data
+	pink_color_ = glm::packUnorm4x8(glm::vec4(1, 0, 1, 1));
+	default_texture_image_ = std::make_shared<LavaImage>(this, (void*)&pink_color_, VkExtent3D{ 1, 1, 1 }, VK_FORMAT_R8G8B8A8_UNORM,
+		VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+
+	initImgui();
+	is_initialized_ = true;
 }
 
 LavaEngine::LavaEngine(unsigned int window_width, unsigned int window_height) :
+	global_scene_data_{ glm::mat4(1.0f),glm::mat4(1.0f),glm::mat4(1.0f),glm::vec4(1.0f) },
 	window_{window_width, window_height, "LavaEngine"},
 	instance_{validationLayers},
 	surface_{instance_.get_instance(), window_.get_window()},
@@ -63,20 +88,37 @@ LavaEngine::LavaEngine(unsigned int window_width, unsigned int window_height) :
 	window_extent_{window_width, window_height},
 	allocator_{ device_, instance_ },
 	swap_chain_{ device_, surface_, window_extent_, allocator_.get_allocator() },
-	frame_data_{ device_, surface_ },
-	inmediate_communication{ device_, surface_ }
+	frame_data_{ device_, surface_, allocator_, &global_scene_data_ },
+	inmediate_communication{ device_, surface_ },
+	global_descriptor_allocator_{ device_.get_device(),LavaDescriptorManager::initial_sets,LavaDescriptorManager::pool_ratios }
 {
 	//Singleton Functionality
 	assert(loaded_engine == nullptr);
 	loaded_engine = this;
 	is_initialized_ = false;
 	stop_rendering = false;
-	//render_pass_ = VK_NULL_HANDLE;
+	//GLOBAL DATA
+	initGlobalData();
+
+	camera_parameters_.fov = 90.0f;
+	global_scene_data_.proj = glm::perspective(glm::radians(camera_parameters_.fov),
+		(float)swap_chain_.get_draw_extent().width / (float)swap_chain_.get_draw_extent().height, 10000.f, 0.1f);
+	global_scene_data_.proj[1][1] *= -1;
+	global_scene_data_.view = glm::mat4(1.0f);
+	global_scene_data_.viewproj = global_scene_data_.proj * global_scene_data_.view;
+
+	//Default data
+	pink_color_ = glm::packUnorm4x8(glm::vec4(1, 0, 1, 1));
+	default_texture_image_ = std::make_shared<LavaImage>(this, (void*)&pink_color_, VkExtent3D{ 1, 1, 1 }, VK_FORMAT_R8G8B8A8_UNORM,
+		VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+
+	initImgui();
+	is_initialized_ = true;
 }
 
 LavaEngine::~LavaEngine(){
 	vkDeviceWaitIdle(device_.get_device());
-
+	vkDestroyDescriptorSetLayout(device_.get_device(), global_descriptor_set_layout_, nullptr);
 	//pipelines_.clear();
 	main_deletion_queue_.flush();	
 }
@@ -93,14 +135,21 @@ VkSurfaceKHR LavaEngine::get_surface() const {
 	return surface_.get_surface();
 }
 
-void LavaEngine::init() {
-  //Solo se puede llamar una vez a la inicializacion del motor
-	initVulkan();
-	initImgui();
-  is_initialized_ = true;
+void LavaEngine::initGlobalData() {
+	global_descriptor_allocator_.clear();
+	DescriptorLayoutBuilder builder;
+	builder.addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+	global_descriptor_set_layout_ = builder.build(device_.get_device(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
+	global_descriptor_set_ = global_descriptor_allocator_.allocate(global_descriptor_set_layout_);
+	global_data_buffer_ = std::make_unique<LavaBuffer>(allocator_, sizeof(GlobalSceneData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
+	global_data_buffer_->setMappedData();
+	global_descriptor_allocator_.writeBuffer(0, global_data_buffer_->buffer_.buffer, sizeof(GlobalSceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+	global_descriptor_allocator_.updateSet(global_descriptor_set_);
+	global_descriptor_allocator_.clear();
 }
 
 void LavaEngine::mainLoop() {
+	
   while (!glfwWindowShouldClose(get_window())) {
 
     glfwPollEvents();
@@ -109,6 +158,28 @@ void LavaEngine::mainLoop() {
 		ImGui_ImplGlfw_NewFrame();
 
 		ImGui::NewFrame();
+
+		ImGui::Begin("Global Data");
+
+
+		if (ImGui::DragFloat("FOV", &camera_parameters_.fov, 0.1f, 0.0f, 180.0f)) {
+			global_scene_data_.proj = glm::perspective(glm::radians(camera_parameters_.fov),
+				(float)swap_chain_.get_draw_extent().width / (float)swap_chain_.get_draw_extent().height, 10000.f, 0.1f);
+			global_scene_data_.proj[1][1] *= -1;
+			global_scene_data_.view = glm::mat4(1.0f);
+			global_scene_data_.viewproj = global_scene_data_.proj * global_scene_data_.view;
+			global_data_buffer_->updateBufferData(&global_scene_data_, sizeof(GlobalSceneData));
+		}
+
+		if (ImGui::DragFloat3("Ambient", &global_scene_data_.ambientColor.r, 0.01f, 0.0f, 1.0f)) {
+			global_data_buffer_->updateBufferData(&global_scene_data_, sizeof(GlobalSceneData));
+		}
+			
+	
+
+		ImGui::End();
+
+		ImGui::ShowDemoWindow();
 
 		/*ImGui::Begin("Lava window");
 		ComputeEffect& selected = backgroundEffects[currentBackgroundEffect];
@@ -137,11 +208,6 @@ void LavaEngine::mainLoop() {
   }
 }
 
-void LavaEngine::initVulkan(){
-
-	createDescriptors();
-}
-
 void LavaEngine::draw() {
 	//Esperamos a que el fence comunique que la grafica ya ha terminado de dibujar
 	//El timeout esta en nanosegundos 10e-9
@@ -150,7 +216,6 @@ void LavaEngine::draw() {
 		printf("Fence timeout excedeed!");
 #endif // !NDEBUG
 	}
-	//getCurrentFrame().deletion_queue.flush();
 
 	//Reseteamos el fence
 	if (vkResetFences(device_.get_device(), 1, &frame_data_.getCurrentFrame().render_fence) != VK_SUCCESS) {
@@ -212,18 +277,10 @@ void LavaEngine::draw() {
 	//Aplicamos el clear color a una imagen 
 	vkCmdClearColorImage(commandBuffer, swap_chain_.get_draw_image().image,VK_IMAGE_LAYOUT_GENERAL, &clearValue, 1, &clearRange);
 
-	//drawBackground(commandBuffer);
-
 	TransitionImage(commandBuffer, swap_chain_.get_draw_image().image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 	TransitionImage(commandBuffer, swap_chain_.get_depth_image().image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
 
-	//DrawGeometry(commandBuffer);
-	/*if (!pipelines_.empty()) {
-		DrawMesh(commandBuffer);
-	}*/
 	drawMeshes(commandBuffer);
-
-	//DrawGeometryWithProperties(commandBuffer);
 
 	//Cambiamos tanto la imagen del swapchain como la de 
 	// dibujado al mismo estado para copiar la informacion
@@ -233,8 +290,6 @@ void LavaEngine::draw() {
 	TransitionImage(commandBuffer, swap_chain_.get_swap_chain_images()[swap_chain_image_index],
 		VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
-	// -> FIN PRIMER DIBUJADO
-	// -> INICIO IMGUI DIBUJADO
 	// Devolvemos la imagen al swapchain
 	CopyImageToImage(commandBuffer, swap_chain_.get_draw_image().image,
 		swap_chain_.get_swap_chain_images()[swap_chain_image_index], swap_chain_.get_draw_extent(), window_extent_);
@@ -246,7 +301,6 @@ void LavaEngine::draw() {
 	//draw imgui into the swapchain image
 	drawImgui(commandBuffer, swap_chain_.get_swap_chain_image_views()[swap_chain_image_index]);
 	
-	// -> FIN IMGUI DIBUJADO
 	//Se cambia la imagen al layout presentable
 	TransitionImage(commandBuffer, swap_chain_.get_swap_chain_images()[swap_chain_image_index],
 		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
@@ -296,14 +350,12 @@ void LavaEngine::drawMeshes(VkCommandBuffer command_buffer)
 	VkRenderingInfo renderInfo = vkinit::RenderingInfo(swap_chain_.get_draw_extent(), &color_attachment, &depth_attachment);
 	vkCmdBeginRendering(command_buffer, &renderInfo);
 
-	//vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _trianglePipeline);
-
 	//set dynamic viewport and scissor
 	VkViewport viewport = {};
 	viewport.x = 0;
 	viewport.y = 0;
-	viewport.width = swap_chain_.get_draw_extent().width;
-	viewport.height = swap_chain_.get_draw_extent().height;
+	viewport.width = (float)swap_chain_.get_draw_extent().width;
+	viewport.height = (float)swap_chain_.get_draw_extent().height;
 	viewport.minDepth = 0.f;
 	viewport.maxDepth = 1.f;
 
@@ -317,32 +369,56 @@ void LavaEngine::drawMeshes(VkCommandBuffer command_buffer)
 
 	vkCmdSetScissor(command_buffer, 0, 1, &scissor);
 
+	//Clean Descriptor sets for current frame
+	FrameData& frame_data = frame_data_.getCurrentFrame();
+	frame_data.descriptor_manager.clear();
+
+	//global_data_buffer_->updateBufferData(&global_scene_data_, sizeof(GlobalSceneData));
+
+	GPUDrawPushConstants push_constants;
+	glm::mat4 model = glm::mat4(1.0f);
+	model = glm::translate(model, glm::vec3(0.0f, 0.0f, -5.0f));
+	model = glm::rotate(model, glm::radians(0.01f * frame_data_.frame_number_), glm::vec3(1.0f, 0.0f, 0.0f));
+	model = glm::rotate(model, glm::radians(0.02f * frame_data_.frame_number_), glm::vec3(0.0f, 1.0f, 0.0f));
+	model = glm::rotate(model, glm::radians(0.03f * frame_data_.frame_number_), glm::vec3(0.0f, 0.0f, 1.0f));
+
+
+	//GPUDrawPushConstants push_constants;
+//
+//
+//glm::mat4 model = glm::mat4(1.0f);
+//LavaTransform& transform = mesh->get_transform();
+//
+//model = LavaTransform::TranslationMatrix(model, transform);
+//model = LavaTransform::RotateMatrix(model, transform);
+//model = LavaTransform::ScaleMatrix(model, transform);
+//
+//glm::mat4 projection = glm::perspective(glm::radians(70.0f),
+//	(float)swap_chain_.get_draw_extent().width/ (float)swap_chain_.get_draw_extent().height,10000.f,0.1f);
+
+
 	for (auto mesh : meshes_) {
 
 		vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mesh->get_material()->get_pipeline().get_pipeline());
 
-		GPUDrawPushConstants push_constants;
 
+		VkDescriptorSet image_set = mesh->get_material()->get_descriptor_set();
+	
+		//Bind both descriptor sets on the mesh
+		vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+			mesh->get_material()->get_pipeline().get_layout(),
+			0, 1, &global_descriptor_set_, 0, nullptr);
 
-		glm::mat4 model = glm::mat4(1.0f);
-		LavaTransform& transform = mesh->get_transform();
+		vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+			mesh->get_material()->get_pipeline().get_layout(),
+			1, 1, &image_set, 0, nullptr);
 
-		model = LavaTransform::TranslationMatrix(model, transform);
-		model = LavaTransform::RotateMatrix(model, transform);
-		model = LavaTransform::ScaleMatrix(model, transform);
-
-		glm::mat4 projection = glm::perspective(glm::radians(70.0f),
-			(float)swap_chain_.get_draw_extent().width/ (float)swap_chain_.get_draw_extent().height,10000.f,0.1f);
-
-		projection[1][1] *= -1;
-
-
-		push_constants.world_matrix = projection * model;
+		push_constants.world_matrix = model; // global_scene_data_.viewproj* model;
 		for (std::shared_ptr<MeshAsset> submesh : mesh->meshes_) {
 			push_constants.vertex_buffer = submesh->meshBuffers.vertex_buffer_address;
 
 			vkCmdPushConstants(command_buffer, mesh->get_material()->get_pipeline().get_layout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &push_constants);
-			vkCmdBindIndexBuffer(command_buffer, submesh->meshBuffers.index_buffer.buffer , 0, VK_INDEX_TYPE_UINT32);
+			vkCmdBindIndexBuffer(command_buffer, submesh->meshBuffers.index_buffer->get_buffer().buffer, 0, VK_INDEX_TYPE_UINT32);
 
 			vkCmdDrawIndexed(command_buffer, submesh->surfaces[0].count, 1, submesh->surfaces[0].start_index, 0, 0);
 		}
@@ -352,205 +428,8 @@ void LavaEngine::drawMeshes(VkCommandBuffer command_buffer)
 
 }
 
-void LavaEngine::createDescriptors() {
-	//Se crean 10 descriptor sets, cada uno con una imagen
-	std::vector<DescriptorAllocator::PoolSizeRatio> sizes = {
-		{VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1}
-	};
-
-	global_descriptor_allocator_.init_pool(device_.get_device(), 10, sizes);
-
-	{
-		DescriptorLayoutBuilder builder;
-		builder.addBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
-		draw_image_descriptor_set_layout_ = builder.build(device_.get_device(), VK_SHADER_STAGE_COMPUTE_BIT);
-	}
-
-	//Ahora se reserva el description set
-	draw_image_descriptor_set_ =
-		global_descriptor_allocator_.allocate(device_.get_device(), draw_image_descriptor_set_layout_);
-
-	VkDescriptorImageInfo img_info{};
-	img_info.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-	//La imagen que se creo con anterioridad 
-	// fuera del swap chain para poder dibujar sobre ella
-	img_info.imageView = swap_chain_.get_draw_image().image_view;
-
-	VkWriteDescriptorSet draw_image_write{};
-	draw_image_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-	draw_image_write.pNext = nullptr;
-
-	draw_image_write.dstBinding = 0;
-	draw_image_write.dstSet = draw_image_descriptor_set_;
-	draw_image_write.descriptorCount = 1;
-	draw_image_write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-	draw_image_write.pImageInfo = &img_info;
-
-	vkUpdateDescriptorSets(device_.get_device(), 1, &draw_image_write, 0, nullptr);
-	
-	//make sure both the descriptor allocator and the new layout get cleaned up properly
-	main_deletion_queue_.push_function([&]() {
-		global_descriptor_allocator_.destroy_pool(device_.get_device());
-		vkDestroyDescriptorSetLayout(device_.get_device(), draw_image_descriptor_set_layout_, nullptr);
-		});
-}
-
-void LavaEngine::createBackgroundPipelines() {
-	VkPipelineLayoutCreateInfo compute_layout{};
-	compute_layout.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	compute_layout.pNext = nullptr;
-	compute_layout.pSetLayouts = &draw_image_descriptor_set_layout_;
-	compute_layout.setLayoutCount = 1;
-	ComputeEffect gradient;
-	if (vkCreatePipelineLayout(device_.get_device(), &compute_layout, nullptr, &gradient.layout) != VK_SUCCESS) {
-#ifndef NDEBUG
-		printf("Pipeline layout creation failed!");
-#endif // !NDEBUG
-	}
-
-	//layout code
-	VkShaderModule compute_draw_shader;
-	if (!LoadShader("../src/shaders/gradient.comp.spv", device_.get_device(), &compute_draw_shader))
-	{
-		printf("Error when building the compute shader \n");
-	}
-
-	VkPipelineShaderStageCreateInfo stage_info{};
-	stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-	stage_info.pNext = nullptr;
-	stage_info.stage = VK_SHADER_STAGE_COMPUTE_BIT;
-	stage_info.module = compute_draw_shader;
-	stage_info.pName = "main";
-
-	VkComputePipelineCreateInfo compute_pipeline_create_info{};
-	compute_pipeline_create_info.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
-	compute_pipeline_create_info.pNext = nullptr;
-	compute_pipeline_create_info.layout = gradient.layout;
-	compute_pipeline_create_info.stage = stage_info;
-
-	
-	//gradient.layout = gradient_pipeline_layout_;
-	gradient.name = "basic gradient";
-	gradient.data = {};
-	gradient.use_push_constants = false;
-
-	if(vkCreateComputePipelines(device_.get_device(), VK_NULL_HANDLE, 1, &compute_pipeline_create_info, nullptr, &gradient.pipeline) != VK_SUCCESS){
-#ifndef NDEBUG
-		printf("Compute pipeline creation failed!");
-#endif // !NDEBUG
-	}
-
-	backgroundEffects.push_back(gradient);
-
-	vkDestroyShaderModule(device_.get_device(), compute_draw_shader, nullptr);
-	main_deletion_queue_.push_function([&]() {
-		//vkDestroyPipelineLayout(device_, gradient_pipeline_layout_, nullptr);
-		vkDestroyPipelineLayout(device_.get_device(), backgroundEffects[0].layout, nullptr);
-		vkDestroyPipeline(device_.get_device(), backgroundEffects[0].pipeline, nullptr);
-		});
-}
-
-void LavaEngine::createBackgroundPipelinesImGui()
-{
-	VkPipelineLayoutCreateInfo compute_layout{};
-	compute_layout.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	compute_layout.pNext = nullptr;
-	compute_layout.pSetLayouts = &draw_image_descriptor_set_layout_;
-	compute_layout.setLayoutCount = 1;
-
-	VkPushConstantRange push_constant{};
-	push_constant.offset = 0;
-	push_constant.size = sizeof(ComputePushConstants);
-	push_constant.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-
-	compute_layout.pPushConstantRanges = &push_constant;
-	compute_layout.pushConstantRangeCount = 1;
-	ComputeEffect gradient_imgui;
-	if (vkCreatePipelineLayout(device_.get_device(), &compute_layout, nullptr, &gradient_imgui.layout) != VK_SUCCESS) {
-#ifndef NDEBUG
-		printf("Pipeline layout creation failed!");
-#endif // !NDEBUG
-	}
-
-	//layout code
-	VkShaderModule compute_draw_shader;
-	if (!LoadShader("../src/shaders/gradient_imgui.comp.spv", device_.get_device(), &compute_draw_shader))
-	{
-		printf("Error when building the compute shader \n");
-	}
-
-	VkPipelineShaderStageCreateInfo stage_info{};
-	stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-	stage_info.pNext = nullptr;
-	stage_info.stage = VK_SHADER_STAGE_COMPUTE_BIT;
-	stage_info.module = compute_draw_shader;
-	stage_info.pName = "main";
-
-	VkComputePipelineCreateInfo compute_pipeline_create_info{};
-	compute_pipeline_create_info.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
-	compute_pipeline_create_info.pNext = nullptr;
-	compute_pipeline_create_info.layout = gradient_imgui.layout;
-	compute_pipeline_create_info.stage = stage_info;
-
-	
-	//gradient_imgui.layout = gradient_imgui_pipeline_layout_;
-	gradient_imgui.name = "ImGui gradient";
-	gradient_imgui.data = {};
-	gradient_imgui.use_push_constants = true;
-
-	//default colors
-	gradient_imgui.data.data1 = glm::vec4(1, 0, 0, 1);
-	gradient_imgui.data.data2 = glm::vec4(0, 0, 1, 1);
-
-	if (vkCreateComputePipelines(device_.get_device(), VK_NULL_HANDLE, 1, &compute_pipeline_create_info, nullptr, &gradient_imgui.pipeline) != VK_SUCCESS) {
-#ifndef NDEBUG
-		printf("Compute pipeline creation failed!");
-#endif // !NDEBUG
-	}
-
-	backgroundEffects.push_back(gradient_imgui);
-
-	vkDestroyShaderModule(device_.get_device(), compute_draw_shader, nullptr);
-	main_deletion_queue_.push_function([&]() {
-		//vkDestroyPipelineLayout(device_, gradient_imgui_pipeline_layout_, nullptr);
-		vkDestroyPipelineLayout(device_.get_device(), backgroundEffects[1].layout, nullptr);
-		vkDestroyPipeline(device_.get_device(), backgroundEffects[1].pipeline, nullptr);
-		});
-}
-
-AllocatedBuffer LavaEngine::createBuffer(size_t alloc_size, VkBufferUsageFlags usage, VmaMemoryUsage memory_usage)
-{
-	// allocate buffer
-	VkBufferCreateInfo buffer_info = { .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
-	buffer_info.pNext = nullptr;
-	buffer_info.size = alloc_size;
-
-	buffer_info.usage = usage;
-
-	VmaAllocationCreateInfo vmaalloc_info = {};
-	vmaalloc_info.usage = memory_usage;
-	vmaalloc_info.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT;
-	AllocatedBuffer new_buffer;
-
-	// allocate the buffer
-	if (vmaCreateBuffer(allocator_.get_allocator(), &buffer_info, &vmaalloc_info, &new_buffer.buffer, &new_buffer.allocation,
-		&new_buffer.info)) {
-#ifndef NDEBUG
-		printf("Mesh Buffer creation fail!");
-#endif // !NDEBUG
-	}
-
-	return new_buffer;
-}
-
-void LavaEngine::destroyBuffer(const AllocatedBuffer& buffer)
-{
-	vmaDestroyBuffer(allocator_.get_allocator(), buffer.buffer, buffer.allocation);
-}
-
 void LavaEngine::initImgui() {
 	
-
 	std::vector<DescriptorAllocator::PoolSizeRatio> pool_sizes = {
 		{ VK_DESCRIPTOR_TYPE_SAMPLER, 1 },
 		{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1 },
@@ -637,7 +516,6 @@ void LavaEngine::drawImgui(VkCommandBuffer command_buffer, VkImageView target_im
 
 	vkCmdEndRendering(command_buffer);
 }
-
 
 std::shared_ptr<LavaMesh> LavaEngine::addMesh(MeshProperties prop){
 	std::shared_ptr<LavaMesh> mesh = std::make_shared<LavaMesh>(*this, prop);

@@ -31,6 +31,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/mat4x4.hpp>
 #include <glm/gtx/quaternion.hpp>
+#include "engine/lava_buffer.hpp"
 
 #pragma region VulkanGraphic
 
@@ -52,10 +53,13 @@ struct ComputeEffect {
 	ComputePushConstants data;
 };
 
-struct AllocatedBuffer {
-	VkBuffer buffer;
+
+struct AllocatedImage {
+	VkImage image;
+	VkImageView image_view;
 	VmaAllocation allocation;
-	VmaAllocationInfo info;
+	VkExtent3D image_extent;
+	VkFormat image_format;
 };
 
 struct Vertex {
@@ -66,13 +70,13 @@ struct Vertex {
 	glm::vec4 color;
 };
 
-// holds the resources needed for a mesh
-struct GPUMeshBuffers {
 
-	AllocatedBuffer index_buffer;
-	AllocatedBuffer vertex_buffer;
+struct GPUMeshBuffers {
+	std::unique_ptr<LavaBuffer> index_buffer;
+	std::unique_ptr<LavaBuffer> vertex_buffer;
 	VkDeviceAddress vertex_buffer_address;
 };
+
 
 // push constants for our mesh object draws
 struct GPUDrawPushConstants {
@@ -168,6 +172,7 @@ public:
 	const char* fragment_shader_path;
 	class LavaDevice* device;
 	class LavaSwapChain* swap_chain;
+	class LavaDescriptorManager* descriptor_manager;
 	VkDescriptorSetLayout descriptor_set_layout;
 	int pipeline_flags;
 };
@@ -199,5 +204,15 @@ struct MeshAsset {
 	GPUMeshBuffers meshBuffers;
 };
 
+struct GlobalSceneData {
+	glm::mat4 view;
+	glm::mat4 proj;
+	glm::mat4 viewproj;
+	glm::vec4 ambientColor;
+};
+
+struct CameraParameters {
+	float fov;
+};
 
 #endif // ! __LAVA_CUSTOM_TYPES_
