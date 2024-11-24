@@ -3,13 +3,13 @@
 
 #include "lava_types.hpp"
 
+
 struct RenderComponent {
   bool active_;
-  class LavaMaterial* material_;
+  std::shared_ptr<class LavaMesh> mesh_;
 
   RenderComponent(){
     active_ = true;
-    material_ = nullptr;
   }
 };
 

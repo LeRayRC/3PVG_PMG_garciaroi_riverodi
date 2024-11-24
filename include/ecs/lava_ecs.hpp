@@ -100,6 +100,17 @@ public:
     return ECS_SUCCESS;
   }
 
+  template<typename T>
+  std::vector<std::optional<T>>& getComponentList() {
+    size_t hash = typeid(T).hash_code();
+
+    map_type::iterator it = component_list_map_.find(hash);
+    //TO FIX
+    //if (it == component_list_map_.end())// return nullptr; //Component does not exist
+
+    ComponentListDerived<T>* cld = static_cast<ComponentListDerived<T>*>(it->second.get());
+    return cld->component_list_;
+  }
 
 private:
   typedef std::unordered_map<size_t, std::unique_ptr<ComponentListBase>> map_type;
