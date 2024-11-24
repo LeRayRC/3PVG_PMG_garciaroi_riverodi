@@ -193,6 +193,8 @@ void LavaEngine::beginFrame() {
 #endif // !NDEBUG
 	}
 
+	frame_data_.getCurrentFrame().last_bound_mesh.reset();
+
 	//Ahora se rellena la estructura del begin command buffer
 	VkCommandBufferBeginInfo commandBufferBeginInfo{};
 	commandBufferBeginInfo.sType =
@@ -383,14 +385,14 @@ void LavaEngine::drawMeshes(VkCommandBuffer command_buffer)
 			1, 1, &image_set, 0, nullptr);
 
 		push_constants.world_matrix = model; // global_scene_data_.viewproj* model;
-		for (std::shared_ptr<MeshAsset> submesh : mesh->meshes_) {
-			push_constants.vertex_buffer = submesh->meshBuffers.vertex_buffer_address;
+		//for (std::shared_ptr<MeshAsset> submesh : mesh->meshes_) {
+		//	push_constants.vertex_buffer = submesh->meshBuffers.vertex_buffer_address;
 
-			vkCmdPushConstants(command_buffer, mesh->get_material()->get_pipeline().get_layout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &push_constants);
-			vkCmdBindIndexBuffer(command_buffer, submesh->meshBuffers.index_buffer->get_buffer().buffer, 0, VK_INDEX_TYPE_UINT32);
+		//	vkCmdPushConstants(command_buffer, mesh->get_material()->get_pipeline().get_layout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &push_constants);
+		//	vkCmdBindIndexBuffer(command_buffer, submesh->meshBuffers.index_buffer->get_buffer().buffer, 0, VK_INDEX_TYPE_UINT32);
 
-			vkCmdDrawIndexed(command_buffer, submesh->surfaces[0].count, 1, submesh->surfaces[0].start_index, 0, 0);
-		}
+		//	vkCmdDrawIndexed(command_buffer, submesh->surfaces[0].count, 1, submesh->surfaces[0].start_index, 0, 0);
+		//}
 	}
 
 	vkCmdEndRendering(command_buffer);

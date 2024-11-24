@@ -30,7 +30,8 @@ public:
 
 	LavaMaterial* get_material() { return material_; };
 	bool isLoaded() const { return is_loaded_; }
-	std::vector<std::shared_ptr<MeshAsset>> meshes_;
+	//std::vector<std::shared_ptr<MeshAsset>> meshes_;
+	std::shared_ptr<MeshAsset> mesh_;
 	LavaTransform& get_transform() { return transform_; }
 
 private:

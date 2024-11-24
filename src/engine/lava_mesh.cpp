@@ -48,6 +48,7 @@ LavaMesh::~LavaMesh(){
   }*/
 }
 
+/*
 bool LavaMesh::loadAsGLTF(std::filesystem::path file_path){
   std::cout << "Loading GLTF: " << file_path << std::endl;
 
@@ -167,12 +168,126 @@ bool LavaMesh::loadAsGLTF(std::filesystem::path file_path){
   return true;
 }
 
+*/
+bool LavaMesh::loadAsGLTF(std::filesystem::path file_path) {
+  std::cout << "Loading GLTF: " << file_path << std::endl;
+
+  fastgltf::GltfDataBuffer data;
+  data.loadFromFile(file_path);
+
+  constexpr auto gltfOptions = fastgltf::Options::LoadGLBBuffers
+    | fastgltf::Options::LoadExternalBuffers;
+
+  fastgltf::Asset gltf;
+  fastgltf::Parser parser{};
+
+  auto load = parser.loadGltfBinary(&data, file_path.parent_path(), gltfOptions);
+  if (load) {
+    gltf = std::move(load.get());
+  }
+  else {
+    return false;
+  }
+
+  // Vectores globales para todos los vértices e índices del archivo
+  std::vector<Vertex> combinedVertices;
+  std::vector<uint32_t> combinedIndices;
+
+  MeshAsset newmesh;
+  //newmesh.name = mesh.name;
+  for (fastgltf::Mesh& mesh : gltf.meshes) {
+    for (auto&& p : mesh.primitives) {
+      GeoSurface newSurface;
+      newSurface.start_index = static_cast<uint32_t>(combinedIndices.size());
+      newSurface.count = static_cast<uint32_t>(gltf.accessors[p.indicesAccessor.value()].count);
+
+      size_t initial_vtx = combinedVertices.size();
+
+      // Cargar índices
+      {
+        fastgltf::Accessor& indexAccessor = gltf.accessors[p.indicesAccessor.value()];
+        combinedIndices.reserve(combinedIndices.size() + indexAccessor.count);
+
+        fastgltf::iterateAccessor<std::uint32_t>(gltf, indexAccessor,
+          [&](std::uint32_t idx) {
+            combinedIndices.push_back(idx + static_cast<uint32_t>(initial_vtx));
+          });
+      }
+
+      // Cargar posiciones
+      {
+        fastgltf::Accessor& posAccessor = gltf.accessors[p.findAttribute("POSITION")->second];
+        combinedVertices.resize(combinedVertices.size() + posAccessor.count);
+
+        fastgltf::iterateAccessorWithIndex<glm::vec3>(gltf, posAccessor,
+          [&](glm::vec3 v, size_t index) {
+            Vertex newVertex;
+            newVertex.position = v;
+            newVertex.normal = { 1, 0, 0 };  // Por defecto
+            newVertex.color = glm::vec4{ 1.f };
+            newVertex.uv_x = 0;
+            newVertex.uv_y = 0;
+            combinedVertices[initial_vtx + index] = newVertex;
+          });
+      }
+
+      // Cargar normales
+      auto normals = p.findAttribute("NORMAL");
+      if (normals != p.attributes.end()) {
+        fastgltf::iterateAccessorWithIndex<glm::vec3>(gltf, gltf.accessors[normals->second],
+          [&](glm::vec3 v, size_t index) {
+            combinedVertices[initial_vtx + index].normal = v;
+          });
+      }
+
+      // Cargar UVs
+      auto uv = p.findAttribute("TEXCOORD_0");
+      if (uv != p.attributes.end()) {
+        fastgltf::iterateAccessorWithIndex<glm::vec2>(gltf, gltf.accessors[uv->second],
+          [&](glm::vec2 v, size_t index) {
+            combinedVertices[initial_vtx + index].uv_x = v.x;
+            combinedVertices[initial_vtx + index].uv_y = v.y;
+          });
+      }
+
+      // Cargar colores
+      auto colors = p.findAttribute("COLOR_0");
+      if (colors != p.attributes.end()) {
+        fastgltf::iterateAccessorWithIndex<glm::vec4>(gltf, gltf.accessors[colors->second],
+          [&](glm::vec4 v, size_t index) {
+            combinedVertices[initial_vtx + index].color = v;
+          });
+      }
+
+      newmesh.surfaces.push_back(newSurface);
+    }
+  }
+
+  // Sobrescribir colores para depuración
+  constexpr bool OverrideColors = true;
+  if (OverrideColors) {
+    for (Vertex& vtx : combinedVertices) {
+      vtx.color = glm::vec4(vtx.normal, 1.f);
+    }
+  }
+
+  // Subir datos combinados al GPU
+  newmesh.meshBuffers = upload(combinedIndices, combinedVertices);
+
+  // Agregar la malla combinada al contenedor
+  //meshes_.emplace_back(std::make_shared<MeshAsset>(std::move(newmesh)));
+  mesh_ = std::make_shared<MeshAsset>(std::move(newmesh));
+
+  return true;
+}
+
+
 bool LavaMesh::loadCustomMesh(MeshProperties prop) {
   MeshAsset newmesh;
   GeoSurface surface = { 0,prop.index.size() };
   newmesh.meshBuffers = upload(prop.index, prop.vertex);
   newmesh.surfaces.push_back(surface);
-  meshes_.emplace_back(std::make_shared<MeshAsset>(std::move(newmesh)));
+  //meshes_.emplace_back(std::make_shared<MeshAsset>(std::move(newmesh)));
   return true;
 }
 

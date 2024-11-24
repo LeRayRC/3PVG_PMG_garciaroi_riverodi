@@ -37,7 +37,7 @@ int main(int argc, char* argv[]) {
 	//////ASSETS END/////
 	/////////////////////
 	int width = 30;
-	for (int x = 0; x < 30; x++) {
+	for (int x = 0; x < 50; x++) {
 		for (int y = 0; y < 30; y++) {
 
 			size_t entity = ecs_manager.createEntity();
@@ -47,7 +47,7 @@ int main(int argc, char* argv[]) {
 			auto transform_component = ecs_manager.getComponent<TransformComponent>(entity);
 			if (transform_component) {
 				auto& transform = transform_component->value();
-				transform.pos_ = glm::vec3(-15 + x, 15.0f - y, -10.0f);
+				transform.pos_ = glm::vec3(-25.0f + x, 15.0f - y, -15.0f);
 				transform.scale_ = glm::vec3(1.0f, 1.0f, 1.0f);
 
 			}
@@ -62,13 +62,15 @@ int main(int argc, char* argv[]) {
 
 	while (!engine.shouldClose()) {
 
-		auto transform_component = ecs_manager.getComponent<TransformComponent>(0);
-		if (transform_component) {
-			auto& transform = transform_component->value();
-			transform.rot_ = glm::vec3(0.0001f * engine.frame_data_.frame_number_,
-				0.0002f * engine.frame_data_.frame_number_,
-				0.0005f * engine.frame_data_.frame_number_);
+		for (auto& comp : ecs_manager.getComponentList<TransformComponent>()) {
+			if (comp) {
+				auto& transform = comp.value();
+				transform.rot_ = glm::vec3(0.001f * engine.frame_data_.frame_number_,
+					0.02f * engine.frame_data_.frame_number_,
+					0.05f * engine.frame_data_.frame_number_);
+			}
 		}
+
 
 
 		engine.beginFrame();

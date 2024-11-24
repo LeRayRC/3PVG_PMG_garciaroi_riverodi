@@ -24,7 +24,7 @@ void LavaNormalRenderSystem::render(
   std::vector<std::optional<TransformComponent>>& transform_vector,
   std::vector<std::optional<RenderComponent>>& render_vector
   ) {
-	std::shared_ptr<LavaMesh> last_mesh;
+	
 
 
   TransitionImage(engine_.commandBuffer, engine_.swap_chain_.get_draw_image().image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
@@ -77,6 +77,9 @@ void LavaNormalRenderSystem::render(
 		//Clean Descriptor sets for current frame
 		frame_data.descriptor_manager.clear();
 
+		std::shared_ptr<LavaMesh> lava_mesh = render_it->value().mesh_;
+		std::shared_ptr<MeshAsset> mesh = lava_mesh->mesh_;
+
 		GPUDrawPushConstants push_constants;
 		glm::mat4 model = glm::mat4(1.0f);
 		model = glm::translate(model, transform_it->value().pos_);
@@ -85,23 +88,48 @@ void LavaNormalRenderSystem::render(
 		model = glm::rotate(model, transform_it->value().rot_.z, glm::vec3(0.0f, 0.0f, 1.0f));
 		model = glm::scale(model, transform_it->value().scale_);
 
-		std::shared_ptr<LavaMesh> mesh = render_it->value().mesh_;
-
-
-		VkDescriptorSet image_set = mesh->get_material()->get_descriptor_set();
+		VkDescriptorSet image_set = lava_mesh->get_material()->get_descriptor_set();
 		vkCmdBindDescriptorSets(engine_.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-			pipeline_.get_layout(),
-			1, 1, &image_set, 0, nullptr);
+														pipeline_.get_layout(),
+														1, 1, &image_set, 0, nullptr);
 
-		push_constants.world_matrix = model; // global_scene_data_.viewproj* model;
-		
-		for (std::shared_ptr<MeshAsset> submesh : mesh->meshes_) {
-			push_constants.vertex_buffer = submesh->meshBuffers.vertex_buffer_address;
-			vkCmdBindIndexBuffer(engine_.commandBuffer, submesh->meshBuffers.index_buffer->get_buffer().buffer, 0, VK_INDEX_TYPE_UINT32);
-			vkCmdPushConstants(engine_.commandBuffer, pipeline_.get_layout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &push_constants);
-			vkCmdDrawIndexed(engine_.commandBuffer, submesh->surfaces[0].count, 1, submesh->surfaces[0].start_index, 0, 0);
+
+		// Vincular los Vertex y Index Buffers
+		GPUMeshBuffers& meshBuffers = mesh->meshBuffers;
+		VkDeviceSize offsets[] = { 0 };
+		//VkBuffer vertex_buffer = meshBuffers.vertex_buffer->get_buffer().buffer;
+		//vkCmdBindVertexBuffers(engine_.commandBuffer, 0, 1, &vertex_buffer, offsets);
+		if (frame_data.last_bound_mesh != lava_mesh) {
+			vkCmdBindIndexBuffer(engine_.commandBuffer, meshBuffers.index_buffer->get_buffer().buffer, 0, VK_INDEX_TYPE_UINT32);
 		}
-		last_mesh = mesh;
+		
+		push_constants.world_matrix = model; // global_scene_data_.viewproj* model;
+		push_constants.vertex_buffer = meshBuffers.vertex_buffer_address;
+
+		// Dibujar cada superficie
+		for (const GeoSurface& surface : mesh->surfaces) {
+			vkCmdPushConstants(engine_.commandBuffer, pipeline_.get_layout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &push_constants);
+			vkCmdDrawIndexed(engine_.commandBuffer, surface.count, 1, surface.start_index, 0, 0);
+		}
+
+		frame_data.last_bound_mesh = lava_mesh;
+
+
+		//VkDescriptorSet image_set = mesh->get_material()->get_descriptor_set();
+		//vkCmdBindDescriptorSets(engine_.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+		//	pipeline_.get_layout(),
+		//	1, 1, &image_set, 0, nullptr);
+
+		//push_constants.world_matrix = model; // global_scene_data_.viewproj* model;
+		//
+		//for (std::shared_ptr<MeshAsset> submesh : mesh->meshes_) {
+		//	push_constants.vertex_buffer = submesh->meshBuffers.vertex_buffer_address;
+		//	vkCmdBindIndexBuffer(engine_.commandBuffer, submesh->meshBuffers.index_buffer->get_buffer().buffer, 0, VK_INDEX_TYPE_UINT32);
+		//	vkCmdPushConstants(engine_.commandBuffer, pipeline_.get_layout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &push_constants);
+		//	vkCmdDrawIndexed(engine_.commandBuffer, submesh->surfaces[0].count, 1, submesh->surfaces[0].start_index, 0, 0);
+		//	
+		//}
+		//last_mesh = mesh;
 
   }
 

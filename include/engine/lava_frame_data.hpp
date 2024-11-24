@@ -24,6 +24,7 @@ struct FrameData {
 	VkSemaphore render_semaphore; //GPU <-> GPU
 	VkFence render_fence; // CPU <-> GPU
 	LavaDescriptorManager descriptor_manager;
+	std::shared_ptr<class LavaMesh> last_bound_mesh;
 };
 
  //Numero de buffers en paralelo (double-buffering)
