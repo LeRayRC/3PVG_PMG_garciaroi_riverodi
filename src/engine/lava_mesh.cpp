@@ -287,6 +287,7 @@ bool LavaMesh::loadCustomMesh(MeshProperties prop) {
   GeoSurface surface = { 0,prop.index.size() };
   newmesh.meshBuffers = upload(prop.index, prop.vertex);
   newmesh.surfaces.push_back(surface);
+  mesh_ = std::make_shared<MeshAsset>(std::move(newmesh));
   //meshes_.emplace_back(std::make_shared<MeshAsset>(std::move(newmesh)));
   return true;
 }
