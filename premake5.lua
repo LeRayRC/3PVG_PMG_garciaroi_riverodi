@@ -61,7 +61,7 @@ workspace "Motor"
     configurations { "Debug", "Release", "RelWithDebInfo" }
     architecture "x64"
     location "build"
-    cppdialect "c++20"
+    cppdialect "C++23"
     startproject "Window"
 
     filter "configurations:Debug"

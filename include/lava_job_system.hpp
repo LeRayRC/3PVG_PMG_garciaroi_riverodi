@@ -26,7 +26,7 @@ public:
 
 	void run_tasks();
 
-	void add_task(std::packaged_task<void()> task);
+	void add_task(std::move_only_function<void()> task);
 
 	template<typename T> typename std::future<std::invoke_result_t<T>> add(T&& f) {
 		typedef typename std::invoke_result_t<T> result;
@@ -46,7 +46,7 @@ private:
 
 	std::vector<std::thread> workers_;
 
-	std::queue<std::function<void()>> tasks_;
+	std::queue<std::move_only_function<void()>> tasks_;
 
 	std::mutex lock_;
 

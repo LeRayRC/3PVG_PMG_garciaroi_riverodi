@@ -38,7 +38,7 @@ LavaJobSystem::~LavaJobSystem()
 
 void LavaJobSystem::run_tasks()
 {
-	std::function <void(void)> task;
+	std::move_only_function<void()> task;
 
 	while (1) {
 		{
@@ -52,11 +52,11 @@ void LavaJobSystem::run_tasks()
 	}
 }
 
-void LavaJobSystem::add_task(std::packaged_task<void()> task)
+void LavaJobSystem::add_task(std::move_only_function<void()> task)
 {
 	{
 		std::lock_guard<std::mutex> lock{ lock_ };
-		tasks_.emplace(std::move(tasks_));
+		tasks_.emplace(std::move(task));
 	}
 	condition_var_.notify_one();
 }
