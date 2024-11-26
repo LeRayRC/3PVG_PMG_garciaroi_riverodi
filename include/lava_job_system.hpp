@@ -14,18 +14,36 @@
 #define  __LAVA_JOB_SYSTEM__ 1
 
 #include "lava_types.hpp"
+#include <future>
 
 class LavaJobSystem {
 
 public:
 
-	LavaJobSystem();
+	LavaJobSystem(); 
 
 	~LavaJobSystem();
 
 	void run_tasks();
 
+	void add_task(std::packaged_task<void()> task);
+
+	template<typename T> typename std::future<std::invoke_result_t<T>> add(T&& f) {
+		typedef typename std::invoke_result_t<T> result;
+		std::packaged_task<result()> task(std::move(f));
+		auto future = task.get_future();
+
+		add_task(std::move(task));
+		return future;
+	}
+
+
 private:
+
+	LavaJobSystem(LavaJobSystem&&) = delete;
+
+	LavaJobSystem& operator=(LavaJobSystem&&) = delete;
+
 	std::vector<std::thread> workers_;
 
 	std::queue<std::function<void()>> tasks_;

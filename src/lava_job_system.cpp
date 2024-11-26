@@ -51,3 +51,12 @@ void LavaJobSystem::run_tasks()
 		task();
 	}
 }
+
+void LavaJobSystem::add_task(std::packaged_task<void()> task)
+{
+	{
+		std::lock_guard<std::mutex> lock{ lock_ };
+		tasks_.emplace(std::move(tasks_));
+	}
+	condition_var_.notify_one();
+}
