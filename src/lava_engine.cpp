@@ -68,6 +68,7 @@ LavaEngine::LavaEngine() :
 	global_scene_data_.proj[1][1] *= -1;
 	global_scene_data_.view = glm::mat4(1.0f);
 	global_scene_data_.viewproj = global_scene_data_.proj * global_scene_data_.view;
+	global_data_buffer_->updateBufferData(&global_scene_data_, sizeof(GlobalSceneData));
 
 
 	//Default data
@@ -77,6 +78,7 @@ LavaEngine::LavaEngine() :
 
 	initImgui();
 	is_initialized_ = true;
+	swap_chain_image_index = 0;
 }
 
 LavaEngine::LavaEngine(unsigned int window_width, unsigned int window_height) :
@@ -106,6 +108,7 @@ LavaEngine::LavaEngine(unsigned int window_width, unsigned int window_height) :
 	global_scene_data_.proj[1][1] *= -1;
 	global_scene_data_.view = glm::mat4(1.0f);
 	global_scene_data_.viewproj = global_scene_data_.proj * global_scene_data_.view;
+	global_data_buffer_->updateBufferData(&global_scene_data_, sizeof(GlobalSceneData));
 
 	//Default data
 	pink_color_ = glm::packUnorm4x8(glm::vec4(1, 0, 1, 1));
@@ -114,6 +117,7 @@ LavaEngine::LavaEngine(unsigned int window_width, unsigned int window_height) :
 
 	initImgui();
 	is_initialized_ = true;
+	swap_chain_image_index = 0;
 }
 
 LavaEngine::~LavaEngine(){
@@ -148,69 +152,16 @@ void LavaEngine::initGlobalData() {
 	global_descriptor_allocator_.clear();
 }
 
-void LavaEngine::mainLoop() {
-	
-  while (!glfwWindowShouldClose(get_window())) {
+void LavaEngine::beginFrame() {
+	glfwPollEvents();
 
-    glfwPollEvents();
+	ImGui_ImplVulkan_NewFrame();
+	ImGui_ImplGlfw_NewFrame();
 
-		ImGui_ImplVulkan_NewFrame();
-		ImGui_ImplGlfw_NewFrame();
+	ImGui::NewFrame();
 
-		ImGui::NewFrame();
-
-		ImGui::Begin("Global Data");
-
-
-		if (ImGui::DragFloat("FOV", &camera_parameters_.fov, 0.1f, 0.0f, 180.0f)) {
-			global_scene_data_.proj = glm::perspective(glm::radians(camera_parameters_.fov),
-				(float)swap_chain_.get_draw_extent().width / (float)swap_chain_.get_draw_extent().height, 10000.f, 0.1f);
-			global_scene_data_.proj[1][1] *= -1;
-			global_scene_data_.view = glm::mat4(1.0f);
-			global_scene_data_.viewproj = global_scene_data_.proj * global_scene_data_.view;
-			global_data_buffer_->updateBufferData(&global_scene_data_, sizeof(GlobalSceneData));
-		}
-
-		if (ImGui::DragFloat3("Ambient", &global_scene_data_.ambientColor.r, 0.01f, 0.0f, 1.0f)) {
-			global_data_buffer_->updateBufferData(&global_scene_data_, sizeof(GlobalSceneData));
-		}
-			
-	
-
-		ImGui::End();
-
-		ImGui::ShowDemoWindow();
-
-		/*ImGui::Begin("Lava window");
-		ComputeEffect& selected = backgroundEffects[currentBackgroundEffect];
-
-		ImGui::Text("Selected effect: %s", selected.name);
-
-		ImGui::SliderInt("Effect Index", &currentBackgroundEffect, 0, backgroundEffects.size() - 1);
-		if (selected.use_push_constants) {
-			ImGui::InputFloat4("data1", (float*)&selected.data.data1);
-			ImGui::InputFloat4("data2", (float*)&selected.data.data2);
-			ImGui::InputFloat4("data3", (float*)&selected.data.data3);
-			ImGui::InputFloat4("data4", (float*)&selected.data.data4);
-		}
-		ImGui::End();*/
-
-		//ImGui::ShowDemoWindow();
-
-		ImGui::Render();
-
-		draw();
-
-		//End Frame Callbacks(NEEDS A WRAPER)
-		for (auto it = end_frame_callbacks.rbegin(); it != end_frame_callbacks.rend(); it++) {
-			(*it)();
-		}
-  }
-}
-
-void LavaEngine::draw() {
 	//Esperamos a que el fence comunique que la grafica ya ha terminado de dibujar
-	//El timeout esta en nanosegundos 10e-9
+//El timeout esta en nanosegundos 10e-9
 	if (vkWaitForFences(device_.get_device(), 1, &frame_data_.getCurrentFrame().render_fence, true, 1000000000) != VK_SUCCESS) {
 #ifndef NDEBUG
 		printf("Fence timeout excedeed!");
@@ -225,7 +176,7 @@ void LavaEngine::draw() {
 	}
 
 	//Solicitamos una imagen del swap chain
-	uint32_t swap_chain_image_index;
+	//uint32_t swap_chain_image_index;
 	if (vkAcquireNextImageKHR(device_.get_device(), swap_chain_.get_swap_chain(), 1000000000,
 		frame_data_.getCurrentFrame().swap_chain_semaphore, nullptr, &swap_chain_image_index) != VK_SUCCESS) {
 #ifndef NDEBUG
@@ -234,12 +185,15 @@ void LavaEngine::draw() {
 	}
 
 	//Se resetea e inicia el command buffer del frame actual
-	VkCommandBuffer commandBuffer = frame_data_.getCurrentFrame().main_command_buffer;
+	//VkCommandBuffer commandBuffer = frame_data_.getCurrentFrame().main_command_buffer;
+	commandBuffer = frame_data_.getCurrentFrame().main_command_buffer;
 	if (vkResetCommandBuffer(commandBuffer, 0) != VK_SUCCESS) {
 #ifndef NDEBUG
 		printf("Resseting commandbuffer failed!");
 #endif // !NDEBUG
 	}
+
+	frame_data_.getCurrentFrame().last_bound_mesh.reset();
 
 	//Ahora se rellena la estructura del begin command buffer
 	VkCommandBufferBeginInfo commandBufferBeginInfo{};
@@ -251,62 +205,26 @@ void LavaEngine::draw() {
 
 	if (vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo) != VK_SUCCESS) {
 #ifndef NDEBUG
-			printf("Begin commandbuffer failed!");
+		printf("Begin commandbuffer failed!");
 #endif // !NDEBUG
 	}
+}
 
-	//
-	//
-	//A PARTIR DE AQUI SE EMPIEZA A DIBUJAR
-	//
-	//
-
-	// -> INICIO PRIMER DIBUJADO
-	// 
-	//Convertimos la imagen de dibujado a escribible
-	TransitionImage(commandBuffer, swap_chain_.get_draw_image().image,
-		VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
-
-	//Limpiamos la imagen con un clear color
-	VkClearColorValue clearValue;
-	clearValue = { {0.0f,0.0f,0.0f,0.0f} };
-
-	//Seleccionamos un rango de la imagen sobre la que actuar
-	VkImageSubresourceRange clearRange = ImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT);
-
-	//Aplicamos el clear color a una imagen 
-	vkCmdClearColorImage(commandBuffer, swap_chain_.get_draw_image().image,VK_IMAGE_LAYOUT_GENERAL, &clearValue, 1, &clearRange);
-
-	TransitionImage(commandBuffer, swap_chain_.get_draw_image().image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-	TransitionImage(commandBuffer, swap_chain_.get_depth_image().image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
-
-	drawMeshes(commandBuffer);
-
-	//Cambiamos tanto la imagen del swapchain como la de 
-	// dibujado al mismo estado para copiar la informacion
-	TransitionImage(commandBuffer, swap_chain_.get_draw_image().image ,
-		VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
-	//Cambiamos la imagen a tipo presentable para enseñarla en la superficie
-	TransitionImage(commandBuffer, swap_chain_.get_swap_chain_images()[swap_chain_image_index],
-		VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-
-	// Devolvemos la imagen al swapchain
-	CopyImageToImage(commandBuffer, swap_chain_.get_draw_image().image,
-		swap_chain_.get_swap_chain_images()[swap_chain_image_index], swap_chain_.get_draw_extent(), window_extent_);
-
+void LavaEngine::endFrame() {
+	ImGui::Render();
 	// Cambiamos la imagen del swap chain para poder escribir sobre ella
 	TransitionImage(commandBuffer, swap_chain_.get_swap_chain_images()[swap_chain_image_index],
 		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
 	//draw imgui into the swapchain image
 	drawImgui(commandBuffer, swap_chain_.get_swap_chain_image_views()[swap_chain_image_index]);
-	
+
 	//Se cambia la imagen al layout presentable
 	TransitionImage(commandBuffer, swap_chain_.get_swap_chain_images()[swap_chain_image_index],
 		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
 	//Se finalizar el command buffer
-if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
+	if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
 #ifndef NDEBUG
 		printf("End commandbuffer failed!");
 #endif // !NDEBUG
@@ -338,6 +256,74 @@ if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
 
 	//increase the number of frames drawn
 	frame_data_.increaseFrameNumber();
+
+	//End Frame Callbacks(NEEDS A WRAPER)
+	for (auto it = end_frame_callbacks.rbegin(); it != end_frame_callbacks.rend(); it++) {
+		(*it)();
+	}
+}
+
+void LavaEngine::mainLoop() {
+	
+  while (!glfwWindowShouldClose(get_window())) {
+
+    glfwPollEvents();
+
+		ImGui_ImplVulkan_NewFrame();
+		ImGui_ImplGlfw_NewFrame();
+
+		ImGui::NewFrame();
+
+		renderImgui();
+
+		//ImGui::ShowDemoWindow();
+
+		ImGui::Render();
+
+		render();
+
+		//End Frame Callbacks(NEEDS A WRAPER)
+		for (auto it = end_frame_callbacks.rbegin(); it != end_frame_callbacks.rend(); it++) {
+			(*it)();
+		}
+  }
+}
+
+void LavaEngine::clearWindow() {
+	//Convertimos la imagen de dibujado a escribible
+	TransitionImage(commandBuffer, swap_chain_.get_draw_image().image,
+		VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+
+	//Limpiamos la imagen con un clear color
+	VkClearColorValue clearValue;
+	clearValue = { {0.0f,0.0f,0.0f,0.0f} };
+
+	//Seleccionamos un rango de la imagen sobre la que actuar
+	VkImageSubresourceRange clearRange = ImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT);
+
+	//Aplicamos el clear color a una imagen 
+	vkCmdClearColorImage(commandBuffer, swap_chain_.get_draw_image().image, VK_IMAGE_LAYOUT_GENERAL, &clearValue, 1, &clearRange);
+
+}
+
+void LavaEngine::render() {
+
+	TransitionImage(commandBuffer, swap_chain_.get_draw_image().image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+	TransitionImage(commandBuffer, swap_chain_.get_depth_image().image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+
+	drawMeshes(commandBuffer);
+
+	//Cambiamos tanto la imagen del swapchain como la de 
+	// dibujado al mismo estado para copiar la informacion
+	TransitionImage(commandBuffer, swap_chain_.get_draw_image().image ,
+		VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+	//Cambiamos la imagen a tipo presentable para enseñarla en la superficie
+	TransitionImage(commandBuffer, swap_chain_.get_swap_chain_images()[swap_chain_image_index],
+		VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+
+	// Devolvemos la imagen al swapchain
+	CopyImageToImage(commandBuffer, swap_chain_.get_draw_image().image,
+		swap_chain_.get_swap_chain_images()[swap_chain_image_index], swap_chain_.get_draw_extent(), window_extent_);
 
 }
 
@@ -382,21 +368,6 @@ void LavaEngine::drawMeshes(VkCommandBuffer command_buffer)
 	model = glm::rotate(model, glm::radians(0.02f * frame_data_.frame_number_), glm::vec3(0.0f, 1.0f, 0.0f));
 	model = glm::rotate(model, glm::radians(0.03f * frame_data_.frame_number_), glm::vec3(0.0f, 0.0f, 1.0f));
 
-
-	//GPUDrawPushConstants push_constants;
-//
-//
-//glm::mat4 model = glm::mat4(1.0f);
-//LavaTransform& transform = mesh->get_transform();
-//
-//model = LavaTransform::TranslationMatrix(model, transform);
-//model = LavaTransform::RotateMatrix(model, transform);
-//model = LavaTransform::ScaleMatrix(model, transform);
-//
-//glm::mat4 projection = glm::perspective(glm::radians(70.0f),
-//	(float)swap_chain_.get_draw_extent().width/ (float)swap_chain_.get_draw_extent().height,10000.f,0.1f);
-
-
 	for (auto mesh : meshes_) {
 
 		vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mesh->get_material()->get_pipeline().get_pipeline());
@@ -410,18 +381,18 @@ void LavaEngine::drawMeshes(VkCommandBuffer command_buffer)
 			0, 1, &global_descriptor_set_, 0, nullptr);
 
 		vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-			mesh->get_material()->get_pipeline().get_layout(),
+			mesh->get_material()->get_pipeline().get_layout(), 
 			1, 1, &image_set, 0, nullptr);
 
 		push_constants.world_matrix = model; // global_scene_data_.viewproj* model;
-		for (std::shared_ptr<MeshAsset> submesh : mesh->meshes_) {
-			push_constants.vertex_buffer = submesh->meshBuffers.vertex_buffer_address;
+		//for (std::shared_ptr<MeshAsset> submesh : mesh->meshes_) {
+		//	push_constants.vertex_buffer = submesh->meshBuffers.vertex_buffer_address;
 
-			vkCmdPushConstants(command_buffer, mesh->get_material()->get_pipeline().get_layout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &push_constants);
-			vkCmdBindIndexBuffer(command_buffer, submesh->meshBuffers.index_buffer->get_buffer().buffer, 0, VK_INDEX_TYPE_UINT32);
+		//	vkCmdPushConstants(command_buffer, mesh->get_material()->get_pipeline().get_layout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &push_constants);
+		//	vkCmdBindIndexBuffer(command_buffer, submesh->meshBuffers.index_buffer->get_buffer().buffer, 0, VK_INDEX_TYPE_UINT32);
 
-			vkCmdDrawIndexed(command_buffer, submesh->surfaces[0].count, 1, submesh->surfaces[0].start_index, 0, 0);
-		}
+		//	vkCmdDrawIndexed(command_buffer, submesh->surfaces[0].count, 1, submesh->surfaces[0].start_index, 0, 0);
+		//}
 	}
 
 	vkCmdEndRendering(command_buffer);
@@ -521,4 +492,28 @@ std::shared_ptr<LavaMesh> LavaEngine::addMesh(MeshProperties prop){
 	std::shared_ptr<LavaMesh> mesh = std::make_shared<LavaMesh>(*this, prop);
 	meshes_.push_back(mesh);
 	return mesh;
+}
+
+void LavaEngine::renderImgui() {
+	ImGui::Begin("Global Data");
+
+
+	if (ImGui::DragFloat("FOV", &camera_parameters_.fov, 0.1f, 0.0f, 180.0f)) {
+		global_scene_data_.proj = glm::perspective(glm::radians(camera_parameters_.fov),
+			(float)swap_chain_.get_draw_extent().width / (float)swap_chain_.get_draw_extent().height, 10000.f, 0.1f);
+		global_scene_data_.proj[1][1] *= -1;
+		global_scene_data_.view = glm::mat4(1.0f);
+		global_scene_data_.viewproj = global_scene_data_.proj * global_scene_data_.view;
+		global_data_buffer_->updateBufferData(&global_scene_data_, sizeof(GlobalSceneData));
+	}
+
+	if (ImGui::DragFloat3("Ambient", &global_scene_data_.ambientColor.r, 0.01f, 0.0f, 1.0f)) {
+		global_data_buffer_->updateBufferData(&global_scene_data_, sizeof(GlobalSceneData));
+	}
+
+
+
+	ImGui::End();
+
+	ImGui::ShowDemoWindow();
 }

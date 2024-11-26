@@ -102,9 +102,17 @@ public:
 
 	DescriptorAllocator imgui_descriptor_alloc;
 	
+	//draw stuff
+	uint32_t swap_chain_image_index;
+	VkCommandBuffer commandBuffer;
+
+	bool shouldClose() { return glfwWindowShouldClose(get_window()); }
+	void beginFrame();
+	void endFrame();
+	void clearWindow();
 	void mainLoop();
-	
-	void draw();
+	void render();
+	virtual void renderImgui();
 	void drawMeshes(VkCommandBuffer command_buffer);
 	std::shared_ptr<class LavaMesh> addMesh(MeshProperties prop);
 
@@ -113,12 +121,12 @@ public:
 	VkSurfaceKHR get_surface() const;
 
 	std::vector<std::shared_ptr<LavaMesh>> meshes_;
+	
 
 	void initGlobalData();
 	void initImgui();
 	void drawImgui(VkCommandBuffer cmd, VkImageView targetImageView);
 	void immediate_submit(std::function<void(VkCommandBuffer)>&& function);
-
 private:
 	/**
 	* @brief Copy constructor(never use)

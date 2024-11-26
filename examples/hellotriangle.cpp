@@ -24,6 +24,10 @@ int main(int argc, char* argv[]) {
 	triangle_vertices[1].position = { 0.0,-0.5, 0 };
 	triangle_vertices[2].position = { -0.5,0.5, 0 };
 
+	triangle_vertices[0].normal = { 0.0,0.0, 1.0f };
+	triangle_vertices[1].normal = { 0.0,0.0, 1.0f };
+	triangle_vertices[2].normal = { 0.0,0.0, 1.0f };
+
 	triangle_vertices[0].color = { 0,0, 0,1 };
 	triangle_vertices[1].color = { 0.5,0.5,0.5 ,1 };
 	triangle_vertices[2].color = { 1,0, 0,1 };
@@ -39,8 +43,8 @@ int main(int argc, char* argv[]) {
 	mesh_properties.type = MESH_CUSTOM;
 	mesh_properties.mesh_path = "../examples/assets/shiba/shiba.glb";
 	mesh_properties.material = &basic_material;
-	mesh_properties.vertex = triangle_vertices;
 	mesh_properties.index = triangle_index;
+	mesh_properties.vertex = triangle_vertices;
 
 	std::shared_ptr<LavaMesh> mesh = engine.addMesh(mesh_properties);
 

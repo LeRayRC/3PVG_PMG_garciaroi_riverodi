@@ -11,8 +11,8 @@ int main(int argc, char* argv[]) {
 
 	MaterialProperties mat_properties = {};
 	mat_properties.name = "Basic Material";
-	mat_properties.vertex_shader_path		= "../src/shaders/colored_triangle_mesh.vert.spv";
-	mat_properties.fragment_shader_path = "../src/shaders/colored_triangle.frag.spv";
+	mat_properties.vertex_shader_path		= "../src/shaders/normal.vert.spv";
+	mat_properties.fragment_shader_path = "../src/shaders/normal.frag.spv";
 	mat_properties.pipeline_flags = PipelineFlags::PIPELINE_USE_PUSHCONSTANTS | PipelineFlags::PIPELINE_USE_DESCRIPTOR_SET;
 
 	LavaMaterial basic_material(engine, mat_properties);
@@ -23,11 +23,12 @@ int main(int argc, char* argv[]) {
 	mesh_properties.mesh_path = "../examples/assets/shiba/shiba.glb";
 	mesh_properties.material = &basic_material;
 
-	
+	 
 
 	std::shared_ptr<LavaMesh> mesh = engine.addMesh(mesh_properties);
 	mesh->get_transform().set_pos(glm::vec3(0.0f, 0.0f, -10.0f));
 	mesh->get_transform().set_scale(glm::vec3(5.0f, 5.0f, 5.0f));
+
 
 	engine.mainLoop();
 
