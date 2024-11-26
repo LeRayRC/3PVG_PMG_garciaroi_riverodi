@@ -14,6 +14,7 @@
 #include <cstdint>
 #include <fstream>
 #include <vector>
+#include <queue>
 #include <array>
 #include <map>
 #include <deque>
