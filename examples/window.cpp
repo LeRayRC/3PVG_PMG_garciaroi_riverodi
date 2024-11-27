@@ -6,21 +6,13 @@
 
 int main(int argc, char* argv[]) {
 
-// Engine engine;
-// engine.init();
-// engine.mainLoop();
-// engine.cleanUp();
+	std::shared_ptr<LavaWindowSystem> window_system = LavaWindowSystem::Get();
 
-	std::shared_ptr<LavaWindowSystem> a = LavaWindowSystem::Get();
-	std::string b = "lava";
-	std::unique_ptr<LavaWindow> c =  a->MakeNewWindow(1280, 720, b);
+	//Simplest way to open a window
+	std::string window_name = "lava test window";
+	std::unique_ptr<LavaWindow> window = window_system->MakeNewWindow(1280, 720, window_name);
 
-	std::string d = "lava2";
-	std::unique_ptr<LavaWindow> e = a->MakeNewWindow(1280, 720, d);
+	Sleep(5000);
 
-
-	while (1) {
-		
-	}
   return 0;
 }

@@ -201,7 +201,8 @@ struct GeoSurface {
 
 struct MeshAsset {
 	std::string name;
-	std::vector<GeoSurface> surfaces;
+	uint16_t count_surfaces;
+	std::array<GeoSurface,5> surfaces;
 	GPUMeshBuffers meshBuffers;
 };
 
