@@ -22,6 +22,7 @@ LavaInput::LavaInput(GLFWwindow* window) : window_{window}
 	glfwSetMouseButtonCallback(window_, global_mouse_callback);
 	glfwSetWindowCloseCallback(window_, clean_bindings);
 	glfwSetCursorPosCallback(window_, global_cursor_position_callback);
+	glfwSetScrollCallback(window_, global_scrooll_callback);
 
 	//If this is the first window add the end frame callback to the engine
 	if(s_input_map_.empty()) LavaEngine::end_frame_callbacks.push_back(end_frame);
@@ -29,6 +30,8 @@ LavaInput::LavaInput(GLFWwindow* window) : window_{window}
 	//Add this window to the map
 	s_input_map_.emplace(window_, this);
 	cursor_pos_ = glm::vec2(0,0);
+	scroll_offset_ = glm::vec2(0,0);
+	next_scroll_offset_ = glm::vec2(0,0);
 }
 
 LavaInput::~LavaInput()
@@ -63,6 +66,13 @@ glm::vec2 LavaInput::getMousePosition()
 {
 	return cursor_pos_;
 }
+
+glm::vec2 LavaInput::getScrollOffset()
+{
+	return scroll_offset_;
+}
+
+
 
 bool LavaInput::isActionPressed(int action)
 {
@@ -201,6 +211,12 @@ void LavaInput::cursor_position_callback(double xpos, double ypos)
 	cursor_pos_.y = (float)ypos;
 }
 
+void LavaInput::scrooll_callback(double xoffset, double yoffset)
+{
+	next_scroll_offset_.x = (float)xoffset;
+	next_scroll_offset_.y = (float)yoffset;
+}
+
 void LavaInput::ProcessEndFrame()
 {
 	//Process al keys in kb_mouse_input_properties_map_(keyboard and mouse)
@@ -230,6 +246,10 @@ void LavaInput::ProcessEndFrame()
 		}
 		else i->second.is_active = false;  // If gamepad is not conected set is_active to false
 	}
+
+	//Scrooll offset back to cero
+	scroll_offset_ = next_scroll_offset_;
+	next_scroll_offset_ = { 0.0f, 0.0f };
 }
 
 void LavaInput::global_key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
@@ -245,6 +265,11 @@ void LavaInput::global_mouse_callback(GLFWwindow* window, int button, int action
 void LavaInput::global_cursor_position_callback(GLFWwindow* window, double xpos, double ypos)
 {
 	s_input_map_[window]->cursor_position_callback(xpos, ypos);
+}
+
+void LavaInput::global_scrooll_callback(GLFWwindow* window, double xoffset, double yoffset)
+{
+	s_input_map_[window]->scrooll_callback(xoffset, yoffset);
 }
 
 void LavaInput::clean_bindings(GLFWwindow* window)

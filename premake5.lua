@@ -122,6 +122,19 @@ workspace "Motor"
         files "include/examples/hellotriangle.hpp"
         files "include/custom_vulkan_helpers.hpp"
         files "src/shaders/*"
+    project"HelloTriangleWithInput"
+        kind "ConsoleApp" -- This was WindowedApp
+        language "C++"
+        targetdir "build/%{prj.name}/%{cfg.buildcfg}"
+        includedirs "include"
+        links "Motor"
+        conan_config_exec("Debug")
+        conan_config_exec("Release")
+        conan_config_exec("RelWithDebInfo")
+        debugargs { _MAIN_SCRIPT_DIR .. "/examples/data" }
+        files "examples/hellotrianglewithinput.cpp"
+        files "include/custom_vulkan_helpers.hpp"
+        files "src/shaders/*"
     project"ComputeShader"
         kind "ConsoleApp" -- This was WindowedApp
         language "C++"

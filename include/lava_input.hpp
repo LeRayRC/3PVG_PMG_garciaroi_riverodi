@@ -67,6 +67,11 @@ public:
 	*/
 	glm::vec2 getMousePosition();
 
+	/*
+	* @brief Return the scroll offset in a vector(glm:vec2)
+	*/
+	glm::vec2 getScrollOffset();
+
 	/**
 	* @brief Bind the recieve action to a key from mouse or keyboard. (ONLY FOR KEYBOARD AND MOUSE)
 	*
@@ -200,6 +205,15 @@ private:
 	*/
 	glm::vec2 cursor_pos_;
 
+	/**
+	* @brief Scroll Offset updated to the curren value
+	*/
+	glm::vec2 scroll_offset_;
+
+	/**
+	* @brief Scroll Offset updated to the next frame value
+	*/
+	glm::vec2 next_scroll_offset_;
 
 	/****************** Keys & Mouse Implementation **************/
 
@@ -232,6 +246,14 @@ private:
 	* @param ypos Cursor's Y position
 	*/
 	void cursor_position_callback(double xpos, double ypos);
+
+	/**
+	* @brief Update the value of the scroll
+	*
+	* @param xpos Scroll's X off set
+	* @param ypos Scroll's Y off set
+	*/
+	void scrooll_callback(double xoffset, double yoffset);
 
 
 	/****************** Gamepad Implementation **************/
@@ -296,6 +318,15 @@ private:
 	* @param ypos Cursor's X position
 	*/
 	static void global_cursor_position_callback(GLFWwindow* window, double xpos, double ypos);
+
+	/**
+	* @brief Update the value of the scroll
+	*
+	* @param window The window to call
+	* @param xpos Scroll's X off set
+	* @param ypos Scroll's Y off set
+	*/
+	static void global_scrooll_callback(GLFWwindow* window, double xoffset, double yoffset);
 
 	/**
 	* @brief Clear the specific input associated to the recive window

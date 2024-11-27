@@ -14,29 +14,24 @@
 #define  __LAVA_WINDOW_ 1
 
 #include "lava_types.hpp"
+#include "lava_input.hpp"
+
 
 class LavaWindow {
 public:
 
-	LavaWindow(LavaWindow&& other) {
-		w_ = other.w_;
-		other.w_ = nullptr;
-	}
+	LavaWindow(LavaWindow&& other);
 
-
-
-	~LavaWindow() {
-		if (nullptr != w_) {
-			glfwDestroyWindow(w_);
-		}
-	}
+	~LavaWindow();
 
 	//Should be private
-	LavaWindow(GLFWwindow* w) : w_{ w } { }
+	LavaWindow(GLFWwindow* w) : w_{ w } { window_input_ = std::make_unique<LavaInput>(w_); }
 
 	LavaWindow(unsigned int x, unsigned int y, const char* name);
 
 	GLFWwindow* get_window() const;
+
+	LavaInput* get_input() const;
 
 	//TALK ABOUT THIS WITH DANI
 	static std::unique_ptr<LavaWindow> make(unsigned int x, unsigned int y, std::string& name) {
@@ -49,7 +44,7 @@ private:
 
 	GLFWwindow* w_;
 
-	
+	std::unique_ptr<LavaInput> window_input_;
 
 	LavaWindow() { w_ = nullptr; }
 
