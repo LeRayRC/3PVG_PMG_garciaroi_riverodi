@@ -25,6 +25,31 @@ struct TransformComponent {
   }
 };
 
+struct CameraComponent {
+  float fov_;
+  float near_;
+  float far_;
+  glm::mat4 view_;
+
+  CameraComponent() {
+    fov_ = 90.0f;
+    view_ = glm::mat4(1.0f);
+    near_ = 10000.0f;
+    far_ = 0.1f;
+  }
+
+  void LookAt(glm::vec3 target, glm::vec3 pos) {
+    //glm::vec3 viewDirection = glm::normalize(glm::vec3(0.0f, 0.0f, -1.0f)); // Dirección en la que mira
+    //glm::vec3 upVector = glm::vec3(0.0f, 1.0f, 0.0f); // Vector "arriba"
+
+    //// Calculamos el punto objetivo (target)
+    //glm::vec3 target = cameraPosition + viewDirection;
+
+    //// Generamos la matriz de vista
+    //view_ = glm::lookAt(cameraPosition, target, upVector);
+  }
+};
+
 #endif // !__LAVA_ECS_COMPONENTS_H__
 
 //

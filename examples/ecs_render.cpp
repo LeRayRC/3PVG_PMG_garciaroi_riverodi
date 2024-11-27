@@ -24,8 +24,6 @@ int main(int argc, char* argv[]) {
 	mat_properties.pipeline_flags = PipelineFlags::PIPELINE_USE_PUSHCONSTANTS | PipelineFlags::PIPELINE_USE_DESCRIPTOR_SET;
 
 	LavaMaterial basic_material(engine, mat_properties);
-
-
 	std::vector<Vertex> triangle_vertices(3);
 
 	triangle_vertices[0].position = { 0.5,0.5, 0 };
