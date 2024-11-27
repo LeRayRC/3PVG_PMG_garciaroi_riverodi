@@ -4,17 +4,20 @@
 #include "lava_engine.hpp"
 #include "lava_window_system.hpp"
 #include "engine/lava_pipeline.hpp"
+#include "ecs/lava_ecs.hpp"
+#include "ecs/lava_normal_render_system.hpp"
 
 int main(int argc, char* argv[]) {
 	std::shared_ptr<LavaWindowSystem>  lava_system = LavaWindowSystem::Get();
 	LavaEngine engine;
-	engine.init();
-
+	LavaECSManager ecs_manager;
+	LavaNormalRenderSystem normal_render_system{engine};
+	
 	MaterialProperties mat_properties = {};
 	mat_properties.name = "Basic Material";
-	mat_properties.vertex_shader_path = "../src/shaders/colored_triangle_mesh.vert.spv";
-	mat_properties.fragment_shader_path = "../src/shaders/colored_triangle.frag.spv";
-	mat_properties.pipeline_flags |= PipelineFlags::PIPELINE_USE_PUSHCONSTANTS;
+	mat_properties.vertex_shader_path = "../src/shaders/normal.vert.spv";
+	mat_properties.fragment_shader_path = "../src/shaders/normal.frag.spv";
+	mat_properties.pipeline_flags = PipelineFlags::PIPELINE_USE_PUSHCONSTANTS | PipelineFlags::PIPELINE_USE_DESCRIPTOR_SET;
 
 	LavaMaterial basic_material(engine, mat_properties);
 
@@ -41,14 +44,43 @@ int main(int argc, char* argv[]) {
 	MeshProperties mesh_properties = {};
 	mesh_properties.name = "Triangle Mesh";
 	mesh_properties.type = MESH_CUSTOM;
-	mesh_properties.mesh_path = "../examples/assets/shiba/shiba.glb";
 	mesh_properties.material = &basic_material;
 	mesh_properties.index = triangle_index;
 	mesh_properties.vertex = triangle_vertices;
 
-	std::shared_ptr<LavaMesh> mesh = engine.addMesh(mesh_properties);
+	std::shared_ptr<LavaMesh> mesh_triangle = std::make_shared<LavaMesh>(engine, mesh_properties);
 
-	engine.mainLoop();
+
+
+	size_t entity = ecs_manager.createEntity();
+	ecs_manager.addComponent<TransformComponent>(entity);
+	ecs_manager.addComponent<RenderComponent>(entity);
+
+	auto transform_component = ecs_manager.getComponent<TransformComponent>(entity);
+	if (transform_component) {
+		auto& transform = transform_component->value();
+		transform.pos_ = glm::vec3(0.0f, 0.0f, -15.0f);
+		transform.scale_ = glm::vec3(1.0f, 1.0f, 1.0f);
+
+	}
+	auto render_component = ecs_manager.getComponent<RenderComponent>(entity);
+	if (render_component) {
+		auto& render = render_component->value();
+		render.mesh_ = mesh_triangle;
+	}
+
+	while (!engine.shouldClose()) {
+
+
+		engine.beginFrame();
+		engine.clearWindow();
+
+		engine.renderImgui();
+		normal_render_system.render(ecs_manager.getComponentList<TransformComponent>(),
+			ecs_manager.getComponentList<RenderComponent>());
+
+		engine.endFrame();
+	}
 
 	return 0;
 }

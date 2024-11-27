@@ -85,13 +85,13 @@ void LavaNormalRenderSystem::render(
 		model = glm::translate(model, transform_it->value().pos_);
 		
 		// Crear un quaternion a partir de los ángulos de Euler
-		//glm::quat rotation = glm::quat(glm::vec3(
-		//	transform_it->value().rot_.x,
-		//	transform_it->value().rot_.y,
-		//	transform_it->value().rot_.z));
+		glm::quat rotation = glm::quat(glm::vec3(
+			transform_it->value().rot_.x,
+			transform_it->value().rot_.y,
+			transform_it->value().rot_.z));
 
 		// Convertir el quaternion en una matriz de rotación
-		//model *= glm::toMat4(rotation);
+		model *= glm::toMat4(rotation);
 		
 		//model = glm::rotate(model, transform_it->value().rot_.x, glm::vec3(1.0f, 0.0f, 0.0f));
 		//model = glm::rotate(model, transform_it->value().rot_.y, glm::vec3(0.0f, 1.0f, 0.0f));
