@@ -195,6 +195,7 @@ bool LavaMesh::loadAsGLTF(std::filesystem::path file_path) {
 
   MeshAsset newmesh;
   //newmesh.name = mesh.name;
+  int count_surfaces = 0;
   for (fastgltf::Mesh& mesh : gltf.meshes) {
     for (auto&& p : mesh.primitives) {
       GeoSurface newSurface;
@@ -259,7 +260,9 @@ bool LavaMesh::loadAsGLTF(std::filesystem::path file_path) {
           });
       }
 
-      newmesh.surfaces.push_back(newSurface);
+      newmesh.surfaces[count_surfaces] = newSurface;
+      count_surfaces++;
+
     }
   }
 
@@ -273,6 +276,8 @@ bool LavaMesh::loadAsGLTF(std::filesystem::path file_path) {
 
   // Subir datos combinados al GPU
   newmesh.meshBuffers = upload(combinedIndices, combinedVertices);
+  newmesh.count_surfaces = count_surfaces;
+
 
   // Agregar la malla combinada al contenedor
   //meshes_.emplace_back(std::make_shared<MeshAsset>(std::move(newmesh)));
@@ -286,7 +291,7 @@ bool LavaMesh::loadCustomMesh(MeshProperties prop) {
   MeshAsset newmesh;
   GeoSurface surface = { 0,prop.index.size() };
   newmesh.meshBuffers = upload(prop.index, prop.vertex);
-  newmesh.surfaces.push_back(surface);
+  newmesh.surfaces[0] = surface;
   mesh_ = std::make_shared<MeshAsset>(std::move(newmesh));
   //meshes_.emplace_back(std::make_shared<MeshAsset>(std::move(newmesh)));
   return true;

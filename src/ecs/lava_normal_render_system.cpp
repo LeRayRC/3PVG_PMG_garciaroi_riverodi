@@ -83,9 +83,19 @@ void LavaNormalRenderSystem::render(
 		GPUDrawPushConstants push_constants;
 		glm::mat4 model = glm::mat4(1.0f);
 		model = glm::translate(model, transform_it->value().pos_);
-		model = glm::rotate(model, transform_it->value().rot_.x, glm::vec3(1.0f, 0.0f, 0.0f));
-		model = glm::rotate(model, transform_it->value().rot_.y, glm::vec3(0.0f, 1.0f, 0.0f));
-		model = glm::rotate(model, transform_it->value().rot_.z, glm::vec3(0.0f, 0.0f, 1.0f));
+		
+		// Crear un quaternion a partir de los ángulos de Euler
+		//glm::quat rotation = glm::quat(glm::vec3(
+		//	transform_it->value().rot_.x,
+		//	transform_it->value().rot_.y,
+		//	transform_it->value().rot_.z));
+
+		// Convertir el quaternion en una matriz de rotación
+		//model *= glm::toMat4(rotation);
+		
+		//model = glm::rotate(model, transform_it->value().rot_.x, glm::vec3(1.0f, 0.0f, 0.0f));
+		//model = glm::rotate(model, transform_it->value().rot_.y, glm::vec3(0.0f, 1.0f, 0.0f));
+		//model = glm::rotate(model, transform_it->value().rot_.z, glm::vec3(0.0f, 0.0f, 1.0f));
 		model = glm::scale(model, transform_it->value().scale_);
 
 		VkDescriptorSet image_set = lava_mesh->get_material()->get_descriptor_set();
@@ -99,20 +109,25 @@ void LavaNormalRenderSystem::render(
 		VkDeviceSize offsets[] = { 0 };
 		//VkBuffer vertex_buffer = meshBuffers.vertex_buffer->get_buffer().buffer;
 		//vkCmdBindVertexBuffers(engine_.commandBuffer, 0, 1, &vertex_buffer, offsets);
-		if (frame_data.last_bound_mesh != lava_mesh) {
+		//if (frame_data.last_bound_mesh != lava_mesh) {
 			vkCmdBindIndexBuffer(engine_.commandBuffer, meshBuffers.index_buffer->get_buffer().buffer, 0, VK_INDEX_TYPE_UINT32);
-		}
+		//}
 		
 		push_constants.world_matrix = model; // global_scene_data_.viewproj* model;
 		push_constants.vertex_buffer = meshBuffers.vertex_buffer_address;
 
 		// Dibujar cada superficie
-		for (const GeoSurface& surface : mesh->surfaces) {
-			vkCmdPushConstants(engine_.commandBuffer, pipeline_.get_layout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &push_constants);
-			vkCmdDrawIndexed(engine_.commandBuffer, surface.count, 1, surface.start_index, 0, 0);
+		int count_surfaces = mesh->count_surfaces;
+		int total_count = 0;
+		for (int i = 0; i < count_surfaces;i++) {
+			GeoSurface& surface = mesh->surfaces[i];
+			total_count += surface.count;
 		}
+		
+		vkCmdPushConstants(engine_.commandBuffer, pipeline_.get_layout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &push_constants);
+		vkCmdDrawIndexed(engine_.commandBuffer, total_count, 1, 0, 0, 0);
 
-		frame_data.last_bound_mesh = lava_mesh;
+		//frame_data.last_bound_mesh = lava_mesh;
 
 
 		//VkDescriptorSet image_set = mesh->get_material()->get_descriptor_set();
