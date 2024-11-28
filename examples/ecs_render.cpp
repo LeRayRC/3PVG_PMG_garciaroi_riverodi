@@ -21,8 +21,9 @@ void ecs_render_imgui(LavaECSManager& ecs_manager, int camera_entity) {
 		
 	}
 
-	if(ImGui::DragFloat3("Camera rot", &camera_tr.rot_.x, 0.5f, -180.0f, 180.0f)) {
-	}
+	ImGui::DragFloat("Fov", &camera_camera.fov_, 0.1f, 0.0f, 180.0f);
+	ImGui::DragFloat("Camera Rot X", &camera_tr.rot_.x, 0.5f, 88.0f, 268.0f);
+	ImGui::DragFloat("Camera Rot Y", &camera_tr.rot_.y, 0.5f, -360.0f, 360.0f);
 	
 	ImGui::End();
 
