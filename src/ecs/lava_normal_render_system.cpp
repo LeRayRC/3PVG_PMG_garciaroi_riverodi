@@ -43,8 +43,8 @@ void LavaNormalRenderSystem::render(
 	viewport.y = 0;
 	viewport.width = (float)engine_.swap_chain_.get_draw_extent().width;
 	viewport.height = (float)engine_.swap_chain_.get_draw_extent().height;
-	viewport.minDepth = 0.f;
-	viewport.maxDepth = 1.f;
+	viewport.minDepth = 0.0f;
+	viewport.maxDepth = 1.0f;
 
 	vkCmdSetViewport(engine_.commandBuffer, 0, 1, &viewport);
 
@@ -83,19 +83,9 @@ void LavaNormalRenderSystem::render(
 		GPUDrawPushConstants push_constants;
 		glm::mat4 model = glm::mat4(1.0f);
 		model = glm::translate(model, transform_it->value().pos_);
-		
-		// Crear un quaternion a partir de los ángulos de Euler
-		glm::quat rotation = glm::quat(glm::vec3(
-			transform_it->value().rot_.x,
-			transform_it->value().rot_.y,
-			transform_it->value().rot_.z));
-
-		// Convertir el quaternion en una matriz de rotación
-		model *= glm::toMat4(rotation);
-		
-		//model = glm::rotate(model, transform_it->value().rot_.x, glm::vec3(1.0f, 0.0f, 0.0f));
-		//model = glm::rotate(model, transform_it->value().rot_.y, glm::vec3(0.0f, 1.0f, 0.0f));
-		//model = glm::rotate(model, transform_it->value().rot_.z, glm::vec3(0.0f, 0.0f, 1.0f));
+		model = glm::rotate(model, glm::radians(transform_it->value().rot_.x), glm::vec3(1.0f, 0.0f, 0.0f));
+		model = glm::rotate(model, glm::radians(transform_it->value().rot_.y), glm::vec3(0.0f, 1.0f, 0.0f));
+		model = glm::rotate(model, glm::radians(transform_it->value().rot_.z), glm::vec3(0.0f, 0.0f, 1.0f));
 		model = glm::scale(model, transform_it->value().scale_);
 
 		VkDescriptorSet image_set = lava_mesh->get_material()->get_descriptor_set();
@@ -109,9 +99,9 @@ void LavaNormalRenderSystem::render(
 		VkDeviceSize offsets[] = { 0 };
 		//VkBuffer vertex_buffer = meshBuffers.vertex_buffer->get_buffer().buffer;
 		//vkCmdBindVertexBuffers(engine_.commandBuffer, 0, 1, &vertex_buffer, offsets);
-		//if (frame_data.last_bound_mesh != lava_mesh) {
+		if (frame_data.last_bound_mesh != lava_mesh) {
 			vkCmdBindIndexBuffer(engine_.commandBuffer, meshBuffers.index_buffer->get_buffer().buffer, 0, VK_INDEX_TYPE_UINT32);
-		//}
+		}
 		
 		push_constants.world_matrix = model; // global_scene_data_.viewproj* model;
 		push_constants.vertex_buffer = meshBuffers.vertex_buffer_address;
@@ -127,7 +117,9 @@ void LavaNormalRenderSystem::render(
 		vkCmdPushConstants(engine_.commandBuffer, pipeline_.get_layout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &push_constants);
 		vkCmdDrawIndexed(engine_.commandBuffer, total_count, 1, 0, 0, 0);
 
-		//frame_data.last_bound_mesh = lava_mesh;
+		if (frame_data.last_bound_mesh != lava_mesh) {
+			frame_data.last_bound_mesh = lava_mesh;
+		}
 
 
 		//VkDescriptorSet image_set = mesh->get_material()->get_descriptor_set();

@@ -4,6 +4,7 @@ LavaECSManager::LavaECSManager(){
   last_entity = 0;
   addComponentType<RenderComponent>();
   addComponentType<TransformComponent>();
+  addComponentType<CameraComponent>();
 }
 
 LavaECSManager::~LavaECSManager()

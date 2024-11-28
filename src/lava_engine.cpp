@@ -495,25 +495,5 @@ std::shared_ptr<LavaMesh> LavaEngine::addMesh(MeshProperties prop){
 }
 
 void LavaEngine::renderImgui() {
-	ImGui::Begin("Global Data");
-
-
-	if (ImGui::DragFloat("FOV", &camera_parameters_.fov, 0.1f, 0.0f, 180.0f)) {
-		global_scene_data_.proj = glm::perspective(glm::radians(camera_parameters_.fov),
-			(float)swap_chain_.get_draw_extent().width / (float)swap_chain_.get_draw_extent().height, 10000.f, 0.1f);
-		global_scene_data_.proj[1][1] *= -1;
-		global_scene_data_.view = glm::mat4(1.0f);
-		global_scene_data_.viewproj = global_scene_data_.proj * global_scene_data_.view;
-		global_data_buffer_->updateBufferData(&global_scene_data_, sizeof(GlobalSceneData));
-	}
-
-	if (ImGui::DragFloat3("Ambient", &global_scene_data_.ambientColor.r, 0.01f, 0.0f, 1.0f)) {
-		global_data_buffer_->updateBufferData(&global_scene_data_, sizeof(GlobalSceneData));
-	}
-
-
-
-	ImGui::End();
-
 	ImGui::ShowDemoWindow();
 }
