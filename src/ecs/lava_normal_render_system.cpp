@@ -109,7 +109,7 @@ void LavaNormalRenderSystem::render(
 		// Dibujar cada superficie
 		int count_surfaces = mesh->count_surfaces;
 		int total_count = 0;
-		for (int i = 0; i < count_surfaces;i++) {
+		for (int i = 0; i < count_surfaces;i++) { 
 			GeoSurface& surface = mesh->surfaces[i];
 			total_count += surface.count;
 		}

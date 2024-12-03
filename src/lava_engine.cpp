@@ -14,6 +14,7 @@
 #include "engine/lava_pipeline_builder.hpp"
 #include "engine/lava_image.hpp"
 #include "lava_transform.hpp"
+#include <chrono>
 
 
 //#define VMA_IMPLEMENTATION
@@ -124,7 +125,9 @@ LavaEngine::~LavaEngine(){
 	vkDeviceWaitIdle(device_.get_device());
 	vkDestroyDescriptorSetLayout(device_.get_device(), global_descriptor_set_layout_, nullptr);
 	//pipelines_.clear();
-	main_deletion_queue_.flush();	
+	/*main_deletion_queue_.flush();*/
+	ImGui_ImplVulkan_Shutdown();
+	imgui_descriptor_alloc.destroy_pool(device_.get_device());
 }
 
 VkInstance LavaEngine::get_instance() const{
@@ -153,6 +156,9 @@ void LavaEngine::initGlobalData() {
 }
 
 void LavaEngine::beginFrame() {
+	chrono_now_ = std::chrono::steady_clock::now();
+
+
 	glfwPollEvents();
 
 	ImGui_ImplVulkan_NewFrame();
@@ -261,6 +267,9 @@ void LavaEngine::endFrame() {
 	for (auto it = end_frame_callbacks.rbegin(); it != end_frame_callbacks.rend(); it++) {
 		(*it)();
 	}
+
+	dt_ = std::chrono::duration_cast<std::chrono::microseconds>(chrono_now_ - chrono_last_update_).count() / 1000000.0f;
+	chrono_last_update_ = chrono_now_;
 }
 
 void LavaEngine::mainLoop() {
@@ -437,10 +446,10 @@ void LavaEngine::initImgui() {
 	ImGui_ImplVulkan_Init(&init_info);
 	ImGui_ImplVulkan_CreateFontsTexture();
 
-	main_deletion_queue_.push_function([=]() {
-		ImGui_ImplVulkan_Shutdown();
-		imgui_descriptor_alloc.destroy_pool(device_.get_device());
-		});
+	//main_deletion_queue_.push_function([=]() {
+	//	ImGui_ImplVulkan_Shutdown();
+	//	imgui_descriptor_alloc.destroy_pool(device_.get_device());
+	//	});
 
 }
 

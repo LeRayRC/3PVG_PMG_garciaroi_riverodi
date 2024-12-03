@@ -29,21 +29,21 @@
 #include "engine/lava_image.hpp"
 
 
-struct DeletionQueue {
-	//TO FIX -> multiples vector for every kind of Vulkan handle
-	std::deque<std::function<void()>> deletors;
-
-	void push_function(std::function<void()>&& function) {
-		deletors.push_back(function);
-	}
-
-	void flush() {
-		for (auto it = deletors.rbegin(); it != deletors.rend(); it++) {
-			(*it)();
-		}
-		deletors.clear();
-	}
-};
+//struct DeletionQueue {
+//	//TO FIX -> multiples vector for every kind of Vulkan handle
+//	std::deque<std::function<void()>> deletors;
+//
+//	void push_function(std::function<void()>&& function) {
+//		deletors.push_back(function);
+//	}
+//
+//	void flush() {
+//		for (auto it = deletors.rbegin(); it != deletors.rend(); it++) {
+//			(*it)();
+//		}
+//		deletors.clear();
+//	}
+//};
 
 
 class LavaEngine {
@@ -77,7 +77,7 @@ public:
 	bool is_initialized_ = false;
 	bool stop_rendering = false;
 
-	DeletionQueue main_deletion_queue_;
+	//DeletionQueue main_deletion_queue_;
 	GlobalSceneData global_scene_data_;
 	CameraParameters camera_parameters_;
 	static std::vector<std::function<void()>> end_frame_callbacks;
@@ -99,6 +99,11 @@ public:
 
 	uint32_t pink_color_;
 	std::shared_ptr<LavaImage> default_texture_image_;
+
+
+	std::chrono::steady_clock::time_point chrono_now_;
+	std::chrono::steady_clock::time_point chrono_last_update_;
+	double dt_;
 
 	DescriptorAllocator imgui_descriptor_alloc;
 	

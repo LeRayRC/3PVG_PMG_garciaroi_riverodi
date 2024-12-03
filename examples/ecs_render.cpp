@@ -27,10 +27,17 @@ void ecs_render_imgui(LavaECSManager& ecs_manager, int camera_entity) {
 	
 	ImGui::End();
 
-
-	//camera_camera.setViewYXZ(camera_tr.pos_, camera_tr.rot_);
 	camera_camera.LookAt(camera_tr.pos_, camera_tr.rot_);
 	
+}
+
+void engine_imgui_window(LavaEngine& engine) {
+	ImGui::Begin("Engine Window Manager");
+
+	ImGui::Text("Frame time: %f", engine.dt_);
+	ImGui::Text("FPS: %f", 1 / engine.dt_);
+
+	ImGui::End();
 }
 
 
@@ -50,32 +57,12 @@ int main(int argc, char* argv[]) {
 	mat_properties.pipeline_flags = PipelineFlags::PIPELINE_USE_PUSHCONSTANTS | PipelineFlags::PIPELINE_USE_DESCRIPTOR_SET;
 
 	LavaMaterial basic_material(engine, mat_properties);
-	std::vector<Vertex> triangle_vertices(3);
-
-	triangle_vertices[0].position = { 0.5,0.5, 0 };
-	triangle_vertices[1].position = { 0.0,-0.5, 0 };
-	triangle_vertices[2].position = { -0.5,0.5, 0 };
-
-	triangle_vertices[0].normal = { 0.0,0.0, 1.0f };
-	triangle_vertices[1].normal = { 0.0,0.0, 1.0f };
-	triangle_vertices[2].normal = { 0.0,0.0, 1.0f };
-
-	triangle_vertices[0].color = { 0,0, 0,1 };
-	triangle_vertices[1].color = { 0.5,0.5,0.5 ,1 };
-	triangle_vertices[2].color = { 1,0, 0,1 };
-
-	std::vector<uint32_t> triangle_index(3);
-	triangle_index[0] = 0;
-	triangle_index[1] = 1;
-	triangle_index[2] = 2;
 
 	MeshProperties mesh_properties = {};
 	mesh_properties.name = "Shiba Mesh";
 	mesh_properties.type = MESH_GLTF;
 	mesh_properties.mesh_path = "../examples/assets/shiba/shiba_test.glb";
 	mesh_properties.material = &basic_material;
-	//mesh_properties.index = triangle_index;
-	//mesh_properties.vertex = triangle_vertices;
 
 	std::shared_ptr<LavaMesh> mesh_shiba = std::make_shared<LavaMesh>(engine, mesh_properties);
 
@@ -150,7 +137,7 @@ int main(int argc, char* argv[]) {
 
 
 	while (!engine.shouldClose()) {
-
+		 
 
 		auto& camera_tr = ecs_manager.getComponent<TransformComponent>(0)->value();
 		//camera_tr.rot_ = glm::vec3(0.0f, 0.0f, 0.0f);
@@ -177,6 +164,7 @@ int main(int argc, char* argv[]) {
 
 		engine.renderImgui();
 		ecs_render_imgui(ecs_manager, camera_entity);
+		engine_imgui_window(engine);
 
 		
 		normal_render_system.render(ecs_manager.getComponentList<TransformComponent>(),
