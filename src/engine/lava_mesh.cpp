@@ -260,9 +260,9 @@ bool LavaMesh::loadAsGLTF(std::filesystem::path file_path) {
           });
       }
 
-      newmesh.surfaces[count_surfaces] = newSurface;
-      count_surfaces++;
-
+      //newmesh.surfaces[count_surfaces] = newSurface;
+      //count_surfaces++;
+      newmesh.index_count += newSurface.count;
     }
   }
 
@@ -291,8 +291,9 @@ bool LavaMesh::loadCustomMesh(MeshProperties prop) {
   MeshAsset newmesh;
   GeoSurface surface = { 0,prop.index.size() };
   newmesh.meshBuffers = upload(prop.index, prop.vertex);
-  newmesh.surfaces[0] = surface;
+  //newmesh.surfaces[0] = surface;
   newmesh.count_surfaces = 1;
+  newmesh.index_count = surface.count;
   mesh_ = std::make_shared<MeshAsset>(std::move(newmesh));
   //meshes_.emplace_back(std::make_shared<MeshAsset>(std::move(newmesh)));
   return true;

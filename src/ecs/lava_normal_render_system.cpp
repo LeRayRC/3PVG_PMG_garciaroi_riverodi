@@ -107,15 +107,15 @@ void LavaNormalRenderSystem::render(
 		push_constants.vertex_buffer = meshBuffers.vertex_buffer_address;
 
 		// Dibujar cada superficie
-		int count_surfaces = mesh->count_surfaces;
-		int total_count = 0;
-		for (int i = 0; i < count_surfaces;i++) {
-			GeoSurface& surface = mesh->surfaces[i];
-			total_count += surface.count;
-		}
+		//int count_surfaces = mesh->count_surfaces;
+		//int total_count = 0;
+		//for (int i = 0; i < count_surfaces;i++) {
+		//	GeoSurface& surface = mesh->surfaces[i];
+		//	total_count += surface.count;
+		//}
 		
 		vkCmdPushConstants(engine_.commandBuffer, pipeline_.get_layout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &push_constants);
-		vkCmdDrawIndexed(engine_.commandBuffer, total_count, 1, 0, 0, 0);
+		vkCmdDrawIndexed(engine_.commandBuffer, mesh->index_count, 1, 0, 0, 0);
 
 		if (frame_data.last_bound_mesh != lava_mesh) {
 			frame_data.last_bound_mesh = lava_mesh;
