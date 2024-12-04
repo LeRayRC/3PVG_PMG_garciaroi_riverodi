@@ -131,17 +131,14 @@ int main(int argc, char* argv[]) {
 	auto& camera_camera = ecs_manager.getComponent<CameraComponent>(camera_entity)->value();
 
 
-
-		
-	
-
-
 	while (!engine.shouldClose()) {
 		 
 
-		auto& camera_tr = ecs_manager.getComponent<TransformComponent>(0)->value();
+
+
+		//auto& camera_tr = ecs_manager.getComponent<TransformComponent>(0)->value();
 		//camera_tr.rot_ = glm::vec3(0.0f, 0.0f, 0.0f);
-		camera_tr.pos_ = glm::vec3(camera_tr.pos_.x+0.02f, -5.0f, 0.0f);
+		//camera_tr.pos_ = glm::vec3(camera_tr.pos_.x+0.02f, -5.0f, 0.0f);
 		//for (auto& comp : ecs_manager.getComponentList<TransformComponent>()) {
 		//	if (comp) {
 		//		auto& transform = comp.value();
