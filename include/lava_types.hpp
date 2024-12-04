@@ -200,9 +200,11 @@ struct GeoSurface {
 };
 
 struct MeshAsset {
+	MeshAsset() : name{ "NoName" }, count_surfaces{ 0 }, index_count{ 0 } {};
 	std::string name;
 	uint16_t count_surfaces;
-	GeoSurface surfaces[5];
+	uint32_t index_count;
+	//GeoSurface surfaces[5];
 	GPUMeshBuffers meshBuffers;
 };
 

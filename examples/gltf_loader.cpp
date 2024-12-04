@@ -25,26 +25,6 @@ int main(int argc, char* argv[]) {
 
 	LavaMaterial basic_material(engine, mat_properties);
 
-
-	std::vector<Vertex> triangle_vertices(3);
-
-	triangle_vertices[0].position = { 0.5,0.5, 0 };
-	triangle_vertices[1].position = { 0.0,-0.5, 0 };
-	triangle_vertices[2].position = { -0.5,0.5, 0 };
-
-	triangle_vertices[0].normal = { 0.0,0.0, 1.0f };
-	triangle_vertices[1].normal = { 0.0,0.0, 1.0f };
-	triangle_vertices[2].normal = { 0.0,0.0, 1.0f };
-
-	triangle_vertices[0].color = { 0,0, 0,1 };
-	triangle_vertices[1].color = { 0.5,0.5,0.5 ,1 };
-	triangle_vertices[2].color = { 1,0, 0,1 };
-
-	std::vector<uint32_t> triangle_index(3);
-	triangle_index[0] = 0;
-	triangle_index[1] = 1;
-	triangle_index[2] = 2;
-
 	MeshProperties mesh_properties = {};
 	mesh_properties.name = "Shiba Mesh";
 	mesh_properties.type = MESH_GLTF;

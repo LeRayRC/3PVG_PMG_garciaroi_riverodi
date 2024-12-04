@@ -135,20 +135,6 @@ workspace "Motor"
         files "examples/hellotrianglewithinput.cpp"
         files "include/custom_vulkan_helpers.hpp"
         files "src/shaders/*"
-    project"ComputeShader"
-        kind "ConsoleApp" -- This was WindowedApp
-        language "C++"
-        targetdir "build/%{prj.name}/%{cfg.buildcfg}"
-        includedirs "include"
-        links "Motor"
-        conan_config_exec("Debug")
-        conan_config_exec("Release")
-        conan_config_exec("RelWithDebInfo")
-        debugargs { _MAIN_SCRIPT_DIR .. "/examples/data" }
-        files "examples/compute_shader.cpp"
-        files "include/examples/compute_shader.hpp"
-        files "include/custom_vulkan_helpers.hpp"
-        files "src/shaders/*"
     project"GLTFLoad"
         kind "ConsoleApp" -- This was WindowedApp
         language "C++"
@@ -178,3 +164,16 @@ workspace "Motor"
         files "src/shaders/*"
         files "examples/assets/*"
         -- files "src/custom_vulkan_helpers.cpp"
+    project"JobSystemDemostrator"
+        kind "ConsoleApp" -- This was WindowedApp
+        language "C++"
+        targetdir "build/%{prj.name}/%{cfg.buildcfg}"
+        includedirs "include"
+        links "Motor"
+        conan_config_exec("Debug")
+        conan_config_exec("Release")
+        conan_config_exec("RelWithDebInfo")
+        debugargs { _MAIN_SCRIPT_DIR .. "/examples/data" }
+        files "examples/job_system_demostrator.cpp"
+        files "src/shaders/*"
+        files "examples/assets/*"
