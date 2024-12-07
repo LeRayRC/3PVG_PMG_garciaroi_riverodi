@@ -188,5 +188,6 @@ workspace "Motor"
         conan_config_exec("RelWithDebInfo")
         debugargs { _MAIN_SCRIPT_DIR .. "/examples/data" }
         files "examples/scripting_demostrator.cpp"
+        files "examples/scripts/*"
         files "src/shaders/*"
         files "examples/assets/*"

@@ -8,7 +8,37 @@
 #include "ecs/lava_ecs.hpp"
 #include "ecs/lava_normal_render_system.hpp"
 #include "imgui.h"
-#include "lua.h"
+#include "scripting/lava_lua_script.hpp"
+
+
+int mult(int a, int b) {
+	return a * b;
+}
+
+int multuplyLua(lua_State* L) {
+	int a = luaL_checkinteger(L, 1);
+	int b = luaL_checkinteger(L, 2);
+	auto res = mult(a, b);
+	lua_pushinteger(L,res);
+	return 1;
+}
+
+
+// Función que será llamada desde Lua
+int testCppLuaFunction(lua_State* L) {
+	// Obtener argumentos desde Lua
+	const char* message = lua_tostring(L, 2); // Primer argumento pasado desde Lua
+	if (message) {
+		std::cout << "C++ received: " << message << std::endl;
+	}
+	else {
+		std::cout << "C++ received no arguments." << std::endl;
+	}
+
+	// Devolver un valor a Lua (opcional)
+	lua_pushstring(L, "Message received!");
+	return 1; // Número de valores devueltos a Lua
+}
 
 void ecs_render_imgui(LavaECSManager& ecs_manager, int camera_entity) {
 	auto& camera_tr = ecs_manager.getComponent<TransformComponent>(camera_entity)->value();
@@ -48,9 +78,36 @@ int main(int argc, char* argv[]) {
 	LavaECSManager ecs_manager;
 	LavaNormalRenderSystem normal_render_system{engine};
 
+	{
+		LavaLuaScript lua_script;
+		lua_script.add_global(testCppLuaFunction, "testCppLuaFunction");
+		lua_script.add_global(multuplyLua, "multiply");
+		lua_script.run("../examples/scripts/hello.lua");
+	}
+	//lua_State* state = luaL_newstate();
 
-	lua_State* state = lua_newstate();
-	lua_close(state);
+	//// Verificar si el estado se creó correctamente
+	//if (state == nullptr) {
+	//	std::cerr << "Error: unable to create Lua state." << std::endl;
+	//	return 1;
+	//}
+
+	//// Cargar las bibliotecas estándar de Lua
+	//luaL_openlibs(state);
+	//lua_register(state, "testCppLuaFunction", testCppLuaFunction);
+
+
+	//// Ejecutar el script Lua
+	//if (luaL_dofile(state, "../examples/scripts/hello.lua") != LUA_OK) {
+	//	std::cerr << "Error executing Lua script: " << lua_tostring(state, -1) << std::endl;
+	//	lua_close(state);
+	//	return 1;
+	//}
+
+	//// Cerrar el estado de Lua
+	//lua_close(state);
+
+
 
 
 	///////////////////////
