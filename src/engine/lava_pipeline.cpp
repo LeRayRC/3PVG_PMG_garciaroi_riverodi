@@ -49,7 +49,7 @@ LavaPipeline::LavaPipeline(PipelineConfig config){
 	//pipeline_layout_info.pushConstantRangeCount = 1;
 
 	vkCreatePipelineLayout(device_, &pipeline_layout_info, nullptr, &layout_);
-	assert(layout_ != nullptr, "Compute pipeline creation failed!");
+	//assert(layout_ != nullptr, "Compute pipeline creation failed!");
 	
 
 	PipelineBuilder pipeline_builder;

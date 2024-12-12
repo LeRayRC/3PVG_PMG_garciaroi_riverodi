@@ -9,38 +9,13 @@
 #include "ecs/lava_normal_render_system.hpp"
 #include "imgui.h"
 #include "scripting/lava_lua_script.hpp"
+#include "lava_world.hpp"
 
 
-int mult(int a, int b) {
-	return a * b;
-}
-
-int multuplyLua(lua_State* L) {
-	int a = luaL_checkinteger(L, 1);
-	int b = luaL_checkinteger(L, 2);
-	auto res = mult(a, b);
-	lua_pushinteger(L,res);
-	return 1;
-}
 
 
-// Función que será llamada desde Lua
-int testCppLuaFunction(lua_State* L) {
-	// Obtener argumentos desde Lua
-	const char* message = lua_tostring(L, 2); // Primer argumento pasado desde Lua
-	if (message) {
-		std::cout << "C++ received: " << message << std::endl;
-	}
-	else {
-		std::cout << "C++ received no arguments." << std::endl;
-	}
 
-	// Devolver un valor a Lua (opcional)
-	lua_pushstring(L, "Message received!");
-	return 1; // Número de valores devueltos a Lua
-}
-
-void ecs_render_imgui(LavaECSManager& ecs_manager, int camera_entity) {
+void ecs_render_imgui(LavaECSManager& ecs_manager, size_t camera_entity) {
 	auto& camera_tr = ecs_manager.getComponent<TransformComponent>(camera_entity)->value();
 	auto& camera_camera = ecs_manager.getComponent<CameraComponent>(camera_entity)->value();
 	
@@ -73,42 +48,14 @@ void engine_imgui_window(LavaEngine& engine) {
 
 
 int main(int argc, char* argv[]) {
+	LavaWorld& world = LavaWorld::GetWorld();
+
 	std::shared_ptr<LavaWindowSystem>  lava_system = LavaWindowSystem::Get();
 	LavaEngine engine;
 	LavaECSManager ecs_manager;
 	LavaNormalRenderSystem normal_render_system{engine};
 
-	{
-		LavaLuaScript lua_script;
-		lua_script.add_global(testCppLuaFunction, "testCppLuaFunction");
-		lua_script.add_global(multuplyLua, "multiply");
-		lua_script.run("../examples/scripts/hello.lua");
-	}
-	//lua_State* state = luaL_newstate();
-
-	//// Verificar si el estado se creó correctamente
-	//if (state == nullptr) {
-	//	std::cerr << "Error: unable to create Lua state." << std::endl;
-	//	return 1;
-	//}
-
-	//// Cargar las bibliotecas estándar de Lua
-	//luaL_openlibs(state);
-	//lua_register(state, "testCppLuaFunction", testCppLuaFunction);
-
-
-	//// Ejecutar el script Lua
-	//if (luaL_dofile(state, "../examples/scripts/hello.lua") != LUA_OK) {
-	//	std::cerr << "Error executing Lua script: " << lua_tostring(state, -1) << std::endl;
-	//	lua_close(state);
-	//	return 1;
-	//}
-
-	//// Cerrar el estado de Lua
-	//lua_close(state);
-
-
-
+	world.setECSManager(&ecs_manager);
 
 	///////////////////////
 	//////ASSETS START/////
@@ -124,7 +71,7 @@ int main(int argc, char* argv[]) {
 	MeshProperties mesh_properties = {};
 	mesh_properties.name = "Shiba Mesh";
 	mesh_properties.type = MESH_GLTF;
-	mesh_properties.mesh_path = "../examples/assets/shiba/shiba_test.glb";
+	mesh_properties.mesh_path = "../examples/assets/shiba/shiba.glb";
 	mesh_properties.material = &basic_material;
 
 	std::shared_ptr<LavaMesh> mesh_shiba = std::make_shared<LavaMesh>(engine, mesh_properties);
@@ -132,83 +79,51 @@ int main(int argc, char* argv[]) {
 	/////////////////////
 	//////ASSETS END/////
 	/////////////////////
-	int width = 30;
 
-#ifndef NDEBUG
-	for (int x = 0; x < 30; x++) {
-		for (int z = 0; z < 30; z++) {
 
-			size_t entity = ecs_manager.createEntity();
-			ecs_manager.addComponent<TransformComponent>(entity);
-			ecs_manager.addComponent<RenderComponent>(entity);
-
-			auto transform_component = ecs_manager.getComponent<TransformComponent>(entity);
-			if (transform_component) {
-				auto& transform = transform_component->value();
-				transform.pos_ = glm::vec3(-15 + x, -5.0f, 5.0f + 2.0f*z);
-				transform.rot_ = glm::vec3(-90.0f, 0.0f, 0.0f);
-				transform.scale_ = glm::vec3(1.0f, 1.0f, 1.0f);
-
-			}
-			auto render_component = ecs_manager.getComponent<RenderComponent>(entity);
-			if (render_component) {
-				auto& render = render_component->value();
-				render.mesh_ = mesh_shiba;
-			}
-}
-	}
-#else
-	for (int x = 0; x < 1000; x++) {
-		for (int y = 0; y < 100; y++) {
-
-			size_t entity = ecs_manager.createEntity();
-			ecs_manager.addComponent<TransformComponent>(entity);
-			ecs_manager.addComponent<RenderComponent>(entity);
-
-			auto transform_component = ecs_manager.getComponent<TransformComponent>(entity);
-			if (transform_component) {
-				auto& transform = transform_component->value();
-				transform.pos_ = glm::vec3(-500.0f + x, 50.0f - y, -15.0f);
-				transform.scale_ = glm::vec3(1.0f, 1.0f, 1.0f);
-
-			}
-			auto render_component = ecs_manager.getComponent<RenderComponent>(entity);
-			if (render_component) {
-				auto& render = render_component->value();
-				render.mesh_ = mesh_shiba;
+	for (int i = 0; i < 10; i++) {
+		size_t scripted_entity = ecs_manager.createEntity();
+		ecs_manager.addComponent<LuaScriptComponent>(scripted_entity);
+		auto script_component = ecs_manager.getComponent<LuaScriptComponent>(scripted_entity);
+		if (script_component) {
+			if (script_component->has_value()) {
+				auto& script_component_value = script_component->value();
+				script_component_value.lua_script_path = "../examples/scripts/test_ecs.lua";
+				script_component_value.script_->run(script_component_value.lua_script_path);
 			}
 		}
-}
-#endif
+
+		auto transform_component = ecs_manager.getComponent<TransformComponent>(scripted_entity);
+		if (transform_component) {
+			auto& transform = transform_component->value();
+			transform.pos_ = glm::vec3(-8 + i, -5.0f, 5.0f);
+			transform.rot_ = glm::vec3(-90.0f, 0.0f, 0.0f);
+			transform.scale_ = glm::vec3(1.0f, 1.0f, 1.0f);
+		}
+		auto render_component = ecs_manager.getComponent<RenderComponent>(scripted_entity);
+		if (render_component) {
+			auto& render = render_component->value();
+			render.mesh_ = mesh_shiba;
+		}
+	}
+
+
+
+	
+
 
 	size_t camera_entity = ecs_manager.createEntity();
 	ecs_manager.addComponent<TransformComponent>(camera_entity);
 	ecs_manager.addComponent<CameraComponent>(camera_entity);
 
 	
-
-	
 	auto& camera_tr = ecs_manager.getComponent<TransformComponent>(camera_entity)->value();
 	camera_tr.rot_ = glm::vec3(180.0f, 0.0f, 0.0f);
-	camera_tr.pos_ = glm::vec3(0.0f, 0.0f, 70.0f);
+	camera_tr.pos_ = glm::vec3(0.0f, 0.0f, 15.0f);
 	auto& camera_camera = ecs_manager.getComponent<CameraComponent>(camera_entity)->value();
 
 
 	while (!engine.shouldClose()) {
-		 
-
-
-
-		//auto& camera_tr = ecs_manager.getComponent<TransformComponent>(0)->value();
-		//camera_tr.rot_ = glm::vec3(0.0f, 0.0f, 0.0f);
-		//camera_tr.pos_ = glm::vec3(camera_tr.pos_.x+0.02f, -5.0f, 0.0f);
-		//for (auto& comp : ecs_manager.getComponentList<TransformComponent>()) {
-		//	if (comp) {
-		//		auto& transform = comp.value();
-		//		transform.rot_ = glm::vec3(transform.rot_.x,0.03f * engine.frame_data_.frame_number_,
-		//			0.0f);
-		//	}
-		//}
 
 		engine.global_scene_data_.view = camera_camera.view_;
 		engine.global_scene_data_.proj = glm::perspective(glm::radians(camera_camera.fov_),

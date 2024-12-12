@@ -41,8 +41,9 @@ struct ComponentListDerived : ComponentListBase {
 class LavaECSManager
 {
 public:
-	LavaECSManager();
+  LavaECSManager();
 	~LavaECSManager();
+
 
   size_t createEntity();
   void deleteEntity(size_t entity_id);
@@ -80,7 +81,7 @@ public:
     ComponentListDerived<T>* cld = static_cast<ComponentListDerived<T>*>(it->second.get());
 
     if (entity >= cld->getSize()) return ENTITY_NOT_EXIST;
-    cld->component_list_[entity] = T();
+    cld->component_list_[entity] = T(entity);
 
     return ECS_SUCCESS;
   }
@@ -113,6 +114,7 @@ public:
   }
 
 private:
+
   typedef std::unordered_map<size_t, std::unique_ptr<ComponentListBase>> map_type;
   map_type component_list_map_;
 

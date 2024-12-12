@@ -4,6 +4,7 @@
 #include "engine/lava_pipeline.hpp"
 #include "engine/lava_image.hpp"
 #include "engine/lava_material.hpp"
+#include "lava_world.hpp"
 #include "ecs/lava_ecs.hpp"
 #include "ecs/lava_normal_render_system.hpp"
 #include "imgui.h"
@@ -42,11 +43,13 @@ void engine_imgui_window(LavaEngine& engine) {
 
 
 int main(int argc, char* argv[]) {
+	LavaWorld& world = LavaWorld::GetWorld();
 	std::shared_ptr<LavaWindowSystem>  lava_system = LavaWindowSystem::Get();
 	LavaEngine engine;
 	LavaECSManager ecs_manager;
 	LavaNormalRenderSystem normal_render_system{engine};
 
+	world.setECSManager(&ecs_manager);
 	///////////////////////
 	//////ASSETS START/////
 	///////////////////////
@@ -133,9 +136,6 @@ int main(int argc, char* argv[]) {
 
 	while (!engine.shouldClose()) {
 		 
-
-
-
 		//auto& camera_tr = ecs_manager.getComponent<TransformComponent>(0)->value();
 		//camera_tr.rot_ = glm::vec3(0.0f, 0.0f, 0.0f);
 		//camera_tr.pos_ = glm::vec3(camera_tr.pos_.x+0.02f, -5.0f, 0.0f);
