@@ -1,9 +1,15 @@
 #include "scripting/lava_lua_script.hpp"
+#include "scripting/lava_lua_wrapper.hpp"
 
 LavaLuaScript::LavaLuaScript()
 	: state_{ luaL_newstate(),&lua_close }
 	, s{ state_.get() } {
 	luaL_openlibs(s);
+
+	//Register wrapper functions
+	add_global(ECS_AddComponent_Transform, "ECS_AddComponent_Transform");
+	add_global(ECS_AddComponent_Render, "ECS_AddComponent_Render");
+	add_global(ECS_CreateEntity, "ECS_CreateEntity");
 }
 
 LavaLuaScript::~LavaLuaScript()

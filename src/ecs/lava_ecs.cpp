@@ -1,10 +1,14 @@
 #include "ecs/lava_ecs.hpp"
 
+
 LavaECSManager::LavaECSManager(){
   last_entity = 0;
   addComponentType<RenderComponent>();
   addComponentType<TransformComponent>();
   addComponentType<CameraComponent>();
+  addComponentType<LuaScriptComponent>();
+
+  
 }
 
 LavaECSManager::~LavaECSManager()

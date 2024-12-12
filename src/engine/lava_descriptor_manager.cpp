@@ -89,7 +89,7 @@ VkDescriptorPool LavaDescriptorManager::getPool(){
   }
   else {
     new_pool = createPool(setsPerPool_);
-    setsPerPool_ = setsPerPool_ * 1.5f;
+    setsPerPool_ = static_cast<uint32_t>(setsPerPool_ * 1.5f);
     if (setsPerPool_ > 4092) {
       setsPerPool_ = 4092;
     }
