@@ -6,7 +6,10 @@
 #include "engine/lava_material.hpp"
 #include "ecs/lava_ecs.hpp"
 #include "ecs/lava_normal_render_system.hpp"
+#include "lava_job_system.hpp"
 #include "imgui.h"
+
+#include "thread"
 
 
 void ecs_render_imgui(LavaECSManager& ecs_manager, int camera_entity) {
@@ -31,11 +34,14 @@ void ecs_render_imgui(LavaECSManager& ecs_manager, int camera_entity) {
 
 }
 
+
+
 int main(int argc, char* argv[]) {
 	std::shared_ptr<LavaWindowSystem>  lava_system = LavaWindowSystem::Get();
 	LavaEngine engine;
 	LavaECSManager ecs_manager;
 	LavaNormalRenderSystem normal_render_system{ engine };
+	LavaJobSystem job_system;
 
 	///////////////////////
 	//////ASSETS START/////
@@ -51,7 +57,7 @@ int main(int argc, char* argv[]) {
 	MeshProperties mesh_properties = {};
 	mesh_properties.name = "Shiba Mesh";
 	mesh_properties.type = MESH_GLTF;
-	mesh_properties.mesh_path = "../examples/assets/skull.glb";
+	mesh_properties.mesh_path = "../examples/assets/shiba/shiba.glb";
 	mesh_properties.material = &basic_material;
 
 	std::shared_ptr<LavaMesh> mesh_loaded = std::make_shared<LavaMesh>(engine, mesh_properties);
@@ -60,6 +66,7 @@ int main(int argc, char* argv[]) {
 	//////ASSETS END/////
 	/////////////////////
 
+	//auto mesh_loaded = job_system.add([&engine, mesh_properties]() { return std::make_shared<LavaMesh>(engine, mesh_properties); });
 
 	size_t entity = ecs_manager.createEntity();
 	ecs_manager.addComponent<TransformComponent>(entity);
@@ -68,14 +75,14 @@ int main(int argc, char* argv[]) {
 	auto transform_component = ecs_manager.getComponent<TransformComponent>(entity);
 	if (transform_component) {
 		auto& transform = transform_component->value();
-		transform.pos_ = glm::vec3(0.0f, 0.0f, -50.0f);
+		transform.pos_ = glm::vec3(0.0f, 0.0f, -5.0f);
 		transform.scale_ = glm::vec3(1.0f, 1.0f, 1.0f);
 
 	}
 	auto render_component = ecs_manager.getComponent<RenderComponent>(entity);
 	if (render_component) {
 		auto& render = render_component->value();
-		render.mesh_ = mesh_loaded;
+		render.mesh_ = mesh_loaded ;
 	}
 
 	size_t camera_entity = ecs_manager.createEntity();
