@@ -107,7 +107,7 @@ workspace "Motor"
         conan_config_exec("Release")
         conan_config_exec("RelWithDebInfo")
         debugargs { _MAIN_SCRIPT_DIR .. "/examples/data" }
-        files "examples/window.cpp"
+        files "examples/window_demostrator.cpp"
     project"HelloTriangle"
         kind "ConsoleApp" -- This was WindowedApp
         language "C++"

@@ -86,13 +86,13 @@ int main(int argc, char* argv[]) {
 
 		// Rotation
 		float rot_act = 0.0f;
-		if(input->isInputDown(KEY_RIGHT)) rot_act = -1.0f;
-		else if (input->isInputDown(KEY_LEFT)) rot_act = 1.0f;
-		transform_component->value().rot_.z += 0.1f * rot_act;
+		if(input->isInputDown(KEY_RIGHT)) rot_act = -10000.0f ;
+		else if (input->isInputDown(KEY_LEFT)) rot_act = 10000.0f;
+		transform_component->value().rot_.z += (rot_act * engine.dt_);
 		
 		//Scale
 		glm::vec2 scrooll = input->getScrollOffset();
-		transform_component->value().scale_ += 0.5f * scrooll.y;
+		transform_component->value().scale_ += (engine.dt_ * scrooll.y * 100.0f);
 
 		engine.renderImgui();
 		normal_render_system.render(ecs_manager.getComponentList<TransformComponent>(),
