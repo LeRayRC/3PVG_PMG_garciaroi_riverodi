@@ -173,17 +173,21 @@ int main(int argc, char* argv[]) {
 		engine.clearWindow();
 		
 		if (input->isInputDown(KEY_RIGHT)) {
-			input_entity_transform.pos_.x += (100.0f * (float)engine.dt_);
+			printf("RIGHT\n");
+			input_entity_transform.pos_.x += (10.0f * (float)engine.dt_);
 		}
-		else if (input->isInputDown(KEY_LEFT)) {
-			input_entity_transform.pos_.x += (-100.0f * (float)engine.dt_);
+		else if (input->isInputDown(KEY_LEFT)) { //263
+			printf("LEFT\n");
+			input_entity_transform.pos_.x += (-10.0f * (float)engine.dt_);
 		}
 
-		if (input->isInputDown(KEY_UP)) {
-			input_entity_transform.pos_.y += (100.0f * (float)engine.dt_);
+		if (input->isInputDown(KEY_UP)) { //265
+			printf("UP\n");
+			input_entity_transform.pos_.y += (10.0f * (float)engine.dt_);
 		}
 		else if (input->isInputDown(KEY_DOWN)) {
-			input_entity_transform.pos_.y += (-100.0f * (float)engine.dt_);
+			printf("DOWN\n");
+			input_entity_transform.pos_.y += (-10.0f * (float)engine.dt_);
 		}
 
 		engine.renderImgui();
