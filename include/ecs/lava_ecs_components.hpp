@@ -56,7 +56,6 @@ struct LuaScriptComponent {
   }
 };
 
-
 struct CameraComponent {
   float fov_;
   float near_;
@@ -145,6 +144,21 @@ struct CameraComponent {
     view_ = glm::lookAt(pos, target, up_vector);
   }
 };
+
+struct RotateComponent {
+  bool can_rotate_;
+  glm::vec3 rotate_speed_;
+
+  RotateComponent() {
+    can_rotate_ = false;
+    rotate_speed_ = glm::vec3(1.0f);
+  }
+  RotateComponent(size_t entity) {
+    can_rotate_ = false;
+    rotate_speed_ = glm::vec3(1.0f);
+  }
+};
+
 
 #endif // !__LAVA_ECS_COMPONENTS_H__
 

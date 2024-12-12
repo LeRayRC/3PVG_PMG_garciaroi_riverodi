@@ -7,17 +7,17 @@
 #include "lava_world.hpp"
 #include "ecs/lava_ecs.hpp"
 #include "ecs/lava_normal_render_system.hpp"
+#include "ecs/lava_rotate_system.hpp"
 #include "imgui.h"
+#include <glm/gtc/random.hpp>
 
 
-void ecs_render_imgui(LavaECSManager& ecs_manager, int camera_entity) {
+void ecs_render_imgui(LavaECSManager& ecs_manager, size_t camera_entity) {
 	auto& camera_tr = ecs_manager.getComponent<TransformComponent>(camera_entity)->value();
 	auto& camera_camera = ecs_manager.getComponent<CameraComponent>(camera_entity)->value();
 	
-	ImGui::Begin("ECS Example Manager Window");
+	ImGui::Begin("ECS Camera Manager Window");
 
-
-	
 	if (ImGui::DragFloat3("Camera position", &camera_tr.pos_.x, 0.1f, -100.0f, 100.0f)) {
 		
 	}
@@ -48,6 +48,9 @@ int main(int argc, char* argv[]) {
 	LavaEngine engine;
 	LavaECSManager ecs_manager;
 	LavaNormalRenderSystem normal_render_system{engine};
+	LavaRotateSystem rotate_system;
+
+	size_t input_entity;
 
 	world.setECSManager(&ecs_manager);
 	///////////////////////
@@ -81,6 +84,7 @@ int main(int argc, char* argv[]) {
 			size_t entity = ecs_manager.createEntity();
 			ecs_manager.addComponent<TransformComponent>(entity);
 			ecs_manager.addComponent<RenderComponent>(entity);
+			ecs_manager.addComponent<RotateComponent>(entity);
 
 			auto transform_component = ecs_manager.getComponent<TransformComponent>(entity);
 			if (transform_component) {
@@ -95,6 +99,20 @@ int main(int argc, char* argv[]) {
 				auto& render = render_component->value();
 				render.mesh_ = mesh_shiba;
 			}
+
+			auto rotate_component = ecs_manager.getComponent<RotateComponent>(entity);
+			if (rotate_component) {
+				auto& rotate = rotate_component->value();
+				if (x == 29 && z == 29) {
+					rotate.can_rotate_ = false;
+					input_entity = entity;
+				}
+				else {
+					rotate.can_rotate_ = true;
+				}
+				rotate.rotate_speed_ = glm::vec3(50.0f);
+			}
+
 }
 	}
 #else
@@ -134,18 +152,15 @@ int main(int argc, char* argv[]) {
 	auto& camera_camera = ecs_manager.getComponent<CameraComponent>(camera_entity)->value();
 
 
+	auto& input_entity_transform = ecs_manager.getComponent<TransformComponent>(input_entity)->value();
+	LavaInput* input = engine.window_.get_input();
+
 	while (!engine.shouldClose()) {
 		 
-		//auto& camera_tr = ecs_manager.getComponent<TransformComponent>(0)->value();
-		//camera_tr.rot_ = glm::vec3(0.0f, 0.0f, 0.0f);
-		//camera_tr.pos_ = glm::vec3(camera_tr.pos_.x+0.02f, -5.0f, 0.0f);
-		//for (auto& comp : ecs_manager.getComponentList<TransformComponent>()) {
-		//	if (comp) {
-		//		auto& transform = comp.value();
-		//		transform.rot_ = glm::vec3(transform.rot_.x,0.03f * engine.frame_data_.frame_number_,
-		//			0.0f);
-		//	}
-		//}
+
+		//CheckInput
+		
+		/*if()*/
 
 		engine.global_scene_data_.view = camera_camera.view_;
 		engine.global_scene_data_.proj = glm::perspective(glm::radians(camera_camera.fov_),
@@ -157,13 +172,26 @@ int main(int argc, char* argv[]) {
 		engine.beginFrame();
 		engine.clearWindow();
 		
+		if (input->isInputDown(KEY_RIGHT)) {
+			input_entity_transform.pos_.x += (100.0f * (float)engine.dt_);
+		}
+		else if (input->isInputDown(KEY_LEFT)) {
+			input_entity_transform.pos_.x += (-100.0f * (float)engine.dt_);
+		}
 
+		if (input->isInputDown(KEY_UP)) {
+			input_entity_transform.pos_.y += (100.0f * (float)engine.dt_);
+		}
+		else if (input->isInputDown(KEY_DOWN)) {
+			input_entity_transform.pos_.y += (-100.0f * (float)engine.dt_);
+		}
 
 		engine.renderImgui();
 		ecs_render_imgui(ecs_manager, camera_entity);
 		engine_imgui_window(engine);
 
 		
+		rotate_system(ecs_manager.getComponentList<RotateComponent>(),ecs_manager.getComponentList<TransformComponent>(), engine.dt_);
 		normal_render_system.render(ecs_manager.getComponentList<TransformComponent>(),
 			ecs_manager.getComponentList<RenderComponent>());
 

@@ -50,8 +50,8 @@ LavaEngine::LavaEngine() :
 	swap_chain_{ device_, surface_, window_extent_, allocator_.get_allocator()},
 	frame_data_{device_, surface_, allocator_, &global_scene_data_},
 	inmediate_communication{device_, surface_},
-	global_descriptor_allocator_{device_.get_device(),LavaDescriptorManager::initial_sets,LavaDescriptorManager::pool_ratios}
-	
+	global_descriptor_allocator_{device_.get_device(),LavaDescriptorManager::initial_sets,LavaDescriptorManager::pool_ratios},
+	dt_{0.0f}
 {
 	//Singleton Functionality
 	assert(loaded_engine == nullptr);
@@ -93,7 +93,8 @@ LavaEngine::LavaEngine(unsigned int window_width, unsigned int window_height) :
 	swap_chain_{ device_, surface_, window_extent_, allocator_.get_allocator() },
 	frame_data_{ device_, surface_, allocator_, &global_scene_data_ },
 	inmediate_communication{ device_, surface_ },
-	global_descriptor_allocator_{ device_.get_device(),LavaDescriptorManager::initial_sets,LavaDescriptorManager::pool_ratios }
+	global_descriptor_allocator_{ device_.get_device(),LavaDescriptorManager::initial_sets,LavaDescriptorManager::pool_ratios },
+	dt_{ 0.0f }
 {
 	//Singleton Functionality
 	assert(loaded_engine == nullptr);
