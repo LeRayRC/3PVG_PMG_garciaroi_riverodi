@@ -289,7 +289,7 @@ bool LavaMesh::loadAsGLTF(std::filesystem::path file_path) {
 
 bool LavaMesh::loadCustomMesh(MeshProperties prop) {
   MeshAsset newmesh;
-  GeoSurface surface = { 0,prop.index.size() };
+  GeoSurface surface = { 0,static_cast<uint32_t>(prop.index.size()) };
   newmesh.meshBuffers = upload(prop.index, prop.vertex);
   //newmesh.surfaces[0] = surface;
   newmesh.count_surfaces = 1;

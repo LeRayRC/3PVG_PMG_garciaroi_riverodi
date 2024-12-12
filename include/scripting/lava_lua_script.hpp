@@ -22,6 +22,11 @@ public:
 		lua_setglobal(s, name);
 	}
 
+	void set_int_variable(const std::string& name, size_t value) {
+		lua_pushinteger(s, value);
+		lua_setglobal(s, name.c_str());
+	}
+
 private:
 	std::unique_ptr<lua_State, decltype(&lua_close)> state_;
 	lua_State* s;
