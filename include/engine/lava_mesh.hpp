@@ -41,6 +41,7 @@ private:
 	class LavaMaterial* material_;
 	class LavaEngine* engine_;
 	class LavaTransform transform_;
+
 };
 
 

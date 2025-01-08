@@ -193,11 +193,11 @@ void LavaInput::kb_mouse_callback(int key, int input_type, int action, int mods)
 {
 	int32_t aux_current_frame_properties = 0;
 	if (action & GLFW_PRESS) { //If is press this frame
-		aux_current_frame_properties = aux_current_frame_properties | KEY_PRESS; //Add Press property
+		aux_current_frame_properties = aux_current_frame_properties | KEY_PRESS | SUSTAIN_TIL_RELEASE; //Add Press property
 		//If input type is mouse add Sustain Til Release Property
-		if(input_type == -1) aux_current_frame_properties = aux_current_frame_properties | SUSTAIN_TIL_RELEASE;
+		/*if (input_type == -1) aux_current_frame_properties = aux_current_frame_properties | SUSTAIN_TIL_RELEASE;*/
 	}
-	else if (action & GLFW_REPEAT) aux_current_frame_properties = aux_current_frame_properties | KEY_REPEAT; //If is repeated this frame add Repeated property
+	else if (action & GLFW_REPEAT) aux_current_frame_properties = aux_current_frame_properties | KEY_REPEAT | SUSTAIN_TIL_RELEASE; //If is repeated this frame add Repeated property
 	else aux_current_frame_properties = aux_current_frame_properties | KEY_RELEASE; //If not Press or Repeated then is Release, add Release property
 	//Find or Create the new key and set current frame property
 	kb_mouse_input_properties_map_[key].current_frame_properties = aux_current_frame_properties;

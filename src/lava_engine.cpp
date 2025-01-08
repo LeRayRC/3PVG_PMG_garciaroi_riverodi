@@ -14,6 +14,7 @@
 #include "engine/lava_pipeline_builder.hpp"
 #include "engine/lava_image.hpp"
 #include "lava_transform.hpp"
+#include <future>
 #include <chrono>
 
 
@@ -244,6 +245,7 @@ void LavaEngine::endFrame() {
 		VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT, frame_data_.getCurrentFrame().render_semaphore);
 
 	VkSubmitInfo2 submit = vkinit::SubmitInfo(&commandSubmitInfo, &signalInfo, &waitInfo);
+
 	vkQueueSubmit2(device_.get_graphics_queue(), 1, &submit, frame_data_.getCurrentFrame().render_fence);
 
 	//Se crea la estructura de presentacion para enviarla a la ventana de GLFW

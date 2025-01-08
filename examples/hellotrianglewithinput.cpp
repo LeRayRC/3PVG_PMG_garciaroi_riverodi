@@ -78,17 +78,17 @@ int main(int argc, char* argv[]) {
 		glm::vec2 mouse_pos = input->getMousePosition();
 
 		// Movement
-		float ndcX = (2.0f * mouse_pos.x) / (float)engine.window_extent_.width - 1.0f;
-		float ndcY = (2.0f * mouse_pos.y) / (float)engine.window_extent_.height - 1.0f;
-		auto dir = glm::vec3(glm::inverse(engine.global_scene_data_.viewproj) * glm::vec4(ndcX, ndcY, 1.0f, 1.0f));
+		float ndc_x = (2.0f * mouse_pos.x) / (float)engine.window_extent_.width - 1.0f;
+		float ndc_y = (2.0f * mouse_pos.y) / (float)engine.window_extent_.height - 1.0f;
+		auto dir = glm::vec3(glm::inverse(engine.global_scene_data_.viewproj) * glm::vec4(ndc_x, ndc_y, 1.0f, 1.0f));
 		dir *= -(transform_component->value().pos_.z);
 		transform_component->value().pos_ = dir;
 
 		// Rotation
 		float rot_act = 0.0f;
-		if(input->isInputDown(KEY_RIGHT)) rot_act = -10000.0f ;
-		else if (input->isInputDown(KEY_LEFT)) rot_act = 10000.0f;
-		transform_component->value().rot_.z += (rot_act * engine.dt_);
+		if(input->isInputDown(KEY_RIGHT)) rot_act = -100.0f ;
+		else if (input->isInputDown(KEY_LEFT)) rot_act = 100.0f;
+		transform_component->value().rot_.z += (rot_act * (float)engine.dt_);
 		
 		//Scale
 		glm::vec2 scrooll = input->getScrollOffset();

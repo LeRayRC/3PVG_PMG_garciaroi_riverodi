@@ -12,6 +12,10 @@
 #include "thread"
 
 
+std::filesystem::path meshes[3]{"../examples/assets/shiba/shiba.glb", "../examples/assets/skull.glb", "../examples/assets/shark.glb" };
+int mesh_index = 0;
+std::queue<std::future<std::shared_ptr<LavaMesh>>> mesh_queue;
+
 void ecs_render_imgui(LavaECSManager& ecs_manager, int camera_entity) {
 	auto& camera_tr = ecs_manager.getComponent<TransformComponent>(camera_entity)->value();
 	auto& camera_camera = ecs_manager.getComponent<CameraComponent>(camera_entity)->value();
@@ -57,7 +61,7 @@ int main(int argc, char* argv[]) {
 	MeshProperties mesh_properties = {};
 	mesh_properties.name = "Shiba Mesh";
 	mesh_properties.type = MESH_GLTF;
-	mesh_properties.mesh_path = "../examples/assets/shiba/shiba.glb";
+	mesh_properties.mesh_path = meshes[0];
 	mesh_properties.material = &basic_material;
 
 	std::shared_ptr<LavaMesh> mesh_loaded = std::make_shared<LavaMesh>(engine, mesh_properties);
@@ -94,17 +98,32 @@ int main(int argc, char* argv[]) {
 	camera_tr.pos_ = glm::vec3(0.0f, 0.0f, 10.0f);
 	auto& camera_camera = ecs_manager.getComponent<CameraComponent>(camera_entity)->value();
 
+	LavaInput* input = engine.window_.get_input();
 
 	while (!engine.shouldClose()) {
 
-		//for (auto& comp : ecs_manager.getComponentList<TransformComponent>()) {
-		//	if (comp) {
-		//		auto& transform = comp.value();
-		//		transform.rot_ = glm::vec3(0.001f * engine.frame_data_.frame_number_,
-		//			0.002f * engine.frame_data_.frame_number_,
-		//			0.0005f * engine.frame_data_.frame_number_);
-		//	}
-		//}
+		if (input->isInputReleased(KEY_RIGHT)) {
+			mesh_index++;
+			mesh_index = mesh_index % 3;
+			mesh_properties.mesh_path = meshes[mesh_index];
+			mesh_queue.push(job_system.add([&engine, mesh_properties]() { return std::make_shared<LavaMesh>(engine, mesh_properties); }));
+		}
+		else if (input->isInputReleased(KEY_LEFT)) {
+			mesh_index += 4;
+			mesh_index = mesh_index % 3;
+			mesh_properties.mesh_path = meshes[mesh_index];
+			mesh_queue.push(job_system.add([&engine, mesh_properties]() { return std::make_shared<LavaMesh>(engine, mesh_properties); }));
+		}
+
+		if (!mesh_queue.empty()) {
+			auto status = mesh_queue.front().wait_for(std::chrono::seconds(0));
+			if (status == std::future_status::ready) {
+				render_component = ecs_manager.getComponent<RenderComponent>(entity);
+				auto& render = render_component->value();
+				render.mesh_ = mesh_queue.front().get();
+				mesh_queue.pop();
+			}
+		}
 
 		engine.global_scene_data_.view = camera_camera.view_;
 		engine.global_scene_data_.proj = glm::perspective(glm::radians(camera_camera.fov_),

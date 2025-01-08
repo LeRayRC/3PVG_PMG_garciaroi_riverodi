@@ -41,6 +41,7 @@ private:
 	VkQueue graphics_queue_;
 	VkQueue present_queue_;
 
+
 	void createLogicalDevice(LavaSurface& surface);
 	void pickPhysicalDevice(LavaInstance& instance, LavaSurface& surface);
 
