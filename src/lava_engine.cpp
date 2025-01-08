@@ -245,8 +245,10 @@ void LavaEngine::endFrame() {
 		VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT, frame_data_.getCurrentFrame().render_semaphore);
 
 	VkSubmitInfo2 submit = vkinit::SubmitInfo(&commandSubmitInfo, &signalInfo, &waitInfo);
-
+	
+	std::lock_guard<std::mutex> lock(queue_mutex_);
 	vkQueueSubmit2(device_.get_graphics_queue(), 1, &submit, frame_data_.getCurrentFrame().render_fence);
+	
 
 	//Se crea la estructura de presentacion para enviarla a la ventana de GLFW
 	VkPresentInfoKHR presentInfo = {};
@@ -457,6 +459,7 @@ void LavaEngine::initImgui() {
 }
 
 void LavaEngine::immediate_submit(std::function<void(VkCommandBuffer)>&& function) {
+	std::lock_guard<std::mutex> lock(queue_mutex_);
 	VkFence aux_inmediate_fence = inmediate_communication.get_inmediate_fence();
 	if (vkResetFences(device_.get_device(), 1, &aux_inmediate_fence) != VK_SUCCESS) {
 		exit(-1);
@@ -482,7 +485,9 @@ void LavaEngine::immediate_submit(std::function<void(VkCommandBuffer)>&& functio
 
 	// submit command buffer to the queue and execute it.
 	//  _renderFence will now block until the graphic commands finish execution
-	vkQueueSubmit2(device_.get_graphics_queue(), 1, &submit, aux_inmediate_fence);
+	
+		vkQueueSubmit2(device_.get_graphics_queue(), 1, &submit, aux_inmediate_fence);
+	
 
 	vkWaitForFences(device_.get_device(), 1, &aux_inmediate_fence, true, 9999999999);
 }

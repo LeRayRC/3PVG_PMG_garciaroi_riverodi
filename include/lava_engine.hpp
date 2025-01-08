@@ -26,6 +26,7 @@
 #include "engine/lava_material.hpp"
 #include "engine/lava_mesh.hpp"
 #include "engine/lava_descriptor_manager.hpp"
+#include <mutex>
 #include "engine/lava_image.hpp"
 
 
@@ -103,6 +104,8 @@ public:
 
 	std::chrono::steady_clock::time_point chrono_now_;
 	std::chrono::steady_clock::time_point chrono_last_update_;
+
+	std::mutex queue_mutex_;
 	double dt_;
 
 	DescriptorAllocator imgui_descriptor_alloc;
