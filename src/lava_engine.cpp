@@ -246,8 +246,8 @@ void LavaEngine::endFrame() {
 
 	VkSubmitInfo2 submit = vkinit::SubmitInfo(&commandSubmitInfo, &signalInfo, &waitInfo);
 
-	{
-		std::lock_guard<std::mutex> lock(queue_mutex_);
+	//{
+		//std::lock_guard<std::mutex> lock(queue_mutex_);
 		vkQueueSubmit2(device_.get_graphics_queue(), 1, &submit, frame_data_.getCurrentFrame().render_fence);
 
 		//Se crea la estructura de presentacion para enviarla a la ventana de GLFW
@@ -264,7 +264,7 @@ void LavaEngine::endFrame() {
 		presentInfo.pImageIndices = &swap_chain_image_index;
 
 		vkQueuePresentKHR(device_.get_present_queue(), &presentInfo);
-	}
+	//}
 
 	//increase the number of frames drawn
 	frame_data_.increaseFrameNumber();
@@ -485,11 +485,13 @@ void LavaEngine::immediate_submit(std::function<void(VkCommandBuffer)>&& functio
 
 	// submit command buffer to the queue and execute it.
 	//  _renderFence will now block until the graphic commands finish execution
-	{
+	
 
-		std::lock_guard<std::mutex> lock(queue_mutex_);
-		vkQueueSubmit2(device_.get_graphics_queue(), 1, &submit, aux_inmediate_fence);
-	}
+	//std::lock_guard<std::mutex> lock(queue_mutex_);
+	//vkQueueSubmit2(device_.get_transfer_queue(), 1, &submit, aux_inmediate_fence);
+	vkQueueSubmit2(device_.get_transfer_queue(), 1, &submit, aux_inmediate_fence);
+
+	//}
 	
 
 	vkWaitForFences(device_.get_device(), 1, &aux_inmediate_fence, true, 9999999999);

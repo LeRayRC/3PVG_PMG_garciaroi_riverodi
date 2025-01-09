@@ -50,15 +50,15 @@ void LavaDevice::createLogicalDevice(LavaSurface& surface) {
 	QueueFamilyIndices indices = FindQueueFamilies(physical_device_, surface.get_surface());
 	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
 	std::set<uint32_t> uniqueQueueFamilies = { indices.graphicsFamily.value(), indices.presentFamily.value() };
-	float queuePriority = 1.0f;
+	float queuePriorities[] = { 1.0f , 1.0f};
 
 
 	for (uint32_t queueFamily : uniqueQueueFamilies) {
 		VkDeviceQueueCreateInfo queueCreateInfo{};
 		queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
 		queueCreateInfo.queueFamilyIndex = queueFamily;
-		queueCreateInfo.queueCount = 1;
-		queueCreateInfo.pQueuePriorities = &queuePriority;
+		queueCreateInfo.queueCount = 2;
+		queueCreateInfo.pQueuePriorities = queuePriorities;
 		queueCreateInfos.push_back(queueCreateInfo);
 	}
 
@@ -114,12 +114,12 @@ void LavaDevice::createLogicalDevice(LavaSurface& surface) {
 		exit(-1);
 	}
 
-	//Index 0 hace referencia a que cola se va a utilizar de la 
-	//familia seleccionada, arriba se podrian haber creado una 
-	//cola de cada familia pero en este caso se ha creado una cola de 
-	//dentro de la misma ya que soporta tanto comandos graficos como de presentacion
-	//Tanto si fuesen iguales como diferentes, se seleccionaria la primera cola de cada familia
-	// asi que el index seguiria siendo 0
+	/*
+	Indica el indice de la cola que se va a seleccionar de la familia correspondiente
+	0 graficos y presentacion
+	1 transferencia
+	*/
 	vkGetDeviceQueue(device_, indices.graphicsFamily.value(), 0, &graphics_queue_);
 	vkGetDeviceQueue(device_, indices.presentFamily.value(), 0, &present_queue_);
+	vkGetDeviceQueue(device_, indices.graphicsFamily.value(), 1, &transfer_queue_);
 }
