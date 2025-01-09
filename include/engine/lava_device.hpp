@@ -29,6 +29,10 @@ public:
 		return present_queue_;
 	}
 
+	VkQueue get_transfer_queue() const {
+		return transfer_queue_;
+	}
+
 	const std::vector<const char*> required_device_extensions_ = {
 		VK_KHR_SWAPCHAIN_EXTENSION_NAME,
 		VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
@@ -40,6 +44,7 @@ private:
 	VkDevice device_;
 	VkQueue graphics_queue_;
 	VkQueue present_queue_;
+	VkQueue transfer_queue_;
 
 
 	void createLogicalDevice(LavaSurface& surface);
