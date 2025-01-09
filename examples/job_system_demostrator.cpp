@@ -136,7 +136,7 @@ int main(int argc, char* argv[]) {
 		engine.clearWindow();
 
 		//engine.renderImgui();
-		ecs_render_imgui(ecs_manager, camera_entity);
+		ecs_render_imgui(ecs_manager, (int)camera_entity);
 
 		normal_render_system.render(ecs_manager.getComponentList<TransformComponent>(),
 			ecs_manager.getComponentList<RenderComponent>());

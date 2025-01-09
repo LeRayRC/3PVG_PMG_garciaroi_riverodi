@@ -195,7 +195,7 @@ int main(int argc, char* argv[]) {
 		engine_imgui_window(engine);
 
 		
-		rotate_system(ecs_manager.getComponentList<RotateComponent>(),ecs_manager.getComponentList<TransformComponent>(), engine.dt_);
+		rotate_system(ecs_manager.getComponentList<RotateComponent>(),ecs_manager.getComponentList<TransformComponent>(), (float)engine.dt_);
 		normal_render_system.render(ecs_manager.getComponentList<TransformComponent>(),
 			ecs_manager.getComponentList<RenderComponent>());
 
