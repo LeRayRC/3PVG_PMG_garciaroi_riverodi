@@ -161,6 +161,17 @@ struct MaterialProperties {
 	const char* fragment_shader_path;
 };
 
+struct MaterialPBRProperties {
+	std::string name;
+
+	
+};
+
+typedef enum PipelineType {
+	PIPELINE_TYPE_NORMAL, 
+	PIPELINE_TYPE_PBR
+} PipelineType;
+
 typedef enum PipelineFlags {
 	PIPELINE_USE_ATTRIBUTES = 1,					//0001
 	PIPELINE_USE_PUSHCONSTANTS = 1 << 1,	//0010
@@ -169,6 +180,7 @@ typedef enum PipelineFlags {
 
 struct PipelineConfig {
 public:
+	PipelineType type;
 	const char* vertex_shader_path;
 	const char* fragment_shader_path;
 	class LavaDevice* device;

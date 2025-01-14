@@ -26,6 +26,7 @@ private:
 	VkPipeline pipeline_;
 	VkDevice device_;
 	VkDescriptorSetLayout descriptor_set_layouts_[2];
+
 	
 	void configurePushConstants(VkPipelineLayoutCreateInfo* info,
 		VkPushConstantRange* range);

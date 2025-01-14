@@ -101,17 +101,52 @@ void LavaPipeline::configurePushConstants(VkPipelineLayoutCreateInfo* info,
 	info->pPushConstantRanges = range;
 	info->pushConstantRangeCount = 1;
 }
-void LavaPipeline::configureDescriptorSet(VkPipelineLayoutCreateInfo* info, VkDescriptorSetLayout global_layout) {
-	//Include global descriptor set also
 
-	
+
+void LavaPipeline::configureDescriptorSet(VkPipelineLayoutCreateInfo* info, VkDescriptorSetLayout global_layout, PipelineType type) {
+	//Include global descriptor set also
+	//Primero le decimos que va a utilizar un descriptor set global que tiene el motor
+	//Este descriptor contiene cosas como la matriz de vista
 	descriptor_set_layouts_[0] = global_layout;
 
 	//By default every material can hold two images: diffuse and normal
 	//TODO include Uniform buffer as another binding
 	DescriptorLayoutBuilder builder;
-	builder.addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-	builder.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+
+	//En funcion del tipo de pipeline se configuran unos binding u otros
+
+	switch (type)
+	{
+	case PIPELINE_TYPE_NORMAL: {
+			builder.addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+			builder.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+			break;
+		}
+	case PIPELINE_TYPE_PBR: {
+			/*
+					std::shared_ptr<LavaImage> base_color_; // if null pick the global base color texture
+					std::shared_ptr<LavaImage> metallic_; // If null pick the global metallic texture (black or white)
+					float metallic_factor_;	//Determines the metallic value of the metallic parts of the texture
+					std::shared_ptr<LavaImage> roughness_; // If null pick the global roughness texture
+					float roughness_factor_;	//Determines the roughness value of the metallic parts of the texture
+																		// Default value 0.5f
+					float specular_factor_; 
+					std::shared_ptr<LavaImage> opacity_; // If null pick the global opacity mask completely white
+					float opacity_mask_;
+					std::shared_ptr<LavaImage> normal_; // If null pick the global normal texture
+					float use_normal_;	//Determines to use 
+			*/
+			builder.addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER); // base color texture
+			builder.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER); // metallic_texture
+			builder.addBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER); // roughness texture
+			//builder.addBinding(3, );
+			break;
+		}
+	default:
+		break;
+	}
+	
+
 	descriptor_set_layouts_[1] = builder.build(device_, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT);
 	
 
