@@ -4,14 +4,17 @@
 #include <unordered_map>
 #include <filesystem>
 
-#include "stb_image.h"
-
 #include "lava_vulkan_inits.hpp"
 #include "engine/lava_buffer.hpp"
 
 #include <fastgltf/glm_element_traits.hpp>
 #include <fastgltf/core.hpp>
 #include <fastgltf/tools.hpp>
+
+#include "engine/lava_pbr_material.hpp"
+
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
 
 
 LavaMesh::LavaMesh(LavaEngine& engine, MeshProperties prop){
@@ -274,6 +277,8 @@ bool LavaMesh::loadAsGLTF(std::filesystem::path file_path) {
     }
   }
 
+
+
   // Subir datos combinados al GPU
   newmesh.meshBuffers = upload(combinedIndices, combinedVertices);
   newmesh.count_surfaces = count_surfaces;
@@ -282,6 +287,25 @@ bool LavaMesh::loadAsGLTF(std::filesystem::path file_path) {
   // Agregar la malla combinada al contenedor
   //meshes_.emplace_back(std::make_shared<MeshAsset>(std::move(newmesh)));
   mesh_ = std::make_shared<MeshAsset>(std::move(newmesh));
+
+  //Update material
+  //int base_color_index = -1;
+  if (gltf.materials.size() > 0) { 
+    if (gltf.materials[0].pbrData.baseColorTexture.has_value()) {
+      int base_color_index =  gltf.materials[0].pbrData.baseColorTexture.value().textureIndex;
+      material_->base_color_ = loadImage(engine_, gltf, gltf.images[base_color_index]);
+    }
+  }
+  //material_->base_color_ = std::make_shared<LavaImage>(engine_,gltf. );
+
+  //  pink_color_ = glm::packUnorm4x8(glm::vec4(1, 0, 1, 1));
+  //default_texture_image_ = std::make_shared<LavaImage>(this, (void*)&pink_color_, VkExtent3D{ 1, 1, 1 }, VK_FORMAT_R8G8B8A8_UNORM,
+  //  VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+  for (fastgltf::Image& image : gltf.images) {
+    std::shared_ptr<LavaImage> img = loadImage(engine_, gltf, image);
+
+  }
+
 
   return true;
 }
@@ -348,4 +372,88 @@ GPUMeshBuffers LavaMesh::upload(std::span<uint32_t> indices, std::span<Vertex> v
     vmaUnmapMemory(engine_->allocator_.get_allocator(), staging.get_buffer().allocation);
     return new_surface;
   
+}
+
+
+std::shared_ptr<LavaImage> LavaMesh::loadImage(LavaEngine* engine, fastgltf::Asset& asset, fastgltf::Image& image) {
+  std::shared_ptr<LavaImage> loaded_image;
+
+  int width, height, nrChannels;
+
+   std::visit(
+        fastgltf::visitor{
+            [](auto& arg) {},
+            [&](fastgltf::sources::URI& filePath) {
+                assert(filePath.fileByteOffset == 0); // We don't support offsets with stbi.
+                assert(filePath.uri.isLocalPath()); // We're only capable of loading
+                // local files.
+
+        const std::string path(filePath.uri.path().begin(),
+            filePath.uri.path().end()); // Thanks C++.
+        printf("loading 1\n");
+        unsigned char* data = stbi_load(path.c_str(), &width, &height, &nrChannels, 4);
+        if (data) {
+          VkExtent3D imagesize;
+          imagesize.width = width;
+          imagesize.height = height;
+          imagesize.depth = 1;
+
+          loaded_image = std::make_shared<LavaImage>(engine, data, imagesize, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT, false);
+
+          stbi_image_free(data);
+        }
+        },
+        [&](fastgltf::sources::Vector& vector) {
+            unsigned char* data = stbi_load_from_memory(vector.bytes.data(), static_cast<int>(vector.bytes.size()),
+              &width, &height, &nrChannels, 4);
+       printf("loading 2\n");
+            if (data) {
+                VkExtent3D imagesize;
+                imagesize.width = width;
+                imagesize.height = height;
+                imagesize.depth = 1;
+
+                loaded_image = std::make_shared<LavaImage>(engine, data, imagesize, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT, false);
+
+                stbi_image_free(data);
+            }
+        },
+        [&](fastgltf::sources::BufferView& view) {
+          auto& bufferView = asset.bufferViews[view.bufferViewIndex];
+          auto& buffer = asset.buffers[bufferView.bufferIndex];
+
+          std::visit(fastgltf::visitor { // We only care about VectorWithMime here, because we
+          // specify LoadExternalBuffers, meaning all buffers
+          // are already loaded into a vector.
+          [](auto& arg) {},
+          [&](fastgltf::sources::Vector& vector) {
+            unsigned char* data = stbi_load_from_memory(vector.bytes.data() + bufferView.byteOffset,
+              static_cast<int>(bufferView.byteLength),
+              &width, &height, &nrChannels, 4);
+            printf("loading 3\n");
+            if (data) {
+              VkExtent3D imagesize;
+              imagesize.width = width;
+              imagesize.height = height;
+              imagesize.depth = 1;
+
+              loaded_image = std::make_shared<LavaImage>(engine, data, imagesize, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT, false);
+
+              stbi_image_free(data);
+            }
+    } },
+    buffer.data);
+    },
+        },
+        image.data);
+
+      // if any of the attempts to load the data failed, we havent written the image
+      // so handle is null
+      //if (newImage.image == VK_NULL_HANDLE) {
+      //  return {};
+      //}
+      //else {
+      //  return newImage;
+      //}
+      return loaded_image;
 }

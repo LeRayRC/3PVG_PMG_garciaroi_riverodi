@@ -1,12 +1,13 @@
-#include "ecs/lava_normal_render_system.hpp"
+#include "ecs/lava_pbr_render_system.hpp"
 
 #include "lava_engine.hpp"
 #include "lava_vulkan_inits.hpp"
 #include "engine/lava_mesh.hpp"
-
-LavaNormalRenderSystem::LavaNormalRenderSystem(LavaEngine &engine) : 
+#include "engine/lava_pbr_material.hpp"
+LavaPBRRenderSystem::LavaPBRRenderSystem(LavaEngine &engine) :
   engine_{engine},
   pipeline_{ PipelineConfig(
+							PIPELINE_TYPE_PBR,
               "../src/shaders/normal.vert.spv",
               "../src/shaders/normal.frag.spv",
               &engine_.device_,
@@ -20,7 +21,7 @@ LavaNormalRenderSystem::LavaNormalRenderSystem(LavaEngine &engine) :
 }
 
 
-void LavaNormalRenderSystem::render(
+void LavaPBRRenderSystem::render(
   std::vector<std::optional<TransformComponent>>& transform_vector,
   std::vector<std::optional<RenderComponent>>& render_vector
   ) {
@@ -88,7 +89,7 @@ void LavaNormalRenderSystem::render(
 		model = glm::rotate(model, glm::radians(transform_it->value().rot_.z), glm::vec3(0.0f, 0.0f, 1.0f));
 		model = glm::scale(model, transform_it->value().scale_);
 
-		VkDescriptorSet image_set = lava_mesh->get_material()->get_descriptor_set();
+		VkDescriptorSet image_set = pipeline_.get_descriptor_set();
 		vkCmdBindDescriptorSets(engine_.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
 														pipeline_.get_layout(),
 														1, 1, &image_set, 0, nullptr);
@@ -154,6 +155,6 @@ void LavaNormalRenderSystem::render(
 
 }
 
-LavaNormalRenderSystem::~LavaNormalRenderSystem()
+LavaPBRRenderSystem::~LavaPBRRenderSystem()
 {
 }

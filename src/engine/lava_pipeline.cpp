@@ -34,7 +34,10 @@ LavaPipeline::LavaPipeline(PipelineConfig config){
 	//Create Generic pipeline layouts 10 descriptor sets with two textures each 
 	
 	if ((config.pipeline_flags & PipelineFlags::PIPELINE_USE_DESCRIPTOR_SET) != 0) {
-		configureDescriptorSet(&pipeline_layout_info, config.descriptor_set_layout);
+		configureDescriptorSet(&pipeline_layout_info, 
+			config.descriptor_set_layout,
+			config.type,
+			config.descriptor_manager);
 	}
 	else {
 		pipeline_layout_info.setLayoutCount = 0;
@@ -84,7 +87,9 @@ LavaPipeline::LavaPipeline(PipelineConfig config){
 	vkDestroyShaderModule(device_, vertex_shader, nullptr);
 
 	//Create descriptor set that will be destroyed when the engine gets stopped
-	
+	//Allocate descriptor set
+
+
 }
 
 LavaPipeline::~LavaPipeline() {
@@ -103,7 +108,10 @@ void LavaPipeline::configurePushConstants(VkPipelineLayoutCreateInfo* info,
 }
 
 
-void LavaPipeline::configureDescriptorSet(VkPipelineLayoutCreateInfo* info, VkDescriptorSetLayout global_layout, PipelineType type) {
+void LavaPipeline::configureDescriptorSet(VkPipelineLayoutCreateInfo* info, 
+	VkDescriptorSetLayout global_layout, 
+	PipelineType type, 
+	class LavaDescriptorManager* descriptor_manager) {
 	//Include global descriptor set also
 	//Primero le decimos que va a utilizar un descriptor set global que tiene el motor
 	//Este descriptor contiene cosas como la matriz de vista
@@ -120,25 +128,26 @@ void LavaPipeline::configureDescriptorSet(VkPipelineLayoutCreateInfo* info, VkDe
 	case PIPELINE_TYPE_NORMAL: {
 			builder.addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 			builder.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+
+
 			break;
 		}
 	case PIPELINE_TYPE_PBR: {
 			/*
-					std::shared_ptr<LavaImage> base_color_; // if null pick the global base color texture
-					std::shared_ptr<LavaImage> metallic_; // If null pick the global metallic texture (black or white)
 					float metallic_factor_;	//Determines the metallic value of the metallic parts of the texture
-					std::shared_ptr<LavaImage> roughness_; // If null pick the global roughness texture
 					float roughness_factor_;	//Determines the roughness value of the metallic parts of the texture
 																		// Default value 0.5f
 					float specular_factor_; 
-					std::shared_ptr<LavaImage> opacity_; // If null pick the global opacity mask completely white
 					float opacity_mask_;
-					std::shared_ptr<LavaImage> normal_; // If null pick the global normal texture
 					float use_normal_;	//Determines to use 
 			*/
 			builder.addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER); // base color texture
-			builder.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER); // metallic_texture
-			builder.addBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER); // roughness texture
+			builder.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER); // normal
+			builder.addBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER); // metallic_texture
+			builder.addBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER); // roughness texture
+			builder.addBinding(4, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER); // opacity
+
+
 			//builder.addBinding(3, );
 			break;
 		}
@@ -152,6 +161,10 @@ void LavaPipeline::configureDescriptorSet(VkPipelineLayoutCreateInfo* info, VkDe
 
 	info->pSetLayouts = descriptor_set_layouts_;
 	info->setLayoutCount = 2;
+
+
+	descriptor_set_ = descriptor_manager->allocate(descriptor_set_layouts_[1]);
+
 }
 void LavaPipeline::configureAttributes(VkPipelineLayoutCreateInfo* info) {
 	//To implement

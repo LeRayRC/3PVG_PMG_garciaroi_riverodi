@@ -1,5 +1,5 @@
-#ifndef __LAVA_MATERIAL_H__ 
-#define __LAVA_MATERIAL_H__ 1
+#ifndef __LAVA_PBR_MATERIAL_H__ 
+#define __LAVA_PBR_MATERIAL_H__ 1
 
 #include "lava_types.hpp"
 #include "lava_engine.hpp"
@@ -13,19 +13,19 @@ struct LavaPBRMaterialProperties {
 class LavaPBRMaterial
 {
 public:
-	LavaPBRMaterial(class LavaEngine& engine, MaterialProperties prop);
+	LavaPBRMaterial(class LavaEngine& engine, MaterialPBRProperties prop);
 	~LavaPBRMaterial();
 
 	std::string get_name() { return name_; }
 	
-	VkDescriptorSet get_descriptor_set() {
+	/*VkDescriptorSet get_descriptor_set() {
 		return descriptor_set_;
-	}
-
-private:
+	}*/
+//TODO CHANGE TO PRIVATE
+	public:
 	std::string name_;
-	VkDescriptorSet descriptor_set_;
-	LavaDescriptorManager& descriptor_manager_;
+	//VkDescriptorSet descriptor_set_;
+	//LavaDescriptorManager& descriptor_manager_;
 	std::shared_ptr<LavaImage> base_color_; // if null pick the global base color texture
 	std::shared_ptr<LavaImage> metallic_; // If null pick the global metallic texture (black or white)
 	float metallic_factor_;	//Determines the metallic value of the metallic parts of the texture

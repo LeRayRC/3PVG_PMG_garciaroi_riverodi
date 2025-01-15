@@ -16,6 +16,7 @@
 #include "lava_engine.hpp"
 #include "lava_types.hpp"
 #include "lava_transform.hpp"
+#include "fastgltf/core.hpp"
 
 
 class LavaMesh
@@ -28,17 +29,19 @@ public:
 	bool loadAsGLTF(std::filesystem::path file_path);
 	bool loadCustomMesh(MeshProperties prop);
 
-	LavaMaterial* get_material() { return material_; };
+	LavaPBRMaterial* get_material() { return material_; };
 	bool isLoaded() const { return is_loaded_; }
 	//std::vector<std::shared_ptr<MeshAsset>> meshes_;
 	std::shared_ptr<MeshAsset> mesh_;
 	LavaTransform& get_transform() { return transform_; }
+	std::shared_ptr<class LavaImage> loadImage(LavaEngine* engine, fastgltf::Asset& asset, fastgltf::Image& image);
+
 
 private:
 	std::string name_;
 	MeshType type_;
 	bool is_loaded_; 
-	class LavaMaterial* material_;
+	class LavaPBRMaterial* material_;
 	class LavaEngine* engine_;
 	class LavaTransform transform_;
 

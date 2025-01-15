@@ -163,7 +163,7 @@ struct MaterialProperties {
 
 struct MaterialPBRProperties {
 	std::string name;
-
+	int pipeline_flags = 0;
 	
 };
 
@@ -201,7 +201,7 @@ struct MeshProperties {
 	std::string name;
 	MeshType type;
 	std::filesystem::path mesh_path;
-	class LavaMaterial* material;
+	class LavaPBRMaterial* material;
 	std::vector<Vertex> vertex;
 	std::vector<uint32_t> index;
 };

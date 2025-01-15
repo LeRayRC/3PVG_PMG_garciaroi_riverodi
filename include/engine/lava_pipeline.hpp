@@ -17,6 +17,10 @@ public:
 	VkDescriptorSetLayout* get_descriptor_set_layouts() {
 		return descriptor_set_layouts_;
 	}
+
+	VkDescriptorSet get_descriptor_set() {
+		return descriptor_set_;
+	}
 	
 
 
@@ -26,11 +30,15 @@ private:
 	VkPipeline pipeline_;
 	VkDevice device_;
 	VkDescriptorSetLayout descriptor_set_layouts_[2];
+	VkDescriptorSet descriptor_set_;
 
 	
 	void configurePushConstants(VkPipelineLayoutCreateInfo* info,
 		VkPushConstantRange* range);
-	void configureDescriptorSet(VkPipelineLayoutCreateInfo* info, VkDescriptorSetLayout layout);
+	void configureDescriptorSet(VkPipelineLayoutCreateInfo* info, 
+		VkDescriptorSetLayout layout, 
+		PipelineType type,
+		class LavaDescriptorManager* descriptor_manager);
 	void configureAttributes(VkPipelineLayoutCreateInfo* info);
 };
 

@@ -13,6 +13,7 @@
 #include "lava_vulkan_inits.hpp"
 #include "engine/lava_pipeline_builder.hpp"
 #include "engine/lava_image.hpp"
+#include "engine/lava_pbr_material.hpp"
 #include "lava_transform.hpp"
 #include <future>
 #include <chrono>
@@ -326,7 +327,7 @@ void LavaEngine::render() {
 	TransitionImage(commandBuffer, swap_chain_.get_draw_image().image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 	TransitionImage(commandBuffer, swap_chain_.get_depth_image().image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
 
-	drawMeshes(commandBuffer);
+	//drawMeshes(commandBuffer);
 
 	//Cambiamos tanto la imagen del swapchain como la de 
 	// dibujado al mismo estado para copiar la informacion
@@ -342,77 +343,77 @@ void LavaEngine::render() {
 
 }
 
-void LavaEngine::drawMeshes(VkCommandBuffer command_buffer)
-{
-	//begin a render pass  connected to our draw image
-	VkRenderingAttachmentInfo color_attachment = vkinit::AttachmentInfo(swap_chain_.get_draw_image().image_view, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-	VkRenderingAttachmentInfo depth_attachment = vkinit::DepthAttachmentInfo(swap_chain_.get_depth_image().image_view, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
-	//
-	VkRenderingInfo renderInfo = vkinit::RenderingInfo(swap_chain_.get_draw_extent(), &color_attachment, &depth_attachment);
-	vkCmdBeginRendering(command_buffer, &renderInfo);
-
-	//set dynamic viewport and scissor
-	VkViewport viewport = {};
-	viewport.x = 0;
-	viewport.y = 0;
-	viewport.width = (float)swap_chain_.get_draw_extent().width;
-	viewport.height = (float)swap_chain_.get_draw_extent().height;
-	viewport.minDepth = 0.f;
-	viewport.maxDepth = 1.f;
-
-	vkCmdSetViewport(command_buffer, 0, 1, &viewport);
-
-	VkRect2D scissor = {};
-	scissor.offset.x = 0;
-	scissor.offset.y = 0;
-	scissor.extent.width = swap_chain_.get_draw_extent().width;
-	scissor.extent.height = swap_chain_.get_draw_extent().height;
-
-	vkCmdSetScissor(command_buffer, 0, 1, &scissor);
-
-	//Clean Descriptor sets for current frame
-	FrameData& frame_data = frame_data_.getCurrentFrame();
-	frame_data.descriptor_manager.clear();
-
-	//global_data_buffer_->updateBufferData(&global_scene_data_, sizeof(GlobalSceneData));
-
-	GPUDrawPushConstants push_constants;
-	glm::mat4 model = glm::mat4(1.0f);
-	model = glm::translate(model, glm::vec3(0.0f, 0.0f, -5.0f));
-	model = glm::rotate(model, glm::radians(0.01f * frame_data_.frame_number_), glm::vec3(1.0f, 0.0f, 0.0f));
-	model = glm::rotate(model, glm::radians(0.02f * frame_data_.frame_number_), glm::vec3(0.0f, 1.0f, 0.0f));
-	model = glm::rotate(model, glm::radians(0.03f * frame_data_.frame_number_), glm::vec3(0.0f, 0.0f, 1.0f));
-
-	for (auto mesh : meshes_) {
-
-		vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mesh->get_material()->get_pipeline().get_pipeline());
-
-
-		VkDescriptorSet image_set = mesh->get_material()->get_descriptor_set();
-	
-		//Bind both descriptor sets on the mesh
-		vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-			mesh->get_material()->get_pipeline().get_layout(),
-			0, 1, &global_descriptor_set_, 0, nullptr);
-
-		vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-			mesh->get_material()->get_pipeline().get_layout(), 
-			1, 1, &image_set, 0, nullptr);
-
-		push_constants.world_matrix = model; // global_scene_data_.viewproj* model;
-		//for (std::shared_ptr<MeshAsset> submesh : mesh->meshes_) {
-		//	push_constants.vertex_buffer = submesh->meshBuffers.vertex_buffer_address;
-
-		//	vkCmdPushConstants(command_buffer, mesh->get_material()->get_pipeline().get_layout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &push_constants);
-		//	vkCmdBindIndexBuffer(command_buffer, submesh->meshBuffers.index_buffer->get_buffer().buffer, 0, VK_INDEX_TYPE_UINT32);
-
-		//	vkCmdDrawIndexed(command_buffer, submesh->surfaces[0].count, 1, submesh->surfaces[0].start_index, 0, 0);
-		//}
-	}
-
-	vkCmdEndRendering(command_buffer);
-
-}
+//void LavaEngine::drawMeshes(VkCommandBuffer command_buffer)
+//{
+//	//begin a render pass  connected to our draw image
+//	VkRenderingAttachmentInfo color_attachment = vkinit::AttachmentInfo(swap_chain_.get_draw_image().image_view, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+//	VkRenderingAttachmentInfo depth_attachment = vkinit::DepthAttachmentInfo(swap_chain_.get_depth_image().image_view, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+//	//
+//	VkRenderingInfo renderInfo = vkinit::RenderingInfo(swap_chain_.get_draw_extent(), &color_attachment, &depth_attachment);
+//	vkCmdBeginRendering(command_buffer, &renderInfo);
+//
+//	//set dynamic viewport and scissor
+//	VkViewport viewport = {};
+//	viewport.x = 0;
+//	viewport.y = 0;
+//	viewport.width = (float)swap_chain_.get_draw_extent().width;
+//	viewport.height = (float)swap_chain_.get_draw_extent().height;
+//	viewport.minDepth = 0.f;
+//	viewport.maxDepth = 1.f;
+//
+//	vkCmdSetViewport(command_buffer, 0, 1, &viewport);
+//
+//	VkRect2D scissor = {};
+//	scissor.offset.x = 0;
+//	scissor.offset.y = 0;
+//	scissor.extent.width = swap_chain_.get_draw_extent().width;
+//	scissor.extent.height = swap_chain_.get_draw_extent().height;
+//
+//	vkCmdSetScissor(command_buffer, 0, 1, &scissor);
+//
+//	//Clean Descriptor sets for current frame
+//	FrameData& frame_data = frame_data_.getCurrentFrame();
+//	frame_data.descriptor_manager.clear();
+//
+//	//global_data_buffer_->updateBufferData(&global_scene_data_, sizeof(GlobalSceneData));
+//
+//	GPUDrawPushConstants push_constants;
+//	glm::mat4 model = glm::mat4(1.0f);
+//	model = glm::translate(model, glm::vec3(0.0f, 0.0f, -5.0f));
+//	model = glm::rotate(model, glm::radians(0.01f * frame_data_.frame_number_), glm::vec3(1.0f, 0.0f, 0.0f));
+//	model = glm::rotate(model, glm::radians(0.02f * frame_data_.frame_number_), glm::vec3(0.0f, 1.0f, 0.0f));
+//	model = glm::rotate(model, glm::radians(0.03f * frame_data_.frame_number_), glm::vec3(0.0f, 0.0f, 1.0f));
+//
+//	for (auto mesh : meshes_) {
+//
+//		vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mesh->get_material()->get_pipeline().get_pipeline());
+//
+//
+//		VkDescriptorSet image_set = mesh->get_material()->get_descriptor_set();
+//	
+//		//Bind both descriptor sets on the mesh
+//		vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+//			mesh->get_material()->get_pipeline().get_layout(),
+//			0, 1, &global_descriptor_set_, 0, nullptr);
+//
+//		vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+//			mesh->get_material()->get_pipeline().get_layout(), 
+//			1, 1, &image_set, 0, nullptr);
+//
+//		push_constants.world_matrix = model; // global_scene_data_.viewproj* model;
+//		//for (std::shared_ptr<MeshAsset> submesh : mesh->meshes_) {
+//		//	push_constants.vertex_buffer = submesh->meshBuffers.vertex_buffer_address;
+//
+//		//	vkCmdPushConstants(command_buffer, mesh->get_material()->get_pipeline().get_layout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &push_constants);
+//		//	vkCmdBindIndexBuffer(command_buffer, submesh->meshBuffers.index_buffer->get_buffer().buffer, 0, VK_INDEX_TYPE_UINT32);
+//
+//		//	vkCmdDrawIndexed(command_buffer, submesh->surfaces[0].count, 1, submesh->surfaces[0].start_index, 0, 0);
+//		//}
+//	}
+//
+//	vkCmdEndRendering(command_buffer);
+//
+//}
 
 void LavaEngine::initImgui() {
 	

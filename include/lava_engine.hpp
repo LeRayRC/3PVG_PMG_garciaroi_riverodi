@@ -122,7 +122,7 @@ public:
 	void render();
 	void pollEvents() { glfwPollEvents(); }
 	virtual void renderImgui();
-	void drawMeshes(VkCommandBuffer command_buffer);
+	//void drawMeshes(VkCommandBuffer command_buffer);
 	std::shared_ptr<class LavaMesh> addMesh(MeshProperties prop);
 
 	VkInstance get_instance() const;

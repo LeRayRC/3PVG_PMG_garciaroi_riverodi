@@ -2,7 +2,9 @@
 #include "engine/lava_image.hpp"
 
 LavaMaterial::LavaMaterial(LavaEngine& engine, MaterialProperties prop) : 
-  pipeline_{ PipelineConfig(prop.vertex_shader_path,
+  pipeline_{ PipelineConfig(
+              PIPELINE_TYPE_NORMAL,
+              prop.vertex_shader_path,
               prop.fragment_shader_path,
               &engine.device_,
               &engine.swap_chain_,
