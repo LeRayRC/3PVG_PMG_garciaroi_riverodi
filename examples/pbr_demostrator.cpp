@@ -12,6 +12,7 @@ int main(int argc, char* argv[]) {
 	std::shared_ptr<LavaWindowSystem>  lava_system = LavaWindowSystem::Get();
 	LavaEngine engine;
 	LavaECSManager ecs_manager;
+	LavaPBRRenderSystem pbr_render_system{ engine };
 	//LavaNormalRenderSystem normal_render_system{ engine };
 
 	///////////////////////
@@ -28,7 +29,7 @@ int main(int argc, char* argv[]) {
 	MeshProperties mesh_properties = {};
 	mesh_properties.name = "Shiba Mesh";
 	mesh_properties.type = MESH_GLTF;
-	mesh_properties.mesh_path = "../examples/assets/shiba/shiba.glb";
+	mesh_properties.mesh_path = "../examples/assets/Avocado.glb";
 	//mesh_properties.mesh_path = "../examples/assets/skull.glb";
 	mesh_properties.material = &basic_material;
 
@@ -46,8 +47,8 @@ int main(int argc, char* argv[]) {
 	auto transform_component = ecs_manager.getComponent<TransformComponent>(entity);
 	if (transform_component) {
 		auto& transform = transform_component->value();
-		transform.pos_ = glm::vec3(0.0f, 0.0f, -5.0f);
-		transform.scale_ = glm::vec3(1.0f, 1.0f, 1.0f);
+		transform.pos_ = glm::vec3(0.0f, 0.0f, -1.0f);
+		transform.scale_ = glm::vec3(10.0f, 10.0f, 10.0f);
 
 	}
 	auto render_component = ecs_manager.getComponent<RenderComponent>(entity);
@@ -60,20 +61,20 @@ int main(int argc, char* argv[]) {
 
 	while (!engine.shouldClose()) {
 
-		for (auto& comp : ecs_manager.getComponentList<TransformComponent>()) {
-			if (comp) {
-				auto& transform = comp.value();
-				transform.rot_ = glm::vec3(0.001f * engine.frame_data_.frame_number_,
-					0.002f * engine.frame_data_.frame_number_,
-					0.0005f * engine.frame_data_.frame_number_);
-			}
-		}
+
+		auto& transform = transform_component->value();
+		transform.rot_ = glm::vec3(0.1f * engine.frame_data_.frame_number_,
+			0.02f * engine.frame_data_.frame_number_,
+			0.05f * engine.frame_data_.frame_number_);
 
 
 		engine.beginFrame();
 		engine.clearWindow();
 
 		engine.renderImgui();
+
+		pbr_render_system.render(ecs_manager.getComponentList<TransformComponent>(),
+			ecs_manager.getComponentList<RenderComponent>());
 		//normal_render_system.render(ecs_manager.getComponentList<TransformComponent>(),
 		//	ecs_manager.getComponentList<RenderComponent>());
 

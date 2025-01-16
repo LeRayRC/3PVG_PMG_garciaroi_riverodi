@@ -8,8 +8,8 @@ LavaPBRRenderSystem::LavaPBRRenderSystem(LavaEngine &engine) :
   engine_{engine},
   pipeline_{ PipelineConfig(
 							PIPELINE_TYPE_PBR,
-              "../src/shaders/normal.vert.spv",
-              "../src/shaders/normal.frag.spv",
+              "../src/shaders/pbr.vert.spv",
+              "../src/shaders/pbr.frag.spv",
               &engine_.device_,
               &engine_.swap_chain_,
               &engine_.global_descriptor_allocator_,
@@ -89,10 +89,23 @@ void LavaPBRRenderSystem::render(
 		model = glm::rotate(model, glm::radians(transform_it->value().rot_.z), glm::vec3(0.0f, 0.0f, 1.0f));
 		model = glm::scale(model, transform_it->value().scale_);
 
-		VkDescriptorSet image_set = pipeline_.get_descriptor_set();
+		VkDescriptorSet pbr_descriptor_set = pipeline_.get_descriptor_set();
+
+		engine_.global_descriptor_allocator_.clear();
+		engine_.global_descriptor_allocator_.writeImage(
+			0,
+			lava_mesh->get_material()->base_color_->get_allocated_image().image_view,
+			lava_mesh->get_material()->base_color_->get_sampler(),
+			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+		
+		engine_.global_descriptor_allocator_.updateSet(pbr_descriptor_set);
+		engine_.global_descriptor_allocator_.clear();
+
+
 		vkCmdBindDescriptorSets(engine_.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
 														pipeline_.get_layout(),
-														1, 1, &image_set, 0, nullptr);
+														1, 1, &pbr_descriptor_set, 0, nullptr);
 
 
 		// Vincular los Vertex y Index Buffers

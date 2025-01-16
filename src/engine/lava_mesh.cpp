@@ -192,7 +192,7 @@ bool LavaMesh::loadAsGLTF(std::filesystem::path file_path) {
     return false;
   }
 
-  // Vectores globales para todos los vértices e índices del archivo
+  // Vectores globales para todos los vï¿½rtices e ï¿½ndices del archivo
   std::vector<Vertex> combinedVertices;
   std::vector<uint32_t> combinedIndices;
 
@@ -207,7 +207,7 @@ bool LavaMesh::loadAsGLTF(std::filesystem::path file_path) {
 
       size_t initial_vtx = combinedVertices.size();
 
-      // Cargar índices
+      // Cargar ï¿½ndices
       {
         fastgltf::Accessor& indexAccessor = gltf.accessors[p.indicesAccessor.value()];
         combinedIndices.reserve(combinedIndices.size() + indexAccessor.count);
@@ -269,7 +269,7 @@ bool LavaMesh::loadAsGLTF(std::filesystem::path file_path) {
     }
   }
 
-  // Sobrescribir colores para depuración
+  // Sobrescribir colores para depuraciï¿½n
   constexpr bool OverrideColors = true;
   if (OverrideColors) {
     for (Vertex& vtx : combinedVertices) {
@@ -301,10 +301,10 @@ bool LavaMesh::loadAsGLTF(std::filesystem::path file_path) {
   //  pink_color_ = glm::packUnorm4x8(glm::vec4(1, 0, 1, 1));
   //default_texture_image_ = std::make_shared<LavaImage>(this, (void*)&pink_color_, VkExtent3D{ 1, 1, 1 }, VK_FORMAT_R8G8B8A8_UNORM,
   //  VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
-  for (fastgltf::Image& image : gltf.images) {
+  /*for (fastgltf::Image& image : gltf.images) {
     std::shared_ptr<LavaImage> img = loadImage(engine_, gltf, image);
 
-  }
+  }*/
 
 
   return true;
@@ -380,80 +380,77 @@ std::shared_ptr<LavaImage> LavaMesh::loadImage(LavaEngine* engine, fastgltf::Ass
 
   int width, height, nrChannels;
 
-   std::visit(
-        fastgltf::visitor{
-            [](auto& arg) {},
-            [&](fastgltf::sources::URI& filePath) {
-                assert(filePath.fileByteOffset == 0); // We don't support offsets with stbi.
-                assert(filePath.uri.isLocalPath()); // We're only capable of loading
-                // local files.
+  std::visit(
+      fastgltf::visitor{
+          [](auto &arg) {},
+          [&](fastgltf::sources::URI &filePath) {
+            assert(filePath.fileByteOffset == 0); // We don't support offsets with stbi.
+            assert(filePath.uri.isLocalPath());   // We're only capable of loading
+                                                  // local files.
 
-        const std::string path(filePath.uri.path().begin(),
-            filePath.uri.path().end()); // Thanks C++.
-        printf("loading 1\n");
-        unsigned char* data = stbi_load(path.c_str(), &width, &height, &nrChannels, 4);
-        if (data) {
-          VkExtent3D imagesize;
-          imagesize.width = width;
-          imagesize.height = height;
-          imagesize.depth = 1;
-
-          loaded_image = std::make_shared<LavaImage>(engine, data, imagesize, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT, false);
-
-          stbi_image_free(data);
-        }
-        },
-        [&](fastgltf::sources::Vector& vector) {
-            unsigned char* data = stbi_load_from_memory(vector.bytes.data(), static_cast<int>(vector.bytes.size()),
-              &width, &height, &nrChannels, 4);
-       printf("loading 2\n");
-            if (data) {
-                VkExtent3D imagesize;
-                imagesize.width = width;
-                imagesize.height = height;
-                imagesize.depth = 1;
-
-                loaded_image = std::make_shared<LavaImage>(engine, data, imagesize, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT, false);
-
-                stbi_image_free(data);
-            }
-        },
-        [&](fastgltf::sources::BufferView& view) {
-          auto& bufferView = asset.bufferViews[view.bufferViewIndex];
-          auto& buffer = asset.buffers[bufferView.bufferIndex];
-
-          std::visit(fastgltf::visitor { // We only care about VectorWithMime here, because we
-          // specify LoadExternalBuffers, meaning all buffers
-          // are already loaded into a vector.
-          [](auto& arg) {},
-          [&](fastgltf::sources::Vector& vector) {
-            unsigned char* data = stbi_load_from_memory(vector.bytes.data() + bufferView.byteOffset,
-              static_cast<int>(bufferView.byteLength),
-              &width, &height, &nrChannels, 4);
-            printf("loading 3\n");
+            const std::string path(filePath.uri.path().begin(),
+                                   filePath.uri.path().end()); // Thanks C++.
+            unsigned char *data = stbi_load(path.c_str(), &width, &height, &nrChannels, 4);
             if (data) {
               VkExtent3D imagesize;
               imagesize.width = width;
               imagesize.height = height;
               imagesize.depth = 1;
 
-              loaded_image = std::make_shared<LavaImage>(engine, data, imagesize, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT, false);
+              loaded_image = std::make_shared<LavaImage>(engine, data, imagesize, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, false);
 
               stbi_image_free(data);
             }
-    } },
-    buffer.data);
-    },
-        },
-        image.data);
+          },
+          [&](fastgltf::sources::Vector &vector) {
+            unsigned char *data = stbi_load_from_memory(vector.bytes.data(), static_cast<int>(vector.bytes.size()),
+                                                        &width, &height, &nrChannels, 4);
+            printf("loading 2\n");
+            if (data) {
+              VkExtent3D imagesize;
+              imagesize.width = width;
+              imagesize.height = height;
+              imagesize.depth = 1;
 
-      // if any of the attempts to load the data failed, we havent written the image
-      // so handle is null
-      //if (newImage.image == VK_NULL_HANDLE) {
-      //  return {};
-      //}
-      //else {
-      //  return newImage;
-      //}
-      return loaded_image;
+              loaded_image = std::make_shared<LavaImage>(engine, data, imagesize, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, false);
+
+              stbi_image_free(data);
+            }
+          },
+          [&](fastgltf::sources::BufferView &view) {
+            auto &bufferView = asset.bufferViews[view.bufferViewIndex];
+            auto &buffer = asset.buffers[bufferView.bufferIndex];
+
+            std::visit(fastgltf::visitor{// We only care about VectorWithMime here, because we
+                                         // specify LoadExternalBuffers, meaning all buffers
+                                         // are already loaded into a vector.
+                                         [](auto &arg) {},
+                                         [&](fastgltf::sources::Array &vector) {
+                                           unsigned char *data = stbi_load_from_memory(vector.bytes.data() + bufferView.byteOffset,
+                                                                                       static_cast<int>(bufferView.byteLength),
+                                                                                       &width, &height, &nrChannels, 4);
+                                           if (data) {
+                                             VkExtent3D imagesize;
+                                             imagesize.width = width;
+                                             imagesize.height = height;
+                                             imagesize.depth = 1;
+
+                                             loaded_image = std::make_shared<LavaImage>(engine, data, imagesize, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, false);
+                                             stbi_image_free(data);
+                                           }
+                                         }},
+                       buffer.data);
+          },
+      },
+      image.data);
+
+  // if any of the attempts to load the data failed, we havent written the image
+  // so handle is null
+  // if (newImage.image == VK_NULL_HANDLE) {
+  //  return {};
+  //}
+  // else {
+  //  return newImage;
+  //}
+  return loaded_image;
 }
