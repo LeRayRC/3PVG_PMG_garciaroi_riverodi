@@ -129,6 +129,16 @@ void LavaPipeline::configureDescriptorSet(VkPipelineLayoutCreateInfo* info,
 			builder.addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 			builder.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 
+			VkDescriptorBindingFlags bindingFlags[2] = {
+				VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT, // Binding 0
+				VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT, // Binding 1
+			};
+
+			VkDescriptorSetLayoutBindingFlagsCreateInfo bindingFlagsInfo = {};
+			bindingFlagsInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO;
+			bindingFlagsInfo.bindingCount = (uint32_t)builder.bindings_.size();
+			bindingFlagsInfo.pBindingFlags = bindingFlags;
+			descriptor_set_layouts_[1] = builder.build(device_, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT , &bindingFlagsInfo, VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT);
 
 			break;
 		}
@@ -147,8 +157,19 @@ void LavaPipeline::configureDescriptorSet(VkPipelineLayoutCreateInfo* info,
 			builder.addBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER); // roughness texture
 			builder.addBinding(4, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER); // opacity
 
+			VkDescriptorBindingFlags bindingFlags[5] = {
+				VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT, // Binding 0
+				VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT, // Binding 1
+				VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT, // Binding 2
+				VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT, // Binding 3
+				VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT  // Binding 4
+			};
 
-			//builder.addBinding(3, );
+			VkDescriptorSetLayoutBindingFlagsCreateInfo bindingFlagsInfo = {};
+			bindingFlagsInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO;
+			bindingFlagsInfo.bindingCount = (uint32_t)builder.bindings_.size();
+			bindingFlagsInfo.pBindingFlags = bindingFlags;
+			descriptor_set_layouts_[1] = builder.build(device_, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT, &bindingFlagsInfo, VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT);
 			break;
 		}
 	default:
@@ -156,7 +177,7 @@ void LavaPipeline::configureDescriptorSet(VkPipelineLayoutCreateInfo* info,
 	}
 	
 
-	descriptor_set_layouts_[1] = builder.build(device_, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT);
+	
 	
 
 	info->pSetLayouts = descriptor_set_layouts_;

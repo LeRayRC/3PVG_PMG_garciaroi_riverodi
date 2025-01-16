@@ -80,14 +80,26 @@ void LavaDevice::createLogicalDevice(LavaSurface& surface) {
 		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES;
 	buffer_device_address_feature_info.pNext = &dynamic_rendering_feature;
 
+	//Habilitar indexacion de descriptores
+	VkPhysicalDeviceDescriptorIndexingFeatures indexing_features = {};
+	indexing_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES;
+	indexing_features.pNext = &buffer_device_address_feature_info;
 
 	VkPhysicalDeviceFeatures2 device_features{};
 	device_features.sType =
 		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+	device_features.pNext = &indexing_features;
+
 	vkGetPhysicalDeviceFeatures2(physical_device_, &device_features);
-	device_features.pNext = &buffer_device_address_feature_info;
 
 
+
+	// 2. Verificar si la característica está soportada
+	if (!indexing_features.descriptorBindingSampledImageUpdateAfterBind) {
+		throw std::runtime_error("descriptorBindingSampledImageUpdateAfterBind not supported.");
+	}
+
+	
 
 	/*
 	* Ahora se rellena la estructura para crear el dispositivo logico
@@ -104,6 +116,10 @@ void LavaDevice::createLogicalDevice(LavaSurface& surface) {
 	sync2Info.sType =
 		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES;
 	sync2Info.synchronization2 = VK_TRUE;
+
+	VkPhysicalDeviceDescriptorIndexingFeatures enabled_indexing_features = {};
+	enabled_indexing_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES;
+	enabled_indexing_features.descriptorBindingSampledImageUpdateAfterBind = VK_TRUE;
 
 	createInfo.pNext = &sync2Info;
 	sync2Info.pNext = &device_features;

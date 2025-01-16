@@ -91,6 +91,8 @@ void LavaPBRRenderSystem::render(
 
 		VkDescriptorSet pbr_descriptor_set = pipeline_.get_descriptor_set();
 
+		//If material changes then the images are updated from descriptor set
+		//if()
 		engine_.global_descriptor_allocator_.clear();
 		engine_.global_descriptor_allocator_.writeImage(
 			0,

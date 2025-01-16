@@ -30,6 +30,7 @@ int main(int argc, char* argv[]) {
 	mesh_properties.name = "Shiba Mesh";
 	mesh_properties.type = MESH_GLTF;
 	mesh_properties.mesh_path = "../examples/assets/Avocado.glb";
+	//mesh_properties.mesh_path = "../examples/assets/shiba/shiba.glb";
 	//mesh_properties.mesh_path = "../examples/assets/skull.glb";
 	mesh_properties.material = &basic_material;
 

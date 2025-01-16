@@ -109,7 +109,7 @@ VkDescriptorPool LavaDescriptorManager::createPool(uint32_t set_count) {
 
   VkDescriptorPoolCreateInfo pool_info = {};
   pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-  pool_info.flags = 0;
+  pool_info.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT | VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT;
   pool_info.maxSets = set_count;
   pool_info.poolSizeCount = (uint32_t)pool_sizes.size();
   pool_info.pPoolSizes = pool_sizes.data();
@@ -201,4 +201,5 @@ void LavaDescriptorManager::updateSet(VkDescriptorSet set)
   }
 
   vkUpdateDescriptorSets(device_, (uint32_t)writes_.size(), writes_.data(), 0, nullptr);
+  
 }
