@@ -3,11 +3,21 @@
 
 LavaPBRMaterial::LavaPBRMaterial(LavaEngine& engine, MaterialPBRProperties prop){
 
+  engine_ = &engine;
   name_ = prop.name;
-  //descriptor_set_ = descriptor_manager_.allocate(pipeline_.get_descriptor_set_layouts()[1]);
+  base_color_ = engine.default_texture_image_pink;
   
+  metallic_roughness_ = engine.default_texture_image_black;
+  uniform_properties.metallic_factor_ = 0.5f;
+  uniform_properties.roughness_factor_ = 0.5f;
 
-  //set_image(0, { true,engine.default_texture_image_.get(), engine.default_texture_image_.get()});
+  uniform_properties.specular_factor_ = 0.5f; //Maybe Wrong
+
+  opacity_ = engine.default_texture_image_white;
+  uniform_properties.opacity_mask_ = 0.5f;
+
+  normal_ = engine.default_texture_image_black;
+  uniform_properties.use_normal_ = 0.0f;
 }
 
 //LavaMaterialImage LavaMaterial::get_image(unsigned int index) {

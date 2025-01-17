@@ -75,8 +75,16 @@ LavaEngine::LavaEngine() :
 
 
 	//Default data
-	pink_color_ = glm::packUnorm4x8(glm::vec4(1, 0, 1, 1));
-	default_texture_image_ = std::make_shared<LavaImage>(this, (void*)&pink_color_, VkExtent3D{ 1, 1, 1 }, VK_FORMAT_R8G8B8A8_UNORM,
+	uint32_t pink_color_ = glm::packUnorm4x8(glm::vec4(1, 0, 1, 1));
+	default_texture_image_pink = std::make_shared<LavaImage>(this, (void*)&pink_color_, VkExtent3D{ 1, 1, 1 }, VK_FORMAT_R8G8B8A8_UNORM,
+		VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+
+	uint32_t white_color_ = glm::packUnorm4x8(glm::vec4(1, 1, 1, 1));
+	default_texture_image_white = std::make_shared<LavaImage>(this, (void*)&white_color_, VkExtent3D{ 1, 1, 1 }, VK_FORMAT_R8G8B8A8_UNORM,
+		VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+
+	uint32_t black_color_ = glm::packUnorm4x8(glm::vec4(0, 0, 0, 1));
+	default_texture_image_white = std::make_shared<LavaImage>(this, (void*)&black_color_, VkExtent3D{ 1, 1, 1 }, VK_FORMAT_R8G8B8A8_UNORM,
 		VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
 
 	initImgui();
@@ -115,8 +123,16 @@ LavaEngine::LavaEngine(unsigned int window_width, unsigned int window_height) :
 	global_data_buffer_->updateBufferData(&global_scene_data_, sizeof(GlobalSceneData));
 
 	//Default data
-	pink_color_ = glm::packUnorm4x8(glm::vec4(1, 0, 1, 1));
-	default_texture_image_ = std::make_shared<LavaImage>(this, (void*)&pink_color_, VkExtent3D{ 1, 1, 1 }, VK_FORMAT_R8G8B8A8_UNORM,
+	uint32_t pink_color_ = glm::packUnorm4x8(glm::vec4(1, 0, 1, 1));
+	default_texture_image_pink = std::make_shared<LavaImage>(this, (void*)&pink_color_, VkExtent3D{ 1, 1, 1 }, VK_FORMAT_R8G8B8A8_UNORM,
+		VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+
+	uint32_t white_color_ = glm::packUnorm4x8(glm::vec4(1, 1, 1, 1));
+	default_texture_image_white = std::make_shared<LavaImage>(this, (void*)&white_color_, VkExtent3D{ 1, 1, 1 }, VK_FORMAT_R8G8B8A8_UNORM,
+		VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+
+	uint32_t black_color_ = glm::packUnorm4x8(glm::vec4(0, 0, 0, 1));
+	default_texture_image_white = std::make_shared<LavaImage>(this, (void*)&black_color_, VkExtent3D{ 1, 1, 1 }, VK_FORMAT_R8G8B8A8_UNORM,
 		VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
 
 	initImgui();

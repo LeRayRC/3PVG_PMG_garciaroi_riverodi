@@ -52,9 +52,10 @@ void LavaDevice::createLogicalDevice(LavaSurface& surface) {
 	std::set<uint32_t> uniqueQueueFamilies = { indices.graphicsFamily.value(), indices.presentFamily.value() };
 	float queuePriorities[] = { 1.0f , 1.0f};
 
-
 	for (uint32_t queueFamily : uniqueQueueFamilies) {
+		VkQueueFamilyProperties familyProperties{};
 		VkDeviceQueueCreateInfo queueCreateInfo{};
+		vkGetPhysicalDeviceQueueFamilyProperties(physical_device_, &queueFamily, &familyProperties);
 		queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
 		queueCreateInfo.queueFamilyIndex = queueFamily;
 		queueCreateInfo.queueCount = 2;

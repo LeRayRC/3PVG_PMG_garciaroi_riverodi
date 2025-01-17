@@ -132,19 +132,25 @@ QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surfa
 	//los comandos graficos
 	int i = 0;
 	VkBool32 presentSupport = false;
+	bool use_graphic = false;
 	for (const auto& queueFamily : queueFamilies) {
 		if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
 			indices.graphicsFamily = i;
+			use_graphic = true;
 		}
-		vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, 
-			&presentSupport);
-		if (presentSupport) {
-			indices.presentFamily = i;
+		if (!use_graphic || queueFamily.queueCount > 1) {
+			vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface,
+				&presentSupport);
+			if (presentSupport) {
+				indices.presentFamily = i;
+			}
 		}
+		
 		if (indices.isComplete()) {
 			break;
 		}
 		i++;
+		use_graphic = false;
 	}
 	
 	return indices;

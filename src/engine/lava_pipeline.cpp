@@ -153,16 +153,16 @@ void LavaPipeline::configureDescriptorSet(VkPipelineLayoutCreateInfo* info,
 			*/
 			builder.addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER); // base color texture
 			builder.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER); // normal
-			builder.addBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER); // metallic_texture
-			builder.addBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER); // roughness texture
-			builder.addBinding(4, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER); // opacity
+			builder.addBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER); // roughness_metallic_texture
+			builder.addBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER); // opacity
+			builder.addBinding(4, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER); // floats values(struct)
 
 			VkDescriptorBindingFlags bindingFlags[5] = {
 				VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT, // Binding 0
 				VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT, // Binding 1
 				VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT, // Binding 2
 				VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT, // Binding 3
-				VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT  // Binding 4
+				VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT, // Binding 4
 			};
 
 			VkDescriptorSetLayoutBindingFlagsCreateInfo bindingFlagsInfo = {};

@@ -290,10 +290,28 @@ bool LavaMesh::loadAsGLTF(std::filesystem::path file_path) {
 
   //Update material
   //int base_color_index = -1;
-  if (gltf.materials.size() > 0) { 
+  if (gltf.materials.size() > 0) {
+    material_->uniform_properties.metallic_factor_ = gltf.materials[0].pbrData.metallicFactor;
+    material_->uniform_properties.roughness_factor_ = gltf.materials[0].pbrData.roughnessFactor;
+    material_->uniform_properties.opacity_mask_ = gltf.materials[0].alphaCutoff;
+    
+    if (gltf.materials[0].specular.get() != nullptr) {
+        material_->uniform_properties.specular_factor_ = gltf.materials[0].specular->specularFactor;
+    }
     if (gltf.materials[0].pbrData.baseColorTexture.has_value()) {
-      int base_color_index =  gltf.materials[0].pbrData.baseColorTexture.value().textureIndex;
-      material_->base_color_ = loadImage(engine_, gltf, gltf.images[base_color_index]);
+        int base_color_index = gltf.materials[0].pbrData.baseColorTexture.value().textureIndex;
+        material_->base_color_ = loadImage(engine_, gltf, gltf.images[base_color_index]);
+    }
+    
+    if (gltf.materials[0].normalTexture.has_value()) {
+        int normal_index = gltf.materials[0].normalTexture.value().textureIndex;
+        material_->normal_ = loadImage(engine_, gltf, gltf.images[normal_index]);
+        material_->uniform_properties.use_normal_ = 1.0f;
+    }
+
+    if (gltf.materials[0].pbrData.metallicRoughnessTexture.has_value()) {
+        int mt_rg_index = gltf.materials[0].pbrData.metallicRoughnessTexture.value().textureIndex;
+        material_->metallic_roughness_ = loadImage(engine_, gltf, gltf.images[mt_rg_index]);
     }
   }
   //material_->base_color_ = std::make_shared<LavaImage>(engine_,gltf. );

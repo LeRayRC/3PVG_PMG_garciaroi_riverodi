@@ -17,7 +17,8 @@ LavaPBRRenderSystem::LavaPBRRenderSystem(LavaEngine &engine) :
               PipelineFlags::PIPELINE_USE_PUSHCONSTANTS | PipelineFlags::PIPELINE_USE_DESCRIPTOR_SET) }
 {
 
-
+	pbr_data_buffer_ = std::make_unique<LavaBuffer>(engine.allocator_, sizeof(LavaPBRMaterialProperties), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
+	pbr_data_buffer_->setMappedData();
 }
 
 
@@ -93,13 +94,15 @@ void LavaPBRRenderSystem::render(
 
 		//If material changes then the images are updated from descriptor set
 		//if()
-		engine_.global_descriptor_allocator_.clear();
-		engine_.global_descriptor_allocator_.writeImage(
-			0,
-			lava_mesh->get_material()->base_color_->get_allocated_image().image_view,
-			lava_mesh->get_material()->base_color_->get_sampler(),
-			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-			VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+		//engine_.global_descriptor_allocator_.clear();
+		//engine_.global_descriptor_allocator_.writeImage(
+		//	0,
+		//	lava_mesh->get_material()->base_color_->get_allocated_image().image_view,
+		//	lava_mesh->get_material()->base_color_->get_sampler(),
+		//	VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+		//	VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+
+		lava_mesh->get_material()->UpdateGlobalDescriptorSet(*pbr_data_buffer_.get());
 		
 		engine_.global_descriptor_allocator_.updateSet(pbr_descriptor_set);
 		engine_.global_descriptor_allocator_.clear();
