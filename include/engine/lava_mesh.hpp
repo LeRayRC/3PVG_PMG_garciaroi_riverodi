@@ -25,8 +25,12 @@ public:
 	LavaMesh(class LavaEngine& engine, MeshProperties prop);
 	~LavaMesh();
 
-	GPUMeshBuffers upload(std::span<uint32_t> indices, std::span<Vertex> vertices);
+	template<typename t>
+	GPUMeshBuffers upload(std::span<uint32_t> indices, std::span<t> vertices);
+
+	template<typename t = Vertex>
 	bool loadAsGLTF(std::filesystem::path file_path);
+
 	bool loadCustomMesh(MeshProperties prop);
 
 	LavaPBRMaterial* get_material() { return material_; };

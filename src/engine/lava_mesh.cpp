@@ -28,7 +28,8 @@ LavaMesh::LavaMesh(LavaEngine& engine, MeshProperties prop){
 	case MESH_FBX:
 		break;
 	case MESH_GLTF:
-    loadAsGLTF(prop.mesh_path);
+        //NEED FIX: SHOULD ALSO BE POSIBLE TO CALL WITHOUT TANGENTS (ONLY VERTEX)
+    loadAsGLTF<VertexWithTangents>(prop.mesh_path);
 		break;
 	case MESH_OBJ:
 		break;
@@ -172,6 +173,7 @@ bool LavaMesh::loadAsGLTF(std::filesystem::path file_path){
 }
 
 */
+template<typename t>
 bool LavaMesh::loadAsGLTF(std::filesystem::path file_path) {
   std::cout << "Loading GLTF: " << file_path << std::endl;
 
@@ -193,7 +195,7 @@ bool LavaMesh::loadAsGLTF(std::filesystem::path file_path) {
   }
 
   // Vectores globales para todos los v�rtices e �ndices del archivo
-  std::vector<Vertex> combinedVertices;
+  std::vector<t> combinedVertices;
   std::vector<uint32_t> combinedIndices;
 
   MeshAsset newmesh;
@@ -225,7 +227,7 @@ bool LavaMesh::loadAsGLTF(std::filesystem::path file_path) {
 
         fastgltf::iterateAccessorWithIndex<glm::vec3>(gltf, posAccessor,
           [&](glm::vec3 v, size_t index) {
-            Vertex newVertex;
+            t newVertex;
             newVertex.position = v;
             newVertex.normal = { 1, 0, 0 };  // Por defecto
             newVertex.color = glm::vec4{ 1.f };
@@ -263,6 +265,7 @@ bool LavaMesh::loadAsGLTF(std::filesystem::path file_path) {
           });
       }
 
+
       //newmesh.surfaces[count_surfaces] = newSurface;
       //count_surfaces++;
       newmesh.index_count += newSurface.count;
@@ -272,7 +275,7 @@ bool LavaMesh::loadAsGLTF(std::filesystem::path file_path) {
   // Sobrescribir colores para depuraci�n
   constexpr bool OverrideColors = true;
   if (OverrideColors) {
-    for (Vertex& vtx : combinedVertices) {
+    for (t& vtx : combinedVertices) {
       vtx.color = glm::vec4(vtx.normal, 1.f);
     }
   }
@@ -280,9 +283,8 @@ bool LavaMesh::loadAsGLTF(std::filesystem::path file_path) {
 
 
   // Subir datos combinados al GPU
-  newmesh.meshBuffers = upload(combinedIndices, combinedVertices);
+  newmesh.meshBuffers = upload<t>(combinedIndices, combinedVertices);
   newmesh.count_surfaces = count_surfaces;
-
 
   // Agregar la malla combinada al contenedor
   //meshes_.emplace_back(std::make_shared<MeshAsset>(std::move(newmesh)));
@@ -307,6 +309,56 @@ bool LavaMesh::loadAsGLTF(std::filesystem::path file_path) {
         int normal_index = gltf.materials[0].normalTexture.value().textureIndex;
         material_->normal_ = loadImage(engine_, gltf, gltf.images[normal_index]);
         material_->uniform_properties.use_normal_ = 1.0f;
+        constexpr bool calc_tangents = sizeof(t) == sizeof(VertexWithTangents);
+        if (calc_tangents) {
+
+            glm::vec3 edge1;
+            glm::vec3 edge2;
+            glm::vec2 deltaUV1;
+            glm::vec2 deltaUV2;
+            glm::vec3 tangent;
+            glm::vec3 bitangent;
+            for (int i = 0; i < combinedIndices.size() - 2; i += 3) {
+                //Calculate Tangent an Bitangent
+                edge1 = combinedVertices[combinedIndices[i+1]].position - combinedVertices[combinedIndices[i]].position;
+                edge2 = combinedVertices[combinedIndices[i + 2]].position - combinedVertices[combinedIndices[i]].position;
+                deltaUV1.x = combinedVertices[combinedIndices[i + 1]].uv_x - combinedVertices[combinedIndices[i]].uv_x;
+                deltaUV1.y = combinedVertices[combinedIndices[i + 1]].uv_y - combinedVertices[combinedIndices[i]].uv_y;
+                deltaUV2.x = combinedVertices[combinedIndices[i + 2]].uv_x - combinedVertices[combinedIndices[i]].uv_x;;
+                deltaUV2.y = combinedVertices[combinedIndices[i + 1]].uv_y - combinedVertices[combinedIndices[i]].uv_y;
+
+                float f = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y);
+
+                tangent.x = f * (deltaUV2.y * edge1.x - deltaUV1.y * edge2.x);
+                tangent.y = f * (deltaUV2.y * edge1.y - deltaUV1.y * edge2.y);
+                tangent.z = f * (deltaUV2.y * edge1.z - deltaUV1.y * edge2.z);
+
+                bitangent.x = f * (-deltaUV2.x * edge1.x + deltaUV1.x * edge2.x);
+                bitangent.y = f * (-deltaUV2.x * edge1.y + deltaUV1.x * edge2.y);
+                bitangent.z = f * (-deltaUV2.x * edge1.z + deltaUV1.x * edge2.z);
+
+                char* vertex_pointer = (char*)(&combinedVertices[combinedIndices[i]]); // collect pointer to first vertex
+
+                glm::vec3* tangent_ptr = (glm::vec3*)(vertex_pointer + offsetof(VertexWithTangents, tangent_));
+                glm::vec3* bitangent_ptr = (glm::vec3*)(vertex_pointer + offsetof(VertexWithTangents, bitangent_));
+                *tangent_ptr = tangent;
+                *bitangent_ptr = bitangent;
+
+                vertex_pointer = (char*)(&combinedVertices[combinedIndices[i + 1]]); // collect pointer to second vertex
+
+                tangent_ptr = (glm::vec3*)(vertex_pointer + offsetof(VertexWithTangents, tangent_));
+                bitangent_ptr = (glm::vec3*)(vertex_pointer + offsetof(VertexWithTangents, bitangent_));
+                *tangent_ptr = tangent;
+                *bitangent_ptr = bitangent;
+
+                vertex_pointer = (char*)(&combinedVertices[combinedIndices[i + 2]]); // collect pointer to third vertex
+
+                tangent_ptr = (glm::vec3*)(vertex_pointer + offsetof(VertexWithTangents, tangent_));
+                bitangent_ptr = (glm::vec3*)(vertex_pointer + offsetof(VertexWithTangents, bitangent_));
+                *tangent_ptr = tangent;
+                *bitangent_ptr = bitangent;
+            }
+        }
     }
 
     if (gltf.materials[0].pbrData.metallicRoughnessTexture.has_value()) {
@@ -314,6 +366,9 @@ bool LavaMesh::loadAsGLTF(std::filesystem::path file_path) {
         material_->metallic_roughness_ = loadImage(engine_, gltf, gltf.images[mt_rg_index]);
     }
   }
+
+
+
   //material_->base_color_ = std::make_shared<LavaImage>(engine_,gltf. );
 
   //  pink_color_ = glm::packUnorm4x8(glm::vec4(1, 0, 1, 1));
@@ -332,7 +387,8 @@ bool LavaMesh::loadAsGLTF(std::filesystem::path file_path) {
 bool LavaMesh::loadCustomMesh(MeshProperties prop) {
   MeshAsset newmesh;
   GeoSurface surface = { 0,static_cast<uint32_t>(prop.index.size()) };
-  newmesh.meshBuffers = upload(prop.index, prop.vertex);
+  
+  newmesh.meshBuffers = upload<Vertex>(prop.index, prop.vertex);
   //newmesh.surfaces[0] = surface;
   newmesh.count_surfaces = 1;
   newmesh.index_count = surface.count;
@@ -341,9 +397,10 @@ bool LavaMesh::loadCustomMesh(MeshProperties prop) {
   return true;
 }
 
-GPUMeshBuffers LavaMesh::upload(std::span<uint32_t> indices, std::span<Vertex> vertices) {
+template<typename t>
+GPUMeshBuffers LavaMesh::upload(std::span<uint32_t> indices, std::span<t> vertices) {
 
-    const size_t vertex_buffer_size = vertices.size() * sizeof(Vertex);
+    const size_t vertex_buffer_size = vertices.size() * sizeof(t);
     const size_t index_buffer_size = indices.size() * sizeof(uint32_t);
 
     GPUMeshBuffers new_surface;

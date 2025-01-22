@@ -71,6 +71,18 @@ struct Vertex {
 	glm::vec4 color;
 };
 
+struct VertexWithTangents {
+	glm::vec3 position;
+	float uv_x;
+	glm::vec3 normal;
+	float uv_y;
+	glm::vec4 color;
+	glm::vec3 tangent_;
+	float padding1;
+	glm::vec3 bitangent_;
+	float padding2;
+};
+
 
 struct GPUMeshBuffers {
 	std::unique_ptr<LavaBuffer> index_buffer;
