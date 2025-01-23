@@ -53,22 +53,19 @@ void main()
 
 	//output data
 	vec4 pos = PushConstants.render_matrix *vec4(v.position, 1.0);
-	vec2 uv_;
-	uv_.x = v.uv_x;
-	uv_.y = v.uv_y;
 
 	gl_Position = globalData.viewproj * pos;
 	outColor = v.color.xyz;
 	outUV = uv_;
+	outUV.x = v.uv_x;
+	outUV.y = v.uv_y;
 	outNormal = normalize(PushConstants.render_matrix * vec4(v.normal,0.0)).xyz;
 
 
 	//Normal Mapping Calculations
-	vec3 texNormal = texture(normalTex, uv_).rgb;
-	texNormal = normalize(texNormal * 2.0 - 1.0);
     vec3 T = normalize(vec3(PushConstants.render_matrix * vec4(v.tangent,   0.0)));
     vec3 B = normalize(vec3(PushConstants.render_matrix * vec4(v.bitangent, 0.0)));
-    vec3 N = normalize(vec3(PushConstants.render_matrix * vec4(texNormal,    0.0)));
+    vec3 N = normalize(vec3(PushConstants.render_matrix * vec4(normal,    0.0)));
     mat3 TBN = transpose(mat3(T, B, N));
     //vs_out.TangentLightPos = TBN * lightPos; //TO DO: LIGHTS
     //tangentViewPos  = TBN * viewPos; //TO DO: LIGHTS
