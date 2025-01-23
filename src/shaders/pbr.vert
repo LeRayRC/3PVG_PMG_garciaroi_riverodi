@@ -24,7 +24,6 @@ struct Vertex {
 	float padding2;
 }; 
 
-layout(set = 1, binding = 1) uniform sampler2D normalTex;
 layout(set = 1, binding = 4) uniform LavaPBRMaterialProperties {
 	float metallic_factor_;
 	float roughness_factor_; 
@@ -56,7 +55,7 @@ void main()
 
 	gl_Position = globalData.viewproj * pos;
 	outColor = v.color.xyz;
-	outUV = uv_;
+
 	outUV.x = v.uv_x;
 	outUV.y = v.uv_y;
 	outNormal = normalize(PushConstants.render_matrix * vec4(v.normal,0.0)).xyz;
@@ -65,7 +64,7 @@ void main()
 	//Normal Mapping Calculations
     vec3 T = normalize(vec3(PushConstants.render_matrix * vec4(v.tangent,   0.0)));
     vec3 B = normalize(vec3(PushConstants.render_matrix * vec4(v.bitangent, 0.0)));
-    vec3 N = normalize(vec3(PushConstants.render_matrix * vec4(normal,    0.0)));
+    vec3 N = normalize(vec3(PushConstants.render_matrix * vec4(v.normal,    0.0)));
     mat3 TBN = transpose(mat3(T, B, N));
     //vs_out.TangentLightPos = TBN * lightPos; //TO DO: LIGHTS
     //tangentViewPos  = TBN * viewPos; //TO DO: LIGHTS
