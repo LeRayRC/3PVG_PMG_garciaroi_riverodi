@@ -4,14 +4,17 @@
 #include <unordered_map>
 #include <filesystem>
 
-#include "stb_image.h"
-
 #include "lava_vulkan_inits.hpp"
 #include "engine/lava_buffer.hpp"
 
 #include <fastgltf/glm_element_traits.hpp>
 #include <fastgltf/core.hpp>
 #include <fastgltf/tools.hpp>
+
+#include "engine/lava_pbr_material.hpp"
+
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
 
 
 LavaMesh::LavaMesh(LavaEngine& engine, MeshProperties prop){
@@ -25,7 +28,8 @@ LavaMesh::LavaMesh(LavaEngine& engine, MeshProperties prop){
 	case MESH_FBX:
 		break;
 	case MESH_GLTF:
-    loadAsGLTF(prop.mesh_path);
+        //NEED FIX: SHOULD ALSO BE POSIBLE TO CALL WITHOUT TANGENTS (ONLY VERTEX)
+    loadAsGLTF<VertexWithTangents>(prop.mesh_path);
 		break;
 	case MESH_OBJ:
 		break;
@@ -169,6 +173,7 @@ bool LavaMesh::loadAsGLTF(std::filesystem::path file_path){
 }
 
 */
+template<typename t>
 bool LavaMesh::loadAsGLTF(std::filesystem::path file_path) {
   std::cout << "Loading GLTF: " << file_path << std::endl;
 
@@ -189,8 +194,8 @@ bool LavaMesh::loadAsGLTF(std::filesystem::path file_path) {
     return false;
   }
 
-  // Vectores globales para todos los vértices e índices del archivo
-  std::vector<Vertex> combinedVertices;
+  // Vectores globales para todos los vï¿½rtices e ï¿½ndices del archivo
+  std::vector<t> combinedVertices;
   std::vector<uint32_t> combinedIndices;
 
   MeshAsset newmesh;
@@ -204,7 +209,7 @@ bool LavaMesh::loadAsGLTF(std::filesystem::path file_path) {
 
       size_t initial_vtx = combinedVertices.size();
 
-      // Cargar índices
+      // Cargar ï¿½ndices
       {
         fastgltf::Accessor& indexAccessor = gltf.accessors[p.indicesAccessor.value()];
         combinedIndices.reserve(combinedIndices.size() + indexAccessor.count);
@@ -222,7 +227,7 @@ bool LavaMesh::loadAsGLTF(std::filesystem::path file_path) {
 
         fastgltf::iterateAccessorWithIndex<glm::vec3>(gltf, posAccessor,
           [&](glm::vec3 v, size_t index) {
-            Vertex newVertex;
+            t newVertex;
             newVertex.position = v;
             newVertex.normal = { 1, 0, 0 };  // Por defecto
             newVertex.color = glm::vec4{ 1.f };
@@ -260,28 +265,120 @@ bool LavaMesh::loadAsGLTF(std::filesystem::path file_path) {
           });
       }
 
+
       //newmesh.surfaces[count_surfaces] = newSurface;
       //count_surfaces++;
       newmesh.index_count += newSurface.count;
     }
   }
 
-  // Sobrescribir colores para depuración
+  // Sobrescribir colores para depuraciï¿½n
   constexpr bool OverrideColors = true;
   if (OverrideColors) {
-    for (Vertex& vtx : combinedVertices) {
+    for (t& vtx : combinedVertices) {
       vtx.color = glm::vec4(vtx.normal, 1.f);
     }
   }
 
-  // Subir datos combinados al GPU
-  newmesh.meshBuffers = upload(combinedIndices, combinedVertices);
-  newmesh.count_surfaces = count_surfaces;
 
+
+  // Subir datos combinados al GPU
+  newmesh.meshBuffers = upload<t>(combinedIndices, combinedVertices);
+  newmesh.count_surfaces = count_surfaces;
 
   // Agregar la malla combinada al contenedor
   //meshes_.emplace_back(std::make_shared<MeshAsset>(std::move(newmesh)));
   mesh_ = std::make_shared<MeshAsset>(std::move(newmesh));
+
+  //Update material
+  //int base_color_index = -1;
+  if (gltf.materials.size() > 0) {
+    material_->uniform_properties.metallic_factor_ = gltf.materials[0].pbrData.metallicFactor;
+    material_->uniform_properties.roughness_factor_ = gltf.materials[0].pbrData.roughnessFactor;
+    material_->uniform_properties.opacity_mask_ = gltf.materials[0].alphaCutoff;
+    
+    if (gltf.materials[0].specular.get() != nullptr) {
+        material_->uniform_properties.specular_factor_ = gltf.materials[0].specular->specularFactor;
+    }
+    if (gltf.materials[0].pbrData.baseColorTexture.has_value()) {
+        int base_color_index = gltf.materials[0].pbrData.baseColorTexture.value().textureIndex;
+        material_->base_color_ = loadImage(engine_, gltf, gltf.images[base_color_index]);
+    }
+    
+    if (gltf.materials[0].normalTexture.has_value()) {
+        int normal_index = gltf.materials[0].normalTexture.value().textureIndex;
+        material_->normal_ = loadImage(engine_, gltf, gltf.images[normal_index]);
+        material_->uniform_properties.use_normal_ = 1.0f;
+        constexpr bool calc_tangents = sizeof(t) == sizeof(VertexWithTangents);
+        if (calc_tangents) {
+
+            glm::vec3 edge1;
+            glm::vec3 edge2;
+            glm::vec2 deltaUV1;
+            glm::vec2 deltaUV2;
+            glm::vec3 tangent;
+            glm::vec3 bitangent;
+            for (int i = 0; i < combinedIndices.size() - 2; i += 3) {
+                //Calculate Tangent an Bitangent
+                edge1 = combinedVertices[combinedIndices[i+1]].position - combinedVertices[combinedIndices[i]].position;
+                edge2 = combinedVertices[combinedIndices[i + 2]].position - combinedVertices[combinedIndices[i]].position;
+                deltaUV1.x = combinedVertices[combinedIndices[i + 1]].uv_x - combinedVertices[combinedIndices[i]].uv_x;
+                deltaUV1.y = combinedVertices[combinedIndices[i + 1]].uv_y - combinedVertices[combinedIndices[i]].uv_y;
+                deltaUV2.x = combinedVertices[combinedIndices[i + 2]].uv_x - combinedVertices[combinedIndices[i]].uv_x;;
+                deltaUV2.y = combinedVertices[combinedIndices[i + 1]].uv_y - combinedVertices[combinedIndices[i]].uv_y;
+
+                float f = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y);
+
+                tangent.x = f * (deltaUV2.y * edge1.x - deltaUV1.y * edge2.x);
+                tangent.y = f * (deltaUV2.y * edge1.y - deltaUV1.y * edge2.y);
+                tangent.z = f * (deltaUV2.y * edge1.z - deltaUV1.y * edge2.z);
+
+                bitangent.x = f * (-deltaUV2.x * edge1.x + deltaUV1.x * edge2.x);
+                bitangent.y = f * (-deltaUV2.x * edge1.y + deltaUV1.x * edge2.y);
+                bitangent.z = f * (-deltaUV2.x * edge1.z + deltaUV1.x * edge2.z);
+
+                char* vertex_pointer = (char*)(&combinedVertices[combinedIndices[i]]); // collect pointer to first vertex
+
+                glm::vec3* tangent_ptr = (glm::vec3*)(vertex_pointer + offsetof(VertexWithTangents, tangent_));
+                glm::vec3* bitangent_ptr = (glm::vec3*)(vertex_pointer + offsetof(VertexWithTangents, bitangent_));
+                *tangent_ptr = tangent;
+                *bitangent_ptr = bitangent;
+
+                vertex_pointer = (char*)(&combinedVertices[combinedIndices[i + 1]]); // collect pointer to second vertex
+
+                tangent_ptr = (glm::vec3*)(vertex_pointer + offsetof(VertexWithTangents, tangent_));
+                bitangent_ptr = (glm::vec3*)(vertex_pointer + offsetof(VertexWithTangents, bitangent_));
+                *tangent_ptr = tangent;
+                *bitangent_ptr = bitangent;
+
+                vertex_pointer = (char*)(&combinedVertices[combinedIndices[i + 2]]); // collect pointer to third vertex
+
+                tangent_ptr = (glm::vec3*)(vertex_pointer + offsetof(VertexWithTangents, tangent_));
+                bitangent_ptr = (glm::vec3*)(vertex_pointer + offsetof(VertexWithTangents, bitangent_));
+                *tangent_ptr = tangent;
+                *bitangent_ptr = bitangent;
+            }
+        }
+    }
+
+    if (gltf.materials[0].pbrData.metallicRoughnessTexture.has_value()) {
+        int mt_rg_index = gltf.materials[0].pbrData.metallicRoughnessTexture.value().textureIndex;
+        material_->metallic_roughness_ = loadImage(engine_, gltf, gltf.images[mt_rg_index]);
+    }
+  }
+
+
+
+  //material_->base_color_ = std::make_shared<LavaImage>(engine_,gltf. );
+
+  //  pink_color_ = glm::packUnorm4x8(glm::vec4(1, 0, 1, 1));
+  //default_texture_image_ = std::make_shared<LavaImage>(this, (void*)&pink_color_, VkExtent3D{ 1, 1, 1 }, VK_FORMAT_R8G8B8A8_UNORM,
+  //  VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+  /*for (fastgltf::Image& image : gltf.images) {
+    std::shared_ptr<LavaImage> img = loadImage(engine_, gltf, image);
+
+  }*/
+
 
   return true;
 }
@@ -290,7 +387,8 @@ bool LavaMesh::loadAsGLTF(std::filesystem::path file_path) {
 bool LavaMesh::loadCustomMesh(MeshProperties prop) {
   MeshAsset newmesh;
   GeoSurface surface = { 0,static_cast<uint32_t>(prop.index.size()) };
-  newmesh.meshBuffers = upload(prop.index, prop.vertex);
+  
+  newmesh.meshBuffers = upload<Vertex>(prop.index, prop.vertex);
   //newmesh.surfaces[0] = surface;
   newmesh.count_surfaces = 1;
   newmesh.index_count = surface.count;
@@ -299,9 +397,10 @@ bool LavaMesh::loadCustomMesh(MeshProperties prop) {
   return true;
 }
 
-GPUMeshBuffers LavaMesh::upload(std::span<uint32_t> indices, std::span<Vertex> vertices) {
+template<typename t>
+GPUMeshBuffers LavaMesh::upload(std::span<uint32_t> indices, std::span<t> vertices) {
 
-    const size_t vertex_buffer_size = vertices.size() * sizeof(Vertex);
+    const size_t vertex_buffer_size = vertices.size() * sizeof(t);
     const size_t index_buffer_size = indices.size() * sizeof(uint32_t);
 
     GPUMeshBuffers new_surface;
@@ -348,4 +447,85 @@ GPUMeshBuffers LavaMesh::upload(std::span<uint32_t> indices, std::span<Vertex> v
     vmaUnmapMemory(engine_->allocator_.get_allocator(), staging.get_buffer().allocation);
     return new_surface;
   
+}
+
+
+std::shared_ptr<LavaImage> LavaMesh::loadImage(LavaEngine* engine, fastgltf::Asset& asset, fastgltf::Image& image) {
+  std::shared_ptr<LavaImage> loaded_image;
+
+  int width, height, nrChannels;
+
+  std::visit(
+      fastgltf::visitor{
+          [](auto &arg) {},
+          [&](fastgltf::sources::URI &filePath) {
+            assert(filePath.fileByteOffset == 0); // We don't support offsets with stbi.
+            assert(filePath.uri.isLocalPath());   // We're only capable of loading
+                                                  // local files.
+
+            const std::string path(filePath.uri.path().begin(),
+                                   filePath.uri.path().end()); // Thanks C++.
+            unsigned char *data = stbi_load(path.c_str(), &width, &height, &nrChannels, 4);
+            if (data) {
+              VkExtent3D imagesize;
+              imagesize.width = width;
+              imagesize.height = height;
+              imagesize.depth = 1;
+
+              loaded_image = std::make_shared<LavaImage>(engine, data, imagesize, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, false);
+
+              stbi_image_free(data);
+            }
+          },
+          [&](fastgltf::sources::Vector &vector) {
+            unsigned char *data = stbi_load_from_memory(vector.bytes.data(), static_cast<int>(vector.bytes.size()),
+                                                        &width, &height, &nrChannels, 4);
+            printf("loading 2\n");
+            if (data) {
+              VkExtent3D imagesize;
+              imagesize.width = width;
+              imagesize.height = height;
+              imagesize.depth = 1;
+
+              loaded_image = std::make_shared<LavaImage>(engine, data, imagesize, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, false);
+
+              stbi_image_free(data);
+            }
+          },
+          [&](fastgltf::sources::BufferView &view) {
+            auto &bufferView = asset.bufferViews[view.bufferViewIndex];
+            auto &buffer = asset.buffers[bufferView.bufferIndex];
+
+            std::visit(fastgltf::visitor{// We only care about VectorWithMime here, because we
+                                         // specify LoadExternalBuffers, meaning all buffers
+                                         // are already loaded into a vector.
+                                         [](auto &arg) {},
+                                         [&](fastgltf::sources::Array &vector) {
+                                           unsigned char *data = stbi_load_from_memory(vector.bytes.data() + bufferView.byteOffset,
+                                                                                       static_cast<int>(bufferView.byteLength),
+                                                                                       &width, &height, &nrChannels, 4);
+                                           if (data) {
+                                             VkExtent3D imagesize;
+                                             imagesize.width = width;
+                                             imagesize.height = height;
+                                             imagesize.depth = 1;
+
+                                             loaded_image = std::make_shared<LavaImage>(engine, data, imagesize, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, false);
+                                             stbi_image_free(data);
+                                           }
+                                         }},
+                       buffer.data);
+          },
+      },
+      image.data);
+
+  // if any of the attempts to load the data failed, we havent written the image
+  // so handle is null
+  // if (newImage.image == VK_NULL_HANDLE) {
+  //  return {};
+  //}
+  // else {
+  //  return newImage;
+  //}
+  return loaded_image;
 }

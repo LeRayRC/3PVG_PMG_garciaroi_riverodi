@@ -28,7 +28,7 @@ int main(int argc, char* argv[]) {
 	MeshProperties mesh_properties = {};
 	mesh_properties.name = "Shiba Mesh";
 	mesh_properties.type = MESH_GLTF;
-	mesh_properties.mesh_path = "../examples/assets/shiba/shiba.glb";
+	mesh_properties.mesh_path = "../examples/assets/skull.glb";
 	mesh_properties.material = &basic_material;
 
 	std::shared_ptr<LavaMesh> mesh_shiba = std::make_shared<LavaMesh>(engine, mesh_properties);

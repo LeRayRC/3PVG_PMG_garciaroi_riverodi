@@ -34,7 +34,10 @@ LavaPipeline::LavaPipeline(PipelineConfig config){
 	//Create Generic pipeline layouts 10 descriptor sets with two textures each 
 	
 	if ((config.pipeline_flags & PipelineFlags::PIPELINE_USE_DESCRIPTOR_SET) != 0) {
-		configureDescriptorSet(&pipeline_layout_info, config.descriptor_set_layout);
+		configureDescriptorSet(&pipeline_layout_info, 
+			config.descriptor_set_layout,
+			config.type,
+			config.descriptor_manager);
 	}
 	else {
 		pipeline_layout_info.setLayoutCount = 0;
@@ -84,7 +87,9 @@ LavaPipeline::LavaPipeline(PipelineConfig config){
 	vkDestroyShaderModule(device_, vertex_shader, nullptr);
 
 	//Create descriptor set that will be destroyed when the engine gets stopped
-	
+	//Allocate descriptor set
+
+
 }
 
 LavaPipeline::~LavaPipeline() {
@@ -101,22 +106,86 @@ void LavaPipeline::configurePushConstants(VkPipelineLayoutCreateInfo* info,
 	info->pPushConstantRanges = range;
 	info->pushConstantRangeCount = 1;
 }
-void LavaPipeline::configureDescriptorSet(VkPipelineLayoutCreateInfo* info, VkDescriptorSetLayout global_layout) {
-	//Include global descriptor set also
 
-	
+
+void LavaPipeline::configureDescriptorSet(VkPipelineLayoutCreateInfo* info, 
+	VkDescriptorSetLayout global_layout, 
+	PipelineType type, 
+	class LavaDescriptorManager* descriptor_manager) {
+	//Include global descriptor set also
+	//Primero le decimos que va a utilizar un descriptor set global que tiene el motor
+	//Este descriptor contiene cosas como la matriz de vista
 	descriptor_set_layouts_[0] = global_layout;
 
 	//By default every material can hold two images: diffuse and normal
 	//TODO include Uniform buffer as another binding
 	DescriptorLayoutBuilder builder;
-	builder.addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-	builder.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-	descriptor_set_layouts_[1] = builder.build(device_, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT);
+
+	//En funcion del tipo de pipeline se configuran unos binding u otros
+
+	switch (type)
+	{
+	case PIPELINE_TYPE_NORMAL: {
+			builder.addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+			builder.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+
+			VkDescriptorBindingFlags bindingFlags[2] = {
+				VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT, // Binding 0
+				VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT, // Binding 1
+			};
+
+			VkDescriptorSetLayoutBindingFlagsCreateInfo bindingFlagsInfo = {};
+			bindingFlagsInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO;
+			bindingFlagsInfo.bindingCount = (uint32_t)builder.bindings_.size();
+			bindingFlagsInfo.pBindingFlags = bindingFlags;
+			descriptor_set_layouts_[1] = builder.build(device_, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT , &bindingFlagsInfo, VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT);
+
+			break;
+		}
+	case PIPELINE_TYPE_PBR: {
+			/*
+					float metallic_factor_;	//Determines the metallic value of the metallic parts of the texture
+					float roughness_factor_;	//Determines the roughness value of the metallic parts of the texture
+																		// Default value 0.5f
+					float specular_factor_; 
+					float opacity_mask_;
+					float use_normal_;	//Determines to use 
+			*/
+			builder.addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER); // base color texture
+			builder.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER); // normal
+			builder.addBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER); // roughness_metallic_texture
+			builder.addBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER); // opacity
+			builder.addBinding(4, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER); // floats values(struct)
+
+			VkDescriptorBindingFlags bindingFlags[5] = {
+				VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT, // Binding 0
+				VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT, // Binding 1
+				VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT, // Binding 2
+				VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT, // Binding 3
+				VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT, // Binding 4
+			};
+
+			VkDescriptorSetLayoutBindingFlagsCreateInfo bindingFlagsInfo = {};
+			bindingFlagsInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO;
+			bindingFlagsInfo.bindingCount = (uint32_t)builder.bindings_.size();
+			bindingFlagsInfo.pBindingFlags = bindingFlags;
+			descriptor_set_layouts_[1] = builder.build(device_, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT, &bindingFlagsInfo, VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT);
+			break;
+		}
+	default:
+		break;
+	}
+	
+
+	
 	
 
 	info->pSetLayouts = descriptor_set_layouts_;
 	info->setLayoutCount = 2;
+
+
+	descriptor_set_ = descriptor_manager->allocate(descriptor_set_layouts_[1]);
+
 }
 void LavaPipeline::configureAttributes(VkPipelineLayoutCreateInfo* info) {
 	//To implement

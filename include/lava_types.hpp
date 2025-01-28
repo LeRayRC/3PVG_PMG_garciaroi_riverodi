@@ -71,6 +71,18 @@ struct Vertex {
 	glm::vec4 color;
 };
 
+struct VertexWithTangents {
+	glm::vec3 position;
+	float uv_x;
+	glm::vec3 normal;
+	float uv_y;
+	glm::vec4 color;
+	glm::vec3 tangent_;
+	float padding1;
+	glm::vec3 bitangent_;
+	float padding2;
+};
+
 
 struct GPUMeshBuffers {
 	std::unique_ptr<LavaBuffer> index_buffer;
@@ -161,6 +173,17 @@ struct MaterialProperties {
 	const char* fragment_shader_path;
 };
 
+struct MaterialPBRProperties {
+	std::string name;
+	int pipeline_flags = 0;
+	
+};
+
+typedef enum PipelineType {
+	PIPELINE_TYPE_NORMAL, 
+	PIPELINE_TYPE_PBR
+} PipelineType;
+
 typedef enum PipelineFlags {
 	PIPELINE_USE_ATTRIBUTES = 1,					//0001
 	PIPELINE_USE_PUSHCONSTANTS = 1 << 1,	//0010
@@ -169,6 +192,7 @@ typedef enum PipelineFlags {
 
 struct PipelineConfig {
 public:
+	PipelineType type;
 	const char* vertex_shader_path;
 	const char* fragment_shader_path;
 	class LavaDevice* device;
@@ -189,7 +213,7 @@ struct MeshProperties {
 	std::string name;
 	MeshType type;
 	std::filesystem::path mesh_path;
-	class LavaMaterial* material;
+	class LavaPBRMaterial* material;
 	std::vector<Vertex> vertex;
 	std::vector<uint32_t> index;
 };

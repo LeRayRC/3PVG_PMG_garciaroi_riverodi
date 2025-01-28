@@ -98,8 +98,9 @@ public:
 	VkDescriptorSetLayout global_descriptor_set_layout_;
 	VkDescriptorSet global_descriptor_set_;
 
-	uint32_t pink_color_;
-	std::shared_ptr<LavaImage> default_texture_image_;
+	std::shared_ptr<LavaImage> default_texture_image_pink;
+	std::shared_ptr<LavaImage> default_texture_image_white;
+	std::shared_ptr<LavaImage> default_texture_image_black;
 
 
 	std::chrono::steady_clock::time_point chrono_now_;
@@ -122,7 +123,7 @@ public:
 	void render();
 	void pollEvents() { glfwPollEvents(); }
 	virtual void renderImgui();
-	void drawMeshes(VkCommandBuffer command_buffer);
+	//void drawMeshes(VkCommandBuffer command_buffer);
 	std::shared_ptr<class LavaMesh> addMesh(MeshProperties prop);
 
 	VkInstance get_instance() const;
