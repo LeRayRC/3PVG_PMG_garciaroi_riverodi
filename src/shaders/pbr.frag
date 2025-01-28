@@ -30,5 +30,5 @@ void main()
 {
 
 
-	outFragColor = texture(metallicRogTex,inUV);
+	outFragColor = texture(baseColorTex,inUV);
 }

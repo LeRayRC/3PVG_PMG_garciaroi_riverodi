@@ -190,6 +190,12 @@ typedef enum PipelineFlags {
 	PIPELINE_USE_DESCRIPTOR_SET = 1 << 2,  //0100
 } PipelineFlags;
 
+typedef enum PipelineBlendMode {
+	PIPELINE_BLEND_DISABLE,
+	PIPELINE_BLEND_ONE_ONE,
+	PIPELINE_BLEND_ONE_ZERO
+} PipelineBlendMode;
+
 struct PipelineConfig {
 public:
 	PipelineType type;
@@ -200,6 +206,7 @@ public:
 	class LavaDescriptorManager* descriptor_manager;
 	VkDescriptorSetLayout descriptor_set_layout;
 	int pipeline_flags;
+	PipelineBlendMode blend_mode;
 };
 
 typedef enum MeshType {

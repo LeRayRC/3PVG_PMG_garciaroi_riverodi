@@ -70,7 +70,23 @@ LavaPipeline::LavaPipeline(PipelineConfig config){
 	//no multisampling
 	pipeline_builder.SetMultisamplingNone();
 	//no blending
+	
+	switch (config.blend_mode)
+	{
+		case PIPELINE_BLEND_DISABLE:
+			pipeline_builder.DisableBlending();
+			break;
+		case PIPELINE_BLEND_ONE_ZERO:
+			pipeline_builder.EnableBlending(config.blend_mode);
+			break;
+		case PIPELINE_BLEND_ONE_ONE:
+			pipeline_builder.EnableBlending(config.blend_mode);
+			break;
+		default:
+			break;
+	}
 	pipeline_builder.DisableBlending();
+	
 	//no depth testing
 	//pipeline_builder.DisableDepthtest();
 	pipeline_builder.EnableDepthTest(true, VK_COMPARE_OP_GREATER_OR_EQUAL);

@@ -18,6 +18,8 @@ public:
 private:
 	class LavaEngine& engine_;
 	LavaPipeline pipeline_;
+	LavaPipeline pipeline_first_light_;
+
 
 	std::unique_ptr<LavaBuffer> pbr_data_buffer_;
 };

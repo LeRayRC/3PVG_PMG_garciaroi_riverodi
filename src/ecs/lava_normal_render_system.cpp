@@ -14,7 +14,8 @@ LavaNormalRenderSystem::LavaNormalRenderSystem(LavaEngine &engine) :
               &engine_.swap_chain_,
               &engine_.global_descriptor_allocator_,
               engine_.global_descriptor_set_layout_,
-              PipelineFlags::PIPELINE_USE_PUSHCONSTANTS | PipelineFlags::PIPELINE_USE_DESCRIPTOR_SET) }
+              PipelineFlags::PIPELINE_USE_PUSHCONSTANTS | PipelineFlags::PIPELINE_USE_DESCRIPTOR_SET,
+							PipelineBlendMode::PIPELINE_BLEND_DISABLE)}
 {
 
 

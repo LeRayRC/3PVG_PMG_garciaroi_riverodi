@@ -150,6 +150,32 @@ void PipelineBuilder::DisableBlending()
     _color_blend_attachment.blendEnable = VK_FALSE;
 }
 
+void PipelineBuilder::EnableBlending(PipelineBlendMode blend_mode){
+  _color_blend_attachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+  _color_blend_attachment.blendEnable = VK_TRUE;
+  _color_blend_attachment.colorBlendOp = VK_BLEND_OP_ADD;             // Operación de blending (suma)
+  _color_blend_attachment.alphaBlendOp = VK_BLEND_OP_ADD;             // Operación de blending para alpha
+
+  switch (blend_mode)
+  {
+    case PIPELINE_BLEND_ONE_ONE:
+      _color_blend_attachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;  // GL_ONE
+      _color_blend_attachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE; // GL_ZERO
+      _color_blend_attachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;  // Alpha blending (puede variar)
+      _color_blend_attachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE; // Alpha blending (puede variar)
+      break;
+    case PIPELINE_BLEND_ONE_ZERO:
+      _color_blend_attachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;  // GL_ONE
+      _color_blend_attachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO; // GL_ZERO
+      _color_blend_attachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;  // Alpha blending (puede variar)
+      _color_blend_attachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO; // Alpha blending (puede variar)
+      break;
+    default:
+      break;
+  }
+
+}
+
 void PipelineBuilder::SetColorAttachmentFormat(VkFormat format)
 {
     _color_attachmentformat = format;

@@ -6,15 +6,26 @@
 #include "engine/lava_pbr_material.hpp"
 LavaPBRRenderSystem::LavaPBRRenderSystem(LavaEngine &engine) :
   engine_{engine},
-  pipeline_{ PipelineConfig(
+	pipeline_{ PipelineConfig(
 							PIPELINE_TYPE_PBR,
-              "../src/shaders/pbr.vert.spv",
-              "../src/shaders/pbr.frag.spv",
-              &engine_.device_,
-              &engine_.swap_chain_,
-              &engine_.global_descriptor_allocator_,
-              engine_.global_descriptor_set_layout_,
-              PipelineFlags::PIPELINE_USE_PUSHCONSTANTS | PipelineFlags::PIPELINE_USE_DESCRIPTOR_SET) }
+							"../src/shaders/pbr.vert.spv",
+							"../src/shaders/pbr.frag.spv",
+							&engine_.device_,
+							&engine_.swap_chain_,
+							&engine_.global_descriptor_allocator_,
+							engine_.global_descriptor_set_layout_,
+							PipelineFlags::PIPELINE_USE_PUSHCONSTANTS | PipelineFlags::PIPELINE_USE_DESCRIPTOR_SET,
+							PipelineBlendMode::PIPELINE_BLEND_ONE_ONE) },
+	pipeline_first_light_{ PipelineConfig(
+													PIPELINE_TYPE_PBR,
+													"../src/shaders/pbr.vert.spv",
+													"../src/shaders/pbr.frag.spv",
+													&engine_.device_,
+													&engine_.swap_chain_,
+													&engine_.global_descriptor_allocator_,
+													engine_.global_descriptor_set_layout_,
+													PipelineFlags::PIPELINE_USE_PUSHCONSTANTS | PipelineFlags::PIPELINE_USE_DESCRIPTOR_SET,
+													PipelineBlendMode::PIPELINE_BLEND_ONE_ZERO) }
 {
 
 	pbr_data_buffer_ = std::make_unique<LavaBuffer>(engine.allocator_, sizeof(LavaPBRMaterialProperties), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
