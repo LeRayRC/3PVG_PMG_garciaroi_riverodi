@@ -263,6 +263,7 @@ bool LavaMesh::loadAsGLTF(std::filesystem::path file_path) {
           });
       }
 
+
       //newmesh.surfaces[count_surfaces] = newSurface;
       //count_surfaces++;
       newmesh.index_count += newSurface.count;
