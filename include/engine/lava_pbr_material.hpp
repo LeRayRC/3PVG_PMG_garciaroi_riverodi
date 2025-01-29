@@ -29,7 +29,7 @@ public:
 
 
 	void UpdateGlobalDescriptorSet(LavaBuffer& buffer_properties,
-	LavaBuffer& light_buffer_properties, LightShaderStruct light_parameter) {
+	LavaBuffer& light_buffer_properties, LightShaderStruct& light_parameter) {
 		engine_->global_descriptor_allocator_.clear();
 		engine_->global_descriptor_allocator_.writeImage(
 			0,

@@ -220,29 +220,44 @@ struct  LightComponent {
 
 //This structure will be loaded on the pbr shader
 struct LightShaderStruct {
+  float pos[3];
   int enabled;
+
+  float dir[3];
   int type;
-  glm::vec3 pos;
-  glm::vec3 dir;
-  glm::vec3 diff_color;
-  glm::vec3 spec_color;
-  float linear_att;
+  
+  float diff_color[3];
   float quad_att;
+  
+  float spec_color[3];
+  float linear_att;
+  
+  float spot_dir[3];
   float constant_att;
+  
   float shininess;
   float strength;
-  glm::vec3 spot_dir;
   float cutoff;
   float outer_cutoff;
 
   LightShaderStruct() {
     enabled = 1;
     type = 0;
-    pos = glm::vec3(0.0f, 0.0f, 0.0f);
-    dir = glm::vec3(0.0f, 0.0f, 0.0f);
-    diff_color = glm::vec3(0.0f, 0.0f, 0.0f);
-    spec_color = glm::vec3(0.0f, 0.0f, 0.0f);
-    spot_dir = glm::vec3(0.0f, 0.0f, 0.0f);
+    pos[0] = 0.0f;
+    pos[1] = 0.0f;
+    pos[2] = 0.0f;
+    dir[0] = 0.0f;
+    dir[1] = 0.0f;
+    dir[2] = 0.0f;
+    diff_color[0] = 0.0f;
+    diff_color[1] = 0.0f;
+    diff_color[2] = 0.0f;
+    spec_color[0] = 0.0f;
+    spec_color[1] = 0.0f;
+    spec_color[2] = 0.0f;
+    spot_dir[0] = 0.0f;
+    spot_dir[1] = 0.0f;
+    spot_dir[2] = 0.0f;
     linear_att = 0.0014f;
     quad_att = 0.00007f;
     constant_att = 1.0f;
@@ -255,7 +270,9 @@ struct LightShaderStruct {
   void config(LightComponent light, TransformComponent tr) {
     enabled = light.enabled_;
     type = (int)light.type_;
-    pos = tr.pos_;
+    pos[0] = tr.pos_.x;
+    pos[1] = tr.pos_.y;
+    pos[2] = tr.pos_.z;
 
     // Matriz de identidad
     glm::mat4 rotationMatrix = glm::mat4(1.0f);
@@ -274,16 +291,25 @@ struct LightShaderStruct {
     //float yaw = glm::radians(tr.rot_.y);   // Rotación en el eje Y
     //float roll = glm::radians(tr.rot_.z);
     //glm::mat4 rotation_matrix = glm::yawPitchRoll(yaw, pitch, roll);
-    dir = forwardVector; //glm::vec3(rotation_matrix * glm::vec4(0.0f, 0.0f, 1.0f, 0.0f));
+    dir[0] = forwardVector.x; //glm::vec3(rotation_matrix * glm::vec4(0.0f, 0.0f, 1.0f, 0.0f));
+    dir[1] = forwardVector.y;
+    dir[2] = forwardVector.z;
 
-    diff_color = light.base_color_;
-    spec_color = light.spec_color_;
+    diff_color[0] = light.base_color_.x;
+    diff_color[1] = light.base_color_.y;
+    diff_color[2] = light.base_color_.z;
+
+    spec_color[0] = light.spec_color_.x;
+    spec_color[1] = light.spec_color_.y;
+    spec_color[2] = light.spec_color_.z;
     linear_att = light.linear_att_;
     quad_att = light.quad_att_;
     constant_att = light.constant_att_;
     shininess = light.shininess_;
     strength = light.strength_;
-    spot_dir = light.spot_dir_;
+    spot_dir[0] = light.spot_dir_.x;
+    spot_dir[1] = light.spot_dir_.y;
+    spot_dir[2] = light.spot_dir_.z;
     cutoff = light.cutoff_;
     outer_cutoff = light.outer_cutoff_;
   }

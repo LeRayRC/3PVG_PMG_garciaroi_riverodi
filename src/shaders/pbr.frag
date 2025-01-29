@@ -15,18 +15,25 @@ layout(set = 1, binding = 4) uniform LavaPBRMaterialProperties {
 	float use_normal_;
 }properties;
 layout(set = 1, binding = 5) uniform LightProperties{
-    int enabled;
-    int type;
+
+
     vec3 pos;
+    int enabled;
+
     vec3 dir;
+    int type;
+    
     vec3 diff_color;
+    float quad_att;
+    
     vec3 spec_color;
     float linear_att;
-    float quad_att;
+    
+    vec3 spot_dir;
     float constant_att;
+    
     float shininess;
     float strength;
-    vec3 spot_dir;
     float cutoff;
     float outer_cutoff;
 } light;
@@ -57,26 +64,23 @@ vec3 DirectionalLight(){
   float specularValue = pow(max(dot(viewDirection, reflectDirection), 0.0), light.shininess);
 
   vec3 diffuse = directionalIncidence * light.diff_color;
-  //vec3 specular = light.strength * specularValue * light.spec_color;
-  return diffuse; //+ specular;
+  vec3 specular = light.strength * specularValue * light.spec_color;
+  return diffuse + specular;
 }
 
 
 void main() 
 {
-
-  outFragColor = texture(baseColorTex,inUV);
-  //final_color += globalData.ambientColor;
+  
+  outFragColor = vec4(globalData.ambientColor,1.0);
   switch(light.type){
     case 0: {
-      outFragColor *= vec4(DirectionalLight(), 1.0);
-      //outFragColor += vec4(1.0,0.0,0.0,1.0);
-      outFragColor = vec4(light.diff_color,1.0);
+      outFragColor += vec4(DirectionalLight(),1.0); 
+      outFragColor *= texture(baseColorTex,inUV);
       break;
      }
      case 1: {
-      //outFragColor = texture(normalTex,inUV);
-      //final_color += DirectionalLight();
+      outFragColor = vec4(light.diff_color, 1.0);
       break;
      }
      default:{
@@ -85,6 +89,6 @@ void main()
      }
 
   }
-  
-
+  //outFragColor = vec4(final_color, 1.0);
+  //outFragColor *= texture(baseColorTex,inUV);
 }

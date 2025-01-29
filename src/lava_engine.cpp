@@ -43,7 +43,13 @@ LavaEngine* loaded_engine = nullptr;
 std::vector<std::function<void()>> LavaEngine::end_frame_callbacks;
 
 LavaEngine::LavaEngine() :
-	global_scene_data_{ glm::mat4(1.0f),glm::mat4(1.0f),glm::mat4(1.0f),glm::vec3(0.0f),glm::vec3(0.0f) },
+	global_scene_data_{ glm::mat4(1.0f),
+	glm::mat4(1.0f),
+	glm::mat4(1.0f),
+	glm::vec3(0.0f),
+	0,
+	glm::vec3(0.0f),
+	0 },
 	surface_{ instance_.get_instance(), window_.get_window() },
 	instance_{ validationLayers },
 	window_{ 1280, 720, "LavaEngine" },
@@ -94,7 +100,13 @@ LavaEngine::LavaEngine() :
 }
 
 LavaEngine::LavaEngine(unsigned int window_width, unsigned int window_height) :
-	global_scene_data_{ glm::mat4(1.0f),glm::mat4(1.0f),glm::mat4(1.0f),glm::vec3(0.0f),glm::vec3(0.0f)},
+	global_scene_data_{ glm::mat4(1.0f),
+	glm::mat4(1.0f),
+	glm::mat4(1.0f),
+	glm::vec3(0.0f),
+	0,
+	glm::vec3(0.0f),
+	0},
 	window_{window_width, window_height, "LavaEngine"},
 	instance_{validationLayers},
 	surface_{instance_.get_instance(), window_.get_window()},

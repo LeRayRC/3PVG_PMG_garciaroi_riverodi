@@ -83,7 +83,8 @@ int main(int argc, char* argv[]) {
 			auto& light = light_component->value();
 			light.enabled_ = true;
 			light.type_ = LIGHT_TYPE_DIRECTIONAL;
-			light.base_color_ = glm::vec3(1.0f, 0.0f, 0.0f);
+			light.base_color_ = glm::vec3(1.0f, 1.0f, 0.0f);
+			light.spec_color_ = glm::vec3(1.0f, 0.0f, 0.0f);
 		}
 		
 	//Create Camera entity
@@ -96,10 +97,9 @@ int main(int argc, char* argv[]) {
 	camera_tr.pos_ = glm::vec3(0.0f, 0.0f, 0.0f);
 	auto& camera_component = ecs_manager.getComponent<CameraComponent>(camera_entity)->value();
 
+	engine.global_scene_data_.ambientColor = glm::vec3(0.2f, 0.2f, 0.2f);
 
-	if (!transform_component->has_value()) {
-		printf("Nullopt!");
-	}
+	LavaInput* input = engine.window_.get_input();
 
 	while (!engine.shouldClose()) {
 
@@ -107,8 +107,30 @@ int main(int argc, char* argv[]) {
 		//tr.rot_ = glm::vec3(0.1f * engine.frame_data_.frame_number_,
 		//	0.02f * engine.frame_data_.frame_number_,
 		//	0.05f * engine.frame_data_.frame_number_);
+		auto& camera_tr = ecs_manager.getComponent<TransformComponent>(camera_entity)->value();
+
+		//if (ImGui::DragFloat3("Camera position", &camera_tr.pos_.x, 0.1f, -100.0f, 100.0f)) {
+
+		//}
+		//ImGui::DragFloat("Fov", &camera_camera.fov_, 0.1f, 0.0f, 180.0f);
+		//ImGui::DragFloat("Camera Rot X", &camera_tr.rot_.x, 0.5f, 88.0f, 268.0f);
+		//ImGui::DragFloat("Camera Rot Y", &camera_tr.rot_.y, 0.5f, -360.0f, 360.0f);
 
 		engine.updateMainCamera(&camera_component, &camera_tr);
+
+		if (input->isInputDown(KEY_D)) {
+			camera_tr.pos_.x += (1.0f * engine.dt_);
+		}
+		if (input->isInputDown(KEY_A)) {
+			camera_tr.pos_.x -= (1.0f * engine.dt_);
+		}
+		if (input->isInputDown(KEY_W)) {
+			camera_tr.pos_.x += (1.0f * engine.dt_);
+		}
+		if (input->isInputDown(KEY_W)) {
+			camera_tr.pos_.x -= (1.0f * engine.dt_);
+		}
+
 
 		engine.beginFrame();
 		engine.clearWindow();
