@@ -102,9 +102,11 @@ public:
 	std::shared_ptr<LavaImage> default_texture_image_white;
 	std::shared_ptr<LavaImage> default_texture_image_black;
 
-
 	std::chrono::steady_clock::time_point chrono_now_;
 	std::chrono::steady_clock::time_point chrono_last_update_;
+
+	void updateMainCamera(struct CameraComponent* camera_component,
+		struct TransformComponent* camera_tr);
 
 	std::mutex queue_mutex_;
 	double dt_;

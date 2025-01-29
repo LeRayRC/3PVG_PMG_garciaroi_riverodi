@@ -243,7 +243,8 @@ struct GlobalSceneData {
 	glm::mat4 view;
 	glm::mat4 proj;
 	glm::mat4 viewproj;
-	glm::vec4 ambientColor;
+	glm::vec3 ambientColor;
+	glm::vec3 cameraPos;
 };
 
 struct CameraParameters {

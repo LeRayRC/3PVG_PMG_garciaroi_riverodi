@@ -14,21 +14,77 @@ layout(set = 1, binding = 4) uniform LavaPBRMaterialProperties {
 	float opacity_mask_;
 	float use_normal_;
 }properties;
+layout(set = 1, binding = 5) uniform LightProperties{
+    int enabled;
+    int type;
+    vec3 pos;
+    vec3 dir;
+    vec3 diff_color;
+    vec3 spec_color;
+    float linear_att;
+    float quad_att;
+    float constant_att;
+    float shininess;
+    float strength;
+    vec3 spot_dir;
+    float cutoff;
+    float outer_cutoff;
+} light;
 
 //shader input
 layout (location = 0) in vec3 inColor;
 layout (location = 1) in vec2 inUV;
 layout (location = 2) in vec3 inNormal;
-layout (location = 3) in vec3 TangentLightPos;
-layout (location = 4) in vec3 TangentViewPos;
-layout (location = 5) in vec3 TangentFragPos;
+layout (location = 3) in vec3 inPos;
+layout (location = 4) in vec3 TangentLightPos;
+layout (location = 5) in vec3 TangentViewPos;
+layout (location = 6) in vec3 TangentFragPos;
 
 //output write
 layout (location = 0) out vec4 outFragColor;
 
+
+vec3 final_color = vec3(0.0, 0.0, 0.0);
+
+
+vec3 DirectionalLight(){
+  vec3 normal_norm = normalize(inNormal);
+  float directionalIncidence = max(dot(normal_norm, light.dir), 0.0);
+  //Specular
+  vec3 viewDirection = normalize(globalData.cameraPos - inPos);
+  vec3 reflectDirection = reflect(-light.dir, normal_norm);
+
+  float specularValue = pow(max(dot(viewDirection, reflectDirection), 0.0), light.shininess);
+
+  vec3 diffuse = directionalIncidence * light.diff_color;
+  //vec3 specular = light.strength * specularValue * light.spec_color;
+  return diffuse; //+ specular;
+}
+
+
 void main() 
 {
 
+  outFragColor = texture(baseColorTex,inUV);
+  //final_color += globalData.ambientColor;
+  switch(light.type){
+    case 0: {
+      outFragColor *= vec4(DirectionalLight(), 1.0);
+      //outFragColor += vec4(1.0,0.0,0.0,1.0);
+      outFragColor = vec4(light.diff_color,1.0);
+      break;
+     }
+     case 1: {
+      //outFragColor = texture(normalTex,inUV);
+      //final_color += DirectionalLight();
+      break;
+     }
+     default:{
+      //outFragColor = texture(metallicRogTex,inUV);
+      break;
+     }
 
-	outFragColor = texture(baseColorTex,inUV);
+  }
+  
+
 }

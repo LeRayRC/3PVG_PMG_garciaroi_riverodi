@@ -159,6 +159,136 @@ struct RotateComponent {
   }
 };
 
+enum LightType {
+  LIGHT_TYPE_DIRECTIONAL,
+  LIGHT_TYPE_POINT,
+  LIGHT_TYPE_SPOT
+};
+
+
+
+struct  LightComponent {
+  bool enabled_;
+  LightType type_;
+  glm::vec3 dir_;
+  glm::vec3 base_color_;
+  glm::vec3 spec_color_;
+  //glm::vec3 camera_position_; //Will be present on the render system structure
+  //glm::vec3 pos_;             //Will be present on the render system structure
+  float linear_att_;
+  float quad_att_;
+  float constant_att_;
+  float shininess_;
+  float strength_;
+  glm::vec3 spot_dir_;
+  float cutoff_;
+  float outer_cutoff_;
+
+  LightComponent() {
+    enabled_ = true;
+    type_ = LIGHT_TYPE_DIRECTIONAL;
+    dir_ = glm::vec3(0.0f, 0.0f, 0.0f);
+    base_color_ = glm::vec3(0.0f, 0.0f, 0.0f);
+    spec_color_ = glm::vec3(0.0f, 0.0f, 0.0f);
+    spot_dir_ = glm::vec3(0.0f, 0.0f, 0.0f);
+    linear_att_ = 0.0014f;
+    quad_att_ = 0.00007f;
+    constant_att_ = 1.0f;
+    shininess_ = 90.0f;
+    strength_ = 0.5f;
+    cutoff_ = cosf(3.1416f * 10.0f / 180.0f);
+    outer_cutoff_ = cosf(3.1416f * 30.0f / 180.0f);
+  }
+
+  LightComponent(size_t entity) {
+    enabled_ = true;
+    type_ = LIGHT_TYPE_DIRECTIONAL;
+    dir_ = glm::vec3(0.0f, 0.0f, 0.0f);
+    base_color_ = glm::vec3(0.0f, 0.0f, 0.0f);
+    spec_color_ = glm::vec3(0.0f, 0.0f, 0.0f);
+    spot_dir_ = glm::vec3(0.0f, 0.0f, 0.0f);
+    linear_att_ = 0.0014f;
+    quad_att_ = 0.00007f;
+    constant_att_ = 1.0f;
+    shininess_ = 90.0f;
+    strength_ = 0.5f;
+    cutoff_ = cosf(3.1416f * 10.0f / 180.0f);
+    outer_cutoff_ = cosf(3.1416f * 30.0f / 180.0f);
+  }
+};
+
+
+//This structure will be loaded on the pbr shader
+struct LightShaderStruct {
+  int enabled;
+  int type;
+  glm::vec3 pos;
+  glm::vec3 dir;
+  glm::vec3 diff_color;
+  glm::vec3 spec_color;
+  float linear_att;
+  float quad_att;
+  float constant_att;
+  float shininess;
+  float strength;
+  glm::vec3 spot_dir;
+  float cutoff;
+  float outer_cutoff;
+
+  LightShaderStruct() {
+    enabled = 1;
+    type = 0;
+    pos = glm::vec3(0.0f, 0.0f, 0.0f);
+    dir = glm::vec3(0.0f, 0.0f, 0.0f);
+    diff_color = glm::vec3(0.0f, 0.0f, 0.0f);
+    spec_color = glm::vec3(0.0f, 0.0f, 0.0f);
+    spot_dir = glm::vec3(0.0f, 0.0f, 0.0f);
+    linear_att = 0.0014f;
+    quad_att = 0.00007f;
+    constant_att = 1.0f;
+    shininess = 90.0f;
+    strength = 0.5f;
+    cutoff = cosf(3.1416f * 10.0f / 180.0f);
+    outer_cutoff = cosf(3.1416f * 30.0f / 180.0f);
+  }
+
+  void config(LightComponent light, TransformComponent tr) {
+    enabled = light.enabled_;
+    type = (int)light.type_;
+    pos = tr.pos_;
+
+    // Matriz de identidad
+    glm::mat4 rotationMatrix = glm::mat4(1.0f);
+
+    // Aplicar rotaciones en el orden Z, Y, X (o el orden que prefieras)
+    rotationMatrix = glm::rotate(rotationMatrix, tr.rot_.z, glm::vec3(0.0f, 0.0f, 1.0f)); // Rotación en Z
+    rotationMatrix = glm::rotate(rotationMatrix, tr.rot_.y, glm::vec3(0.0f, 1.0f, 0.0f)); // Rotación en Y
+    rotationMatrix = glm::rotate(rotationMatrix, tr.rot_.x, glm::vec3(1.0f, 0.0f, 0.0f)); // Rotación en X
+
+    // Obtener el vector forward (tercera columna de la matriz, invertido si Z negativo es forward)
+    glm::vec3 forwardVector = -glm::vec3(rotationMatrix[2]);
+    forwardVector = glm::normalize(forwardVector);
+
+    
+    //float pitch = glm::radians(tr.rot_.x); // Rotación en el eje X
+    //float yaw = glm::radians(tr.rot_.y);   // Rotación en el eje Y
+    //float roll = glm::radians(tr.rot_.z);
+    //glm::mat4 rotation_matrix = glm::yawPitchRoll(yaw, pitch, roll);
+    dir = forwardVector; //glm::vec3(rotation_matrix * glm::vec4(0.0f, 0.0f, 1.0f, 0.0f));
+
+    diff_color = light.base_color_;
+    spec_color = light.spec_color_;
+    linear_att = light.linear_att_;
+    quad_att = light.quad_att_;
+    constant_att = light.constant_att_;
+    shininess = light.shininess_;
+    strength = light.strength_;
+    spot_dir = light.spot_dir_;
+    cutoff = light.cutoff_;
+    outer_cutoff = light.outer_cutoff_;
+  }
+};
+
 
 #endif // !__LAVA_ECS_COMPONENTS_H__
 

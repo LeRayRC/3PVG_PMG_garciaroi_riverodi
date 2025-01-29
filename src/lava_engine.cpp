@@ -14,6 +14,7 @@
 #include "engine/lava_pipeline_builder.hpp"
 #include "engine/lava_image.hpp"
 #include "engine/lava_pbr_material.hpp"
+#include "ecs/lava_ecs_components.hpp"
 #include "lava_transform.hpp"
 #include <future>
 #include <chrono>
@@ -42,7 +43,7 @@ LavaEngine* loaded_engine = nullptr;
 std::vector<std::function<void()>> LavaEngine::end_frame_callbacks;
 
 LavaEngine::LavaEngine() :
-	global_scene_data_{ glm::mat4(1.0f),glm::mat4(1.0f),glm::mat4(1.0f),glm::vec4(0.0f)},
+	global_scene_data_{ glm::mat4(1.0f),glm::mat4(1.0f),glm::mat4(1.0f),glm::vec3(0.0f),glm::vec3(0.0f) },
 	surface_{ instance_.get_instance(), window_.get_window() },
 	instance_{ validationLayers },
 	window_{ 1280, 720, "LavaEngine" },
@@ -93,7 +94,7 @@ LavaEngine::LavaEngine() :
 }
 
 LavaEngine::LavaEngine(unsigned int window_width, unsigned int window_height) :
-	global_scene_data_{ glm::mat4(1.0f),glm::mat4(1.0f),glm::mat4(1.0f),glm::vec4(1.0f) },
+	global_scene_data_{ glm::mat4(1.0f),glm::mat4(1.0f),glm::mat4(1.0f),glm::vec3(0.0f),glm::vec3(0.0f)},
 	window_{window_width, window_height, "LavaEngine"},
 	instance_{validationLayers},
 	surface_{instance_.get_instance(), window_.get_window()},
@@ -172,6 +173,19 @@ void LavaEngine::initGlobalData() {
 	global_descriptor_allocator_.writeBuffer(0, global_data_buffer_->buffer_.buffer, sizeof(GlobalSceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
 	global_descriptor_allocator_.updateSet(global_descriptor_set_);
 	global_descriptor_allocator_.clear();
+}
+
+void LavaEngine::updateMainCamera(struct CameraComponent* camera_component,
+	struct TransformComponent* camera_tr) {
+	camera_component->LookAt(camera_tr->pos_, camera_tr->rot_);
+	global_scene_data_.cameraPos = camera_tr->pos_;
+	global_scene_data_.view = camera_component->view_;
+	global_scene_data_.proj = glm::perspective(glm::radians(camera_component->fov_),
+		(float)window_extent_.width / (float)window_extent_.height, camera_component->near_, camera_component->far_);
+	global_scene_data_.proj[1][1] *= -1;
+	global_scene_data_.viewproj = global_scene_data_.proj * global_scene_data_.view;
+
+	global_data_buffer_->updateBufferData(&global_scene_data_, sizeof(GlobalSceneData));
 }
 
 void LavaEngine::beginFrame() {

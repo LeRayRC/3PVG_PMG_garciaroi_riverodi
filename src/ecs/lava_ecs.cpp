@@ -8,6 +8,7 @@ LavaECSManager::LavaECSManager(){
   addComponentType<CameraComponent>();
   addComponentType<LuaScriptComponent>();
   addComponentType<RotateComponent>();
+  addComponentType<LightComponent>();
 }
 
 LavaECSManager::~LavaECSManager()

@@ -7,9 +7,10 @@
 layout (location = 0) out vec3 outColor;
 layout (location = 1) out vec2 outUV;
 layout (location = 2) out vec3 outNormal;
-layout (location = 3) out vec3 tangentLightPos;
-layout (location = 4) out vec3 tangentViewPos;
-layout (location = 5) out vec3 tangentFragPos;
+layout (location = 3) out vec3 outPos;
+layout (location = 4) out vec3 tangentLightPos;
+layout (location = 5) out vec3 tangentViewPos;
+layout (location = 6) out vec3 tangentFragPos;
 
 struct Vertex {
 	vec3 position;
@@ -52,6 +53,7 @@ void main()
 
 	//output data
 	vec4 pos = PushConstants.render_matrix *vec4(v.position, 1.0);
+	outPos = pos.xyz;
 
 	gl_Position = globalData.viewproj * pos;
 	outColor = v.color.xyz;

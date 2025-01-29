@@ -29,7 +29,6 @@ void ecs_render_imgui(LavaECSManager& ecs_manager, size_t camera_entity) {
 	ImGui::End();
 
 	camera_camera.LookAt(camera_tr.pos_, camera_tr.rot_);
-	
 }
 
 void engine_imgui_window(LavaEngine& engine) {
@@ -143,9 +142,6 @@ int main(int argc, char* argv[]) {
 	ecs_manager.addComponent<TransformComponent>(camera_entity);
 	ecs_manager.addComponent<CameraComponent>(camera_entity);
 
-	
-
-	
 	auto& camera_tr = ecs_manager.getComponent<TransformComponent>(camera_entity)->value();
 	camera_tr.rot_ = glm::vec3(180.0f, 0.0f, 0.0f);
 	camera_tr.pos_ = glm::vec3(0.0f, 0.0f, 70.0f);

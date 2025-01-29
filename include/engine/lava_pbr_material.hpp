@@ -2,6 +2,7 @@
 #define __LAVA_PBR_MATERIAL_H__ 1
 
 #include "lava_types.hpp"
+#include "ecs/lava_ecs_components.hpp"
 #include "lava_engine.hpp"
 
 
@@ -27,7 +28,8 @@ public:
 	}*/
 
 
-	void UpdateGlobalDescriptorSet(LavaBuffer& buffer_properties) {
+	void UpdateGlobalDescriptorSet(LavaBuffer& buffer_properties,
+	LavaBuffer& light_buffer_properties, LightShaderStruct light_parameter) {
 		engine_->global_descriptor_allocator_.clear();
 		engine_->global_descriptor_allocator_.writeImage(
 			0,
@@ -56,6 +58,8 @@ public:
 
 		buffer_properties.updateBufferData(&uniform_properties, sizeof(LavaPBRMaterialProperties));
 		engine_->global_descriptor_allocator_.writeBuffer(4, buffer_properties.get_buffer().buffer, sizeof(LavaPBRMaterialProperties), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+		light_buffer_properties.updateBufferData(&light_parameter, sizeof(LightShaderStruct));
+		engine_->global_descriptor_allocator_.writeBuffer(5, light_buffer_properties.get_buffer().buffer, sizeof(LightShaderStruct), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
 	}
 
 private:
@@ -70,6 +74,7 @@ private:
 	std::shared_ptr<LavaImage> normal_; // If null pick the global normal texture
 
 	LavaPBRMaterialProperties uniform_properties;
+	
 
 	LavaEngine *engine_;
 

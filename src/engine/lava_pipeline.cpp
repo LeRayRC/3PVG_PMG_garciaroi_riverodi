@@ -172,13 +172,15 @@ void LavaPipeline::configureDescriptorSet(VkPipelineLayoutCreateInfo* info,
 			builder.addBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER); // roughness_metallic_texture
 			builder.addBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER); // opacity
 			builder.addBinding(4, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER); // floats values(struct)
+			builder.addBinding(5, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER); // Light structure
 
-			VkDescriptorBindingFlags bindingFlags[5] = {
+			VkDescriptorBindingFlags bindingFlags[6] = {
 				VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT, // Binding 0
 				VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT, // Binding 1
 				VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT, // Binding 2
 				VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT, // Binding 3
 				VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT, // Binding 4
+				VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT
 			};
 
 			VkDescriptorSetLayoutBindingFlagsCreateInfo bindingFlagsInfo = {};

@@ -30,12 +30,16 @@ LavaPBRRenderSystem::LavaPBRRenderSystem(LavaEngine &engine) :
 
 	pbr_data_buffer_ = std::make_unique<LavaBuffer>(engine.allocator_, sizeof(LavaPBRMaterialProperties), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
 	pbr_data_buffer_->setMappedData();
+
+	light_data_buffer_ = std::make_unique<LavaBuffer>(engine.allocator_, sizeof(LightShaderStruct), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
+	light_data_buffer_->setMappedData();
 }
 
 
 void LavaPBRRenderSystem::render(
   std::vector<std::optional<TransformComponent>>& transform_vector,
-  std::vector<std::optional<RenderComponent>>& render_vector
+  std::vector<std::optional<RenderComponent>>& render_vector,
+	std::vector<std::optional<LightComponent>>& light_component_vector
   ) {
 	
 
@@ -83,92 +87,118 @@ void LavaPBRRenderSystem::render(
   auto render_it = render_vector.begin();
   auto transform_end = transform_vector.end();
   auto render_end = render_vector.end();
-  for (; transform_it != transform_end || render_it != render_end; transform_it++, render_it++) {
-    if(!transform_it->has_value()) continue;
-    if (!render_it->has_value()) continue;
 
-		//Clean Descriptor sets for current frame
-		frame_data.descriptor_manager.clear();
+	auto light_transform_it = transform_vector.begin();
+	auto light_transform_end = transform_vector.end();
+	auto light_it = light_component_vector.begin();
+	auto light_end = light_component_vector.end();
+	//for each light we iterate over the every render component
+	 
+	for (; light_transform_it != light_transform_end || light_it != light_end; light_transform_it++, light_it++)
+	{
+		if (!light_transform_it->has_value()) continue;
+		if (!light_it->has_value()) continue;
 
-		std::shared_ptr<LavaMesh> lava_mesh = render_it->value().mesh_;
-		std::shared_ptr<MeshAsset> mesh = lava_mesh->mesh_;
+		LightComponent light_component = light_it->value();
 
-		GPUDrawPushConstants push_constants;
-		glm::mat4 model = glm::mat4(1.0f);
-		model = glm::translate(model, transform_it->value().pos_);
-		model = glm::rotate(model, glm::radians(transform_it->value().rot_.x), glm::vec3(1.0f, 0.0f, 0.0f));
-		model = glm::rotate(model, glm::radians(transform_it->value().rot_.y), glm::vec3(0.0f, 1.0f, 0.0f));
-		model = glm::rotate(model, glm::radians(transform_it->value().rot_.z), glm::vec3(0.0f, 0.0f, 1.0f));
-		model = glm::scale(model, transform_it->value().scale_);
 
-		VkDescriptorSet pbr_descriptor_set = pipeline_.get_descriptor_set();
+		for (; transform_it != transform_end || render_it != render_end; transform_it++, render_it++) {
+			if(!transform_it->has_value()) continue;
+			if (!render_it->has_value()) continue;
 
-		//If material changes then the images are updated from descriptor set
-		//if()
-		//engine_.global_descriptor_allocator_.clear();
-		//engine_.global_descriptor_allocator_.writeImage(
-		//	0,
-		//	lava_mesh->get_material()->base_color_->get_allocated_image().image_view,
-		//	lava_mesh->get_material()->base_color_->get_sampler(),
-		//	VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-		//	VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+			//Clean Descriptor sets for current frame
+			frame_data.descriptor_manager.clear();
 
-		lava_mesh->get_material()->UpdateGlobalDescriptorSet(*pbr_data_buffer_.get());
+			std::shared_ptr<LavaMesh> lava_mesh = render_it->value().mesh_;
+			std::shared_ptr<MeshAsset> mesh = lava_mesh->mesh_;
+
+			GPUDrawPushConstants push_constants;
+			glm::mat4 model = glm::mat4(1.0f);
+			model = glm::translate(model, transform_it->value().pos_);
+			model = glm::rotate(model, glm::radians(transform_it->value().rot_.x), glm::vec3(1.0f, 0.0f, 0.0f));
+			model = glm::rotate(model, glm::radians(transform_it->value().rot_.y), glm::vec3(0.0f, 1.0f, 0.0f));
+			model = glm::rotate(model, glm::radians(transform_it->value().rot_.z), glm::vec3(0.0f, 0.0f, 1.0f));
+			model = glm::scale(model, transform_it->value().scale_);
+
+			VkDescriptorSet pbr_descriptor_set = pipeline_.get_descriptor_set();
+
+			//If material changes then the images are updated from descriptor set
+			//if()
+			//engine_.global_descriptor_allocator_.clear();
+			//engine_.global_descriptor_allocator_.writeImage(
+			//	0,
+			//	lava_mesh->get_material()->base_color_->get_allocated_image().image_view,
+			//	lava_mesh->get_material()->base_color_->get_sampler(),
+			//	VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			//	VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+
+			//Create LightShaderParameterStructures
+			LightShaderStruct light_shader_struct = {};
+			light_shader_struct.config(light_it->value(), light_transform_it->value());
+
+			lava_mesh->get_material()->UpdateGlobalDescriptorSet(
+				*pbr_data_buffer_.get(), *light_data_buffer_.get(), light_shader_struct);
+
+			//Update descriptor set with the lights structure from the component
+			// IMPORTANT
+			//Elemenet with index 5 of pbr_descriptor_set references the ligth_parameters uniform buffer
+
 		
-		engine_.global_descriptor_allocator_.updateSet(pbr_descriptor_set);
-		engine_.global_descriptor_allocator_.clear();
+			engine_.global_descriptor_allocator_.updateSet(pbr_descriptor_set);
+			engine_.global_descriptor_allocator_.clear();
 
 
-		vkCmdBindDescriptorSets(engine_.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-														pipeline_.get_layout(),
-														1, 1, &pbr_descriptor_set, 0, nullptr);
+			vkCmdBindDescriptorSets(engine_.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+															pipeline_.get_layout(),
+															1, 1, &pbr_descriptor_set, 0, nullptr);
 
 
-		// Vincular los Vertex y Index Buffers
-		GPUMeshBuffers& meshBuffers = mesh->meshBuffers;
-		VkDeviceSize offsets[] = { 0 };
-		//VkBuffer vertex_buffer = meshBuffers.vertex_buffer->get_buffer().buffer;
-		//vkCmdBindVertexBuffers(engine_.commandBuffer, 0, 1, &vertex_buffer, offsets);
-		if (frame_data.last_bound_mesh != lava_mesh) {
-			vkCmdBindIndexBuffer(engine_.commandBuffer, meshBuffers.index_buffer->get_buffer().buffer, 0, VK_INDEX_TYPE_UINT32);
+			// Vincular los Vertex y Index Buffers
+			GPUMeshBuffers& meshBuffers = mesh->meshBuffers;
+			VkDeviceSize offsets[] = { 0 };
+			//VkBuffer vertex_buffer = meshBuffers.vertex_buffer->get_buffer().buffer;
+			//vkCmdBindVertexBuffers(engine_.commandBuffer, 0, 1, &vertex_buffer, offsets);
+			if (frame_data.last_bound_mesh != lava_mesh) {
+				vkCmdBindIndexBuffer(engine_.commandBuffer, meshBuffers.index_buffer->get_buffer().buffer, 0, VK_INDEX_TYPE_UINT32);
+			}
+		
+			push_constants.world_matrix = model; // global_scene_data_.viewproj* model;
+			push_constants.vertex_buffer = meshBuffers.vertex_buffer_address;
+
+			// Dibujar cada superficie
+			//int count_surfaces = mesh->count_surfaces;
+			//int total_count = 0;
+			//for (int i = 0; i < count_surfaces;i++) {
+			//	GeoSurface& surface = mesh->surfaces[i];
+			//	total_count += surface.count;
+			//}
+		
+			vkCmdPushConstants(engine_.commandBuffer, pipeline_.get_layout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &push_constants);
+			vkCmdDrawIndexed(engine_.commandBuffer, mesh->index_count, 1, 0, 0, 0);
+
+			if (frame_data.last_bound_mesh != lava_mesh) {
+				frame_data.last_bound_mesh = lava_mesh;
+			}
+
+
+			//VkDescriptorSet image_set = mesh->get_material()->get_descriptor_set();
+			//vkCmdBindDescriptorSets(engine_.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+			//	pipeline_.get_layout(),
+			//	1, 1, &image_set, 0, nullptr);
+
+			//push_constants.world_matrix = model; // global_scene_data_.viewproj* model;
+			//
+			//for (std::shared_ptr<MeshAsset> submesh : mesh->meshes_) {
+			//	push_constants.vertex_buffer = submesh->meshBuffers.vertex_buffer_address;
+			//	vkCmdBindIndexBuffer(engine_.commandBuffer, submesh->meshBuffers.index_buffer->get_buffer().buffer, 0, VK_INDEX_TYPE_UINT32);
+			//	vkCmdPushConstants(engine_.commandBuffer, pipeline_.get_layout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &push_constants);
+			//	vkCmdDrawIndexed(engine_.commandBuffer, submesh->surfaces[0].count, 1, submesh->surfaces[0].start_index, 0, 0);
+			//	
+			//}
+			//last_mesh = mesh;
+
 		}
-		
-		push_constants.world_matrix = model; // global_scene_data_.viewproj* model;
-		push_constants.vertex_buffer = meshBuffers.vertex_buffer_address;
-
-		// Dibujar cada superficie
-		//int count_surfaces = mesh->count_surfaces;
-		//int total_count = 0;
-		//for (int i = 0; i < count_surfaces;i++) {
-		//	GeoSurface& surface = mesh->surfaces[i];
-		//	total_count += surface.count;
-		//}
-		
-		vkCmdPushConstants(engine_.commandBuffer, pipeline_.get_layout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &push_constants);
-		vkCmdDrawIndexed(engine_.commandBuffer, mesh->index_count, 1, 0, 0, 0);
-
-		if (frame_data.last_bound_mesh != lava_mesh) {
-			frame_data.last_bound_mesh = lava_mesh;
-		}
-
-
-		//VkDescriptorSet image_set = mesh->get_material()->get_descriptor_set();
-		//vkCmdBindDescriptorSets(engine_.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-		//	pipeline_.get_layout(),
-		//	1, 1, &image_set, 0, nullptr);
-
-		//push_constants.world_matrix = model; // global_scene_data_.viewproj* model;
-		//
-		//for (std::shared_ptr<MeshAsset> submesh : mesh->meshes_) {
-		//	push_constants.vertex_buffer = submesh->meshBuffers.vertex_buffer_address;
-		//	vkCmdBindIndexBuffer(engine_.commandBuffer, submesh->meshBuffers.index_buffer->get_buffer().buffer, 0, VK_INDEX_TYPE_UINT32);
-		//	vkCmdPushConstants(engine_.commandBuffer, pipeline_.get_layout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &push_constants);
-		//	vkCmdDrawIndexed(engine_.commandBuffer, submesh->surfaces[0].count, 1, submesh->surfaces[0].start_index, 0, 0);
-		//	
-		//}
-		//last_mesh = mesh;
-
-  }
+	}
 
 	vkCmdEndRendering(engine_.commandBuffer);
 
