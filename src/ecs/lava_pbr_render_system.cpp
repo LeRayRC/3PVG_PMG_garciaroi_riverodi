@@ -80,6 +80,10 @@ void LavaPBRRenderSystem::render(
 	//First draw with ambient only
 	vkCmdBindPipeline(engine_.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_first_light_.get_pipeline());
 
+	vkCmdBindDescriptorSets(engine_.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+		pipeline_.get_layout(),
+		0, 1, &engine_.global_descriptor_set_, 0, nullptr);
+
 	auto transform_it = transform_vector.begin();
 	auto render_it = render_vector.begin();
 	auto transform_end = transform_vector.end();
@@ -103,7 +107,7 @@ void LavaPBRRenderSystem::render(
 		model = glm::rotate(model, glm::radians(transform_it->value().rot_.z), glm::vec3(0.0f, 0.0f, 1.0f));
 		model = glm::scale(model, transform_it->value().scale_);
 
-		VkDescriptorSet pbr_descriptor_set = pipeline_.get_descriptor_set();
+		VkDescriptorSet pbr_descriptor_set = pipeline_first_light_.get_descriptor_set();
 		lava_mesh->get_material()->UpdateGlobalDescriptorSet(
 			*pbr_data_buffer_.get());
 
@@ -111,7 +115,7 @@ void LavaPBRRenderSystem::render(
 		engine_.global_descriptor_allocator_.clear();
 
 		vkCmdBindDescriptorSets(engine_.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-			pipeline_.get_layout(),
+			pipeline_first_light_.get_layout(),
 			1, 1, &pbr_descriptor_set, 0, nullptr);
 
 		// Vincular los Vertex y Index Buffers
@@ -124,7 +128,7 @@ void LavaPBRRenderSystem::render(
 		push_constants.world_matrix = model;
 		push_constants.vertex_buffer = meshBuffers.vertex_buffer_address;
 
-		vkCmdPushConstants(engine_.commandBuffer, pipeline_.get_layout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &push_constants);
+		vkCmdPushConstants(engine_.commandBuffer, pipeline_first_light_.get_layout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &push_constants);
 		vkCmdDrawIndexed(engine_.commandBuffer, mesh->index_count, 1, 0, 0, 0);
 
 		if (frame_data.last_bound_mesh != lava_mesh) {
@@ -137,9 +141,7 @@ void LavaPBRRenderSystem::render(
 	auto light_transform_end = transform_vector.end();
 	auto light_it = light_component_vector.begin();
 	auto light_end = light_component_vector.end();
-	//for each light we iterate over the every render component
-
-	 
+	//for each light we iterate over the every render component 
 	for (; light_transform_it != light_transform_end || light_it != light_end; light_transform_it++, light_it++)
 	{
 		if (!light_transform_it->has_value()) continue;
@@ -153,7 +155,6 @@ void LavaPBRRenderSystem::render(
 		vkCmdBindPipeline(engine_.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_.get_pipeline());
 		//}
 
-	
 		vkCmdBindDescriptorSets(engine_.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
 			pipeline_.get_layout(),
 			0, 1, &engine_.global_descriptor_set_, 0, nullptr);
