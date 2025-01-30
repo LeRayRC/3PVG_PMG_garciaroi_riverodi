@@ -132,16 +132,28 @@ struct CameraComponent {
     float yaw = glm::radians(rot.y);   // Rotación en el eje Y
     float roll = glm::radians(rot.z);
 
-    glm::mat4 rotation_matrix = glm::yawPitchRoll(yaw, pitch, roll);
+    //glm::mat4 rotation_matrix = glm::yawPitchRoll(yaw, pitch, roll);
 
-    // Extraer el vector de dirección desde la matriz de rotación
-    glm::vec3 view_direction = glm::vec3(rotation_matrix * glm::vec4(0.0f, 0.0f, 1.0f, 0.0f));
+    //// Extraer el vector de dirección desde la matriz de rotación
+    //glm::vec3 view_direction = glm::vec3(rotation_matrix * glm::vec4(0.0f, 0.0f, 1.0f, 0.0f));
 
-    glm::vec3 up_vector = glm::vec3(0.0f, 1.0f, 0.0f);
-    // Calculamos el punto objetivo (target)
-    glm::vec3 target = pos + glm::normalize(view_direction);
-    //// Generamos la matriz de vista
-    view_ = glm::lookAt(pos, target, up_vector);
+    //glm::vec3 up_vector = glm::vec3(0.0f, 1.0f, 0.0f);
+    //// Calculamos el punto objetivo (target)
+    //glm::vec3 target = pos + glm::normalize(view_direction);
+    ////// Generamos la matriz de vista
+    //view_ = glm::lookAt(pos, target, up_vector);
+
+    //glm::mat4 rotate_180_x = glm::rotate(glm::mat4(1.0f), glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+    //view_ = rotate_180_x * view_;
+
+
+    glm::quat pitchRotation = glm::angleAxis(pitch, glm::vec3{ 1.f, 0.f, 0.f });
+    glm::quat yawRotation = glm::angleAxis(yaw, glm::vec3{ 0.f, -1.f, 0.f });
+
+    glm::mat4 rotationMatrix = glm::toMat4(yawRotation) * glm::toMat4(pitchRotation);
+
+    glm::mat4 cameraTranslation = glm::translate(glm::mat4(1.f), pos);
+    view_ = glm::inverse(cameraTranslation * rotationMatrix);
   }
 };
 
@@ -283,7 +295,7 @@ struct LightShaderStruct {
     rotationMatrix = glm::rotate(rotationMatrix, tr.rot_.x, glm::vec3(1.0f, 0.0f, 0.0f)); // Rotación en X
 
     // Obtener el vector forward (tercera columna de la matriz, invertido si Z negativo es forward)
-    glm::vec3 forwardVector = -glm::vec3(rotationMatrix[2]);
+    glm::vec3 forwardVector = glm::vec3(rotationMatrix[2]);
     forwardVector = glm::normalize(forwardVector);
 
     

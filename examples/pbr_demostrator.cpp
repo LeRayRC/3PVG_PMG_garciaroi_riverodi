@@ -20,13 +20,60 @@ void ecs_render_imgui(LavaECSManager& ecs_manager, size_t camera_entity) {
 	}
 
 	ImGui::DragFloat("Fov", &camera_camera.fov_, 0.1f, 0.0f, 180.0f);
-	ImGui::DragFloat("Camera Rot X", &camera_tr.rot_.x, 0.5f, 88.0f, 268.0f);
+	ImGui::DragFloat("Camera Rot X", &camera_tr.rot_.x, 0.5f, -360.0f, 360.0f);
 	ImGui::DragFloat("Camera Rot Y", &camera_tr.rot_.y, 0.5f, -360.0f, 360.0f);
+
 
 	ImGui::End();
 
 	
 }
+
+void ecs_light_imgui(std::vector<std::optional<TransformComponent>>& transform_vector,
+	std::vector<std::optional<LightComponent>>& light_component_vector) {
+
+	auto light_transform_it = transform_vector.begin();
+	auto light_transform_end = transform_vector.end();
+	auto light_it = light_component_vector.begin();
+	auto light_end = light_component_vector.end();
+
+	const char* lightTypes[] = { "Directional", "Point", "Spot" };
+	int lights_count = 0;
+	ImGui::Begin("ECS Light config");
+	
+	for (; light_transform_it != light_transform_end || light_it != light_end; light_transform_it++, light_it++)
+	{
+		if (!light_transform_it->has_value()) continue;
+		if (!light_it->has_value()) continue;
+	
+		ImGui::PushID(lights_count);
+		if(ImGui::TreeNode("Light" , "Light %d",lights_count)) {
+			static int type = (int)light_it->value().type_;
+
+			ImGui::Checkbox("Enable", &light_it->value().enabled_);
+			if (ImGui::Combo("Light Type", &type, lightTypes, IM_ARRAYSIZE(lightTypes))) {
+				light_it->value().type_ = (LightType)type;
+			}
+			ImGui::DragFloat3("Light Rot", &light_transform_it->value().rot_.x, 0.05f, -360.0f, 360.0f);
+			ImGui::ColorEdit3("Base color", &light_it->value().base_color_.x);
+			ImGui::ColorEdit3("Specular color", &light_it->value().spec_color_.x);
+			ImGui::DragFloat("Linear Att", &light_it->value().linear_att_, 0.01f, 0.0f, 0.7f);
+			ImGui::DragFloat("Quadratic Att", &light_it->value().quad_att_, 0.001f, 0.0f, 1.8f);
+			ImGui::DragFloat("Constant Att", &light_it->value().constant_att_, 0.5f, -360.0f, 360.0f);
+			ImGui::DragFloat("Shininess", &light_it->value().shininess_, 0.5f, 1.0f, 256.0f);
+			ImGui::DragFloat("Strength", &light_it->value().strength_, 0.01f, 0.0f, 1.0f);
+			ImGui::TreePop();
+		}
+		ImGui::PopID();
+		lights_count++;
+	}
+
+	ImGui::End();
+
+
+}
+
+
 
 int main(int argc, char* argv[]) {
 	std::shared_ptr<LavaWindowSystem>  lava_system = LavaWindowSystem::Get();
@@ -74,18 +121,53 @@ int main(int argc, char* argv[]) {
 		render.mesh_ = mesh_;
 	}
 
-	size_t light_entity = ecs_manager.createEntity();
-	ecs_manager.addComponent<TransformComponent>(light_entity);
-	ecs_manager.addComponent<LightComponent>(light_entity);
-	
+
+	{
+		size_t light_entity = ecs_manager.createEntity();
+		ecs_manager.addComponent<TransformComponent>(light_entity);
+		ecs_manager.addComponent<LightComponent>(light_entity);
+
 		auto light_component = ecs_manager.getComponent<LightComponent>(light_entity);
 		if (light_component) {
 			auto& light = light_component->value();
 			light.enabled_ = true;
 			light.type_ = LIGHT_TYPE_DIRECTIONAL;
-			light.base_color_ = glm::vec3(1.0f, 1.0f, 0.0f);
-			light.spec_color_ = glm::vec3(1.0f, 0.0f, 0.0f);
+			light.base_color_ = glm::vec3(1.0f, 0.0f, 0.0f);
+			light.spec_color_ = glm::vec3(0.0f, 0.0f, 0.0f);
 		}
+	}
+
+	{
+		size_t light_entity = ecs_manager.createEntity();
+		ecs_manager.addComponent<TransformComponent>(light_entity);
+		ecs_manager.addComponent<LightComponent>(light_entity);
+		
+		auto light_component = ecs_manager.getComponent<LightComponent>(light_entity);
+		if (light_component) {
+			auto& light = light_component->value();
+			light.enabled_ = true;
+			light.type_ = LIGHT_TYPE_DIRECTIONAL;
+			light.base_color_ = glm::vec3(0.0f, 1.0f, 0.0f);
+			light.spec_color_ = glm::vec3(0.0f, 0.0f, 0.0f);
+		}
+	}
+
+	{
+		size_t light_entity = ecs_manager.createEntity();
+		ecs_manager.addComponent<TransformComponent>(light_entity);
+		ecs_manager.addComponent<LightComponent>(light_entity);
+
+		auto light_component = ecs_manager.getComponent<LightComponent>(light_entity);
+		if (light_component) {
+			auto& light = light_component->value();
+			light.enabled_ = true;
+			light.type_ = LIGHT_TYPE_DIRECTIONAL;
+			light.base_color_ = glm::vec3(0.0f, 0.0f, 1.0f);
+			light.spec_color_ = glm::vec3(0.0f, 0.0f, 0.0f);
+		}
+	}
+
+
 		
 	//Create Camera entity
 	size_t camera_entity = ecs_manager.createEntity();
@@ -93,7 +175,7 @@ int main(int argc, char* argv[]) {
 	ecs_manager.addComponent<CameraComponent>(camera_entity);
 
 	auto& camera_tr = ecs_manager.getComponent<TransformComponent>(camera_entity)->value();
-	camera_tr.rot_ = glm::vec3(180.0f, 0.0f, 0.0f);
+	camera_tr.rot_ = glm::vec3(0.0f, 0.0f, 0.0f);
 	camera_tr.pos_ = glm::vec3(0.0f, 0.0f, 0.0f);
 	auto& camera_component = ecs_manager.getComponent<CameraComponent>(camera_entity)->value();
 
@@ -137,7 +219,7 @@ int main(int argc, char* argv[]) {
 
 		engine.renderImgui();
 		ecs_render_imgui(ecs_manager, camera_entity);
-
+		ecs_light_imgui(ecs_manager.getComponentList<TransformComponent>(), ecs_manager.getComponentList<LightComponent>());
 		pbr_render_system.render(ecs_manager.getComponentList<TransformComponent>(),
 			ecs_manager.getComponentList<RenderComponent>(), ecs_manager.getComponentList<LightComponent>());
 		//normal_render_system.render(ecs_manager.getComponentList<TransformComponent>(),

@@ -85,7 +85,7 @@ LavaPipeline::LavaPipeline(PipelineConfig config){
 		default:
 			break;
 	}
-	pipeline_builder.DisableBlending();
+	//pipeline_builder.DisableBlending();
 	
 	//no depth testing
 	//pipeline_builder.DisableDepthtest();

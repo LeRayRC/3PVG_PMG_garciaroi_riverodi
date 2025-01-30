@@ -73,22 +73,24 @@ void main()
 {
   
   outFragColor = vec4(globalData.ambientColor,1.0);
-  switch(light.type){
-    case 0: {
-      outFragColor += vec4(DirectionalLight(),1.0); 
-      outFragColor *= texture(baseColorTex,inUV);
-      break;
-     }
-     case 1: {
-      outFragColor = vec4(light.diff_color, 1.0);
-      break;
-     }
-     default:{
-      //outFragColor = texture(metallicRogTex,inUV);
-      break;
-     }
+  if(light.enabled == 1){
+    switch(light.type){
+      case 0: {
+        outFragColor += vec4(DirectionalLight(),1.0); 
+        
+        break;
+       }
+       case 1: {
+        outFragColor = vec4(light.diff_color, 1.0);
+        break;
+       }
+       default:{
+        //outFragColor = texture(metallicRogTex,inUV);
+        break;
+       }
 
+    }
   }
-  //outFragColor = vec4(final_color, 1.0);
-  //outFragColor *= texture(baseColorTex,inUV);
+  outFragColor *= texture(baseColorTex,inUV);
+  outFragColor.w = 1.0;
 }
