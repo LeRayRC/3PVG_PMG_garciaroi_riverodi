@@ -19,7 +19,7 @@ LavaPBRRenderSystem::LavaPBRRenderSystem(LavaEngine &engine) :
 	pipeline_first_light_{ PipelineConfig(
 													PIPELINE_TYPE_PBR,
 													"../src/shaders/pbr.vert.spv",
-													"../src/shaders/pbr.frag.spv",
+													"../src/shaders/ambient.frag.spv",
 													&engine_.device_,
 													&engine_.swap_chain_,
 													&engine_.global_descriptor_allocator_,
@@ -42,8 +42,6 @@ void LavaPBRRenderSystem::render(
 	std::vector<std::optional<LightComponent>>& light_component_vector
   ) {
 	
-
-
   TransitionImage(engine_.commandBuffer, engine_.swap_chain_.get_draw_image().image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
   TransitionImage(engine_.commandBuffer, engine_.swap_chain_.get_depth_image().image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
 
@@ -78,10 +76,62 @@ void LavaPBRRenderSystem::render(
 
 	FrameData& frame_data = engine_.frame_data_.getCurrentFrame();
   //Draw everycomponent
-  auto transform_it = transform_vector.begin();
-  auto render_it = render_vector.begin();
-  auto transform_end = transform_vector.end();
-  auto render_end = render_vector.end();
+
+	//First draw with ambient only
+	vkCmdBindPipeline(engine_.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_first_light_.get_pipeline());
+
+	auto transform_it = transform_vector.begin();
+	auto render_it = render_vector.begin();
+	auto transform_end = transform_vector.end();
+	auto render_end = render_vector.end();
+	for (; transform_it != transform_end || render_it != render_end; transform_it++, render_it++) {
+		if (!transform_it->has_value()) continue;
+		if (!render_it->has_value()) continue;
+
+		//Clean Descriptor sets for current frame
+		frame_data.descriptor_manager.clear();
+
+		std::shared_ptr<LavaMesh> lava_mesh = render_it->value().mesh_;
+		std::shared_ptr<MeshAsset> mesh = lava_mesh->mesh_;
+
+		GPUDrawPushConstants push_constants;
+		glm::mat4 model = glm::mat4(1.0f);
+
+		model = glm::translate(model, transform_it->value().pos_);
+		model = glm::rotate(model, glm::radians(transform_it->value().rot_.x), glm::vec3(1.0f, 0.0f, 0.0f));
+		model = glm::rotate(model, glm::radians(transform_it->value().rot_.y), glm::vec3(0.0f, 1.0f, 0.0f));
+		model = glm::rotate(model, glm::radians(transform_it->value().rot_.z), glm::vec3(0.0f, 0.0f, 1.0f));
+		model = glm::scale(model, transform_it->value().scale_);
+
+		VkDescriptorSet pbr_descriptor_set = pipeline_.get_descriptor_set();
+		lava_mesh->get_material()->UpdateGlobalDescriptorSet(
+			*pbr_data_buffer_.get());
+
+		engine_.global_descriptor_allocator_.updateSet(pbr_descriptor_set);
+		engine_.global_descriptor_allocator_.clear();
+
+		vkCmdBindDescriptorSets(engine_.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+			pipeline_.get_layout(),
+			1, 1, &pbr_descriptor_set, 0, nullptr);
+
+		// Vincular los Vertex y Index Buffers
+		GPUMeshBuffers& meshBuffers = mesh->meshBuffers;
+		VkDeviceSize offsets[] = { 0 };
+		if (frame_data.last_bound_mesh != lava_mesh) {
+			vkCmdBindIndexBuffer(engine_.commandBuffer, meshBuffers.index_buffer->get_buffer().buffer, 0, VK_INDEX_TYPE_UINT32);
+		}
+
+		push_constants.world_matrix = model;
+		push_constants.vertex_buffer = meshBuffers.vertex_buffer_address;
+
+		vkCmdPushConstants(engine_.commandBuffer, pipeline_.get_layout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &push_constants);
+		vkCmdDrawIndexed(engine_.commandBuffer, mesh->index_count, 1, 0, 0, 0);
+
+		if (frame_data.last_bound_mesh != lava_mesh) {
+			frame_data.last_bound_mesh = lava_mesh;
+		}
+	}
+
 
 	auto light_transform_it = transform_vector.begin();
 	auto light_transform_end = transform_vector.end();
@@ -89,7 +139,6 @@ void LavaPBRRenderSystem::render(
 	auto light_end = light_component_vector.end();
 	//for each light we iterate over the every render component
 
-	int lights_rendered = 0;
 	 
 	for (; light_transform_it != light_transform_end || light_it != light_end; light_transform_it++, light_it++)
 	{
@@ -98,22 +147,23 @@ void LavaPBRRenderSystem::render(
 
 		if (!light_it->value().enabled_) continue;
 
-		if (lights_rendered == 0) {
-			vkCmdBindPipeline(engine_.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_first_light_.get_pipeline());
-		}else{
-			vkCmdBindPipeline(engine_.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_.get_pipeline());
-		}
+		//if (lights_rendered == 0) {
+		//	vkCmdBindPipeline(engine_.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_first_light_.get_pipeline());
+		//}else{
+		vkCmdBindPipeline(engine_.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_.get_pipeline());
+		//}
 
-		//vkCmdBindPipeline(engine_.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_.get_pipeline());
-
-
+	
 		vkCmdBindDescriptorSets(engine_.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
 			pipeline_.get_layout(),
 			0, 1, &engine_.global_descriptor_set_, 0, nullptr);
 
 		LightComponent light_component = light_it->value();
 
-
+		auto transform_it = transform_vector.begin();
+		auto render_it = render_vector.begin();
+		auto transform_end = transform_vector.end();
+		auto render_end = render_vector.end();
 		for (; transform_it != transform_end || render_it != render_end; transform_it++, render_it++) {
 			if(!transform_it->has_value()) continue;
 			if (!render_it->has_value()) continue;
@@ -126,6 +176,7 @@ void LavaPBRRenderSystem::render(
 
 			GPUDrawPushConstants push_constants;
 			glm::mat4 model = glm::mat4(1.0f);
+
 			model = glm::translate(model, transform_it->value().pos_);
 			model = glm::rotate(model, glm::radians(transform_it->value().rot_.x), glm::vec3(1.0f, 0.0f, 0.0f));
 			model = glm::rotate(model, glm::radians(transform_it->value().rot_.y), glm::vec3(0.0f, 1.0f, 0.0f));
@@ -152,13 +203,11 @@ void LavaPBRRenderSystem::render(
 			// Vincular los Vertex y Index Buffers
 			GPUMeshBuffers& meshBuffers = mesh->meshBuffers;
 			VkDeviceSize offsets[] = { 0 };
-			//VkBuffer vertex_buffer = meshBuffers.vertex_buffer->get_buffer().buffer;
-			//vkCmdBindVertexBuffers(engine_.commandBuffer, 0, 1, &vertex_buffer, offsets);
 			if (frame_data.last_bound_mesh != lava_mesh) {
 				vkCmdBindIndexBuffer(engine_.commandBuffer, meshBuffers.index_buffer->get_buffer().buffer, 0, VK_INDEX_TYPE_UINT32);
 			}
 		
-			push_constants.world_matrix = model; // global_scene_data_.viewproj* model;
+			push_constants.world_matrix = model;
 			push_constants.vertex_buffer = meshBuffers.vertex_buffer_address;
 		
 			vkCmdPushConstants(engine_.commandBuffer, pipeline_.get_layout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &push_constants);
@@ -167,9 +216,7 @@ void LavaPBRRenderSystem::render(
 			if (frame_data.last_bound_mesh != lava_mesh) {
 				frame_data.last_bound_mesh = lava_mesh;
 			}
-
 		}
-		lights_rendered++;
 	}
 
 	vkCmdEndRendering(engine_.commandBuffer);

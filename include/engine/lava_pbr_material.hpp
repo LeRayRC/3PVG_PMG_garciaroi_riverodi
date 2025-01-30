@@ -27,6 +27,37 @@ public:
 		return descriptor_set_;
 	}*/
 
+	void UpdateGlobalDescriptorSet(LavaBuffer& buffer_properties) {
+		engine_->global_descriptor_allocator_.clear();
+		engine_->global_descriptor_allocator_.writeImage(
+			0,
+			base_color_->get_allocated_image().image_view,
+			base_color_->get_sampler(),
+			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+		engine_->global_descriptor_allocator_.writeImage(
+			1,
+			normal_->get_allocated_image().image_view,
+			normal_->get_sampler(),
+			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+		engine_->global_descriptor_allocator_.writeImage(
+			2,
+			metallic_roughness_->get_allocated_image().image_view,
+			metallic_roughness_->get_sampler(),
+			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+		engine_->global_descriptor_allocator_.writeImage(
+			3,
+			opacity_->get_allocated_image().image_view,
+			opacity_->get_sampler(),
+			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+
+		buffer_properties.updateBufferData(&uniform_properties, sizeof(LavaPBRMaterialProperties));
+		engine_->global_descriptor_allocator_.writeBuffer(4, buffer_properties.get_buffer().buffer, sizeof(LavaPBRMaterialProperties), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+	}
+
 
 	void UpdateGlobalDescriptorSet(LavaBuffer& buffer_properties,
 	LavaBuffer& light_buffer_properties, LightShaderStruct& light_parameter) {
