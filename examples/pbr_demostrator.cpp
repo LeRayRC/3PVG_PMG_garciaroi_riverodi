@@ -48,11 +48,14 @@ void ecs_light_imgui(std::vector<std::optional<TransformComponent>>& transform_v
 	
 		ImGui::PushID(lights_count);
 		if(ImGui::TreeNode("Light" , "Light %d",lights_count)) {
-			static int type = (int)light_it->value().type_;
+			int type = (int)light_it->value().type_;
 
 			ImGui::Checkbox("Enable", &light_it->value().enabled_);
 			if (ImGui::Combo("Light Type", &type, lightTypes, IM_ARRAYSIZE(lightTypes))) {
 				light_it->value().type_ = (LightType)type;
+			}
+			if (light_it->value().type_ != LightType::LIGHT_TYPE_DIRECTIONAL) {
+				ImGui::DragFloat3("Light Pos", &light_transform_it->value().pos_.x, 0.01f, -10.0f, 10.0f);
 			}
 			ImGui::DragFloat3("Light Rot", &light_transform_it->value().rot_.x, 0.05f, -360.0f, 360.0f);
 			ImGui::ColorEdit3("Base color", &light_it->value().base_color_.x);
@@ -135,6 +138,12 @@ int main(int argc, char* argv[]) {
 			light.base_color_ = glm::vec3(1.0f, 0.0f, 0.0f);
 			light.spec_color_ = glm::vec3(0.0f, 0.0f, 0.0f);
 		}
+		auto tr_component = ecs_manager.getComponent<TransformComponent>(light_entity);
+		if (tr_component) {
+			auto& tr = tr_component->value();
+			tr.rot_ = glm::vec3(0.0f, 1.5f, 0.0f);
+		}
+
 	}
 
 	{
@@ -145,10 +154,16 @@ int main(int argc, char* argv[]) {
 		auto light_component = ecs_manager.getComponent<LightComponent>(light_entity);
 		if (light_component) {
 			auto& light = light_component->value();
-			light.enabled_ = true;
+			light.enabled_ = false;
 			light.type_ = LIGHT_TYPE_DIRECTIONAL;
 			light.base_color_ = glm::vec3(0.0f, 1.0f, 0.0f);
 			light.spec_color_ = glm::vec3(0.0f, 0.0f, 0.0f);
+		}
+
+		auto tr_component = ecs_manager.getComponent<TransformComponent>(light_entity);
+		if (tr_component) {
+			auto& tr = tr_component->value();
+			tr.rot_ = glm::vec3(0.0f, -1.5f, 0.0f);
 		}
 	}
 
@@ -160,7 +175,7 @@ int main(int argc, char* argv[]) {
 		auto light_component = ecs_manager.getComponent<LightComponent>(light_entity);
 		if (light_component) {
 			auto& light = light_component->value();
-			light.enabled_ = true;
+			light.enabled_ = false;
 			light.type_ = LIGHT_TYPE_DIRECTIONAL;
 			light.base_color_ = glm::vec3(0.0f, 0.0f, 1.0f);
 			light.spec_color_ = glm::vec3(0.0f, 0.0f, 0.0f);
@@ -198,6 +213,8 @@ int main(int argc, char* argv[]) {
 		//ImGui::DragFloat("Camera Rot X", &camera_tr.rot_.x, 0.5f, 88.0f, 268.0f);
 		//ImGui::DragFloat("Camera Rot Y", &camera_tr.rot_.y, 0.5f, -360.0f, 360.0f);
 
+		engine.allocate_lights(ecs_manager.getComponentList<LightComponent>());
+		engine.update_lights(ecs_manager.getComponentList<LightComponent>(),ecs_manager.getComponentList<TransformComponent>());
 		engine.updateMainCamera(&camera_component, &camera_tr);
 
 		if (input->isInputDown(KEY_D)) {

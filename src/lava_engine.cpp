@@ -156,6 +156,8 @@ LavaEngine::LavaEngine(unsigned int window_width, unsigned int window_height) :
 LavaEngine::~LavaEngine(){
 	vkDeviceWaitIdle(device_.get_device());
 	vkDestroyDescriptorSetLayout(device_.get_device(), global_descriptor_set_layout_, nullptr);
+	vkDestroyDescriptorSetLayout(device_.get_device(), global_lights_descriptor_set_layout_, nullptr);
+
 	//pipelines_.clear();
 	/*main_deletion_queue_.flush();*/
 	ImGui_ImplVulkan_Shutdown();
@@ -182,9 +184,18 @@ void LavaEngine::initGlobalData() {
 	global_descriptor_set_ = global_descriptor_allocator_.allocate(global_descriptor_set_layout_);
 	global_data_buffer_ = std::make_unique<LavaBuffer>(allocator_, sizeof(GlobalSceneData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
 	global_data_buffer_->setMappedData();
+	global_descriptor_allocator_.clear();
+
 	global_descriptor_allocator_.writeBuffer(0, global_data_buffer_->buffer_.buffer, sizeof(GlobalSceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
 	global_descriptor_allocator_.updateSet(global_descriptor_set_);
 	global_descriptor_allocator_.clear();
+
+	//Descriptor set layout of every light
+	builder.clear();
+	builder.addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+	global_lights_descriptor_set_layout_ = builder.build(device_.get_device(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
+
+
 }
 
 void LavaEngine::updateMainCamera(struct CameraComponent* camera_component,
@@ -562,3 +573,54 @@ std::shared_ptr<LavaMesh> LavaEngine::addMesh(MeshProperties prop){
 void LavaEngine::renderImgui() {
 	ImGui::ShowDemoWindow();
 }
+
+
+void LavaEngine::allocate_lights(std::vector<std::optional<class LightComponent>>& light_component_vector) {
+
+	auto light_it = light_component_vector.begin();
+	auto light_end = light_component_vector.end();
+	//for each light we iterate over the every render component 
+	for (; light_it != light_end; light_it++)
+	{
+		if (!light_it->has_value()) continue;
+
+		if (light_it->value().allocated_) continue;
+
+		LightComponent& light_component = light_it->value();
+		global_descriptor_allocator_.clear();
+		light_component.light_data_buffer_ = std::make_unique<LavaBuffer>(allocator_, sizeof(LightShaderStruct), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
+		light_component.light_data_buffer_->setMappedData();
+		light_component.descriptor_set_ = global_descriptor_allocator_.allocate(global_lights_descriptor_set_layout_);
+		global_descriptor_allocator_.writeBuffer(0, light_component.light_data_buffer_->get_buffer().buffer, sizeof(LightShaderStruct), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+		global_descriptor_allocator_.updateSet(light_component.descriptor_set_);
+		global_descriptor_allocator_.clear();
+		light_component.allocated_ = true;
+	}
+}
+
+void LavaEngine::update_lights(std::vector<std::optional<class LightComponent>>& light_component_vector,
+	std::vector<std::optional<class TransformComponent>>& transform_vector) {
+
+	auto light_transform_it = transform_vector.begin();
+	auto light_transform_end = transform_vector.end();
+	auto light_it = light_component_vector.begin();
+	auto light_end = light_component_vector.end();
+	//for each light we iterate over the every render component 
+	for (; light_transform_it != light_transform_end || light_it != light_end; light_transform_it++, light_it++)
+	{
+		if (!light_transform_it->has_value()) continue;
+		if (!light_it->has_value()) continue;
+
+		if (!light_it->value().allocated_) continue;
+
+		LightComponent& light_component = light_it->value();
+
+		LightShaderStruct light_shader_struct = {};
+		light_shader_struct.config(light_it->value(), light_transform_it->value());
+		light_component.light_data_buffer_->updateBufferData(&light_shader_struct, sizeof(LightShaderStruct));
+
+	}
+
+}
+
+

@@ -30,23 +30,6 @@
 #include "engine/lava_image.hpp"
 
 
-//struct DeletionQueue {
-//	//TO FIX -> multiples vector for every kind of Vulkan handle
-//	std::deque<std::function<void()>> deletors;
-//
-//	void push_function(std::function<void()>&& function) {
-//		deletors.push_back(function);
-//	}
-//
-//	void flush() {
-//		for (auto it = deletors.rbegin(); it != deletors.rend(); it++) {
-//			(*it)();
-//		}
-//		deletors.clear();
-//	}
-//};
-
-
 class LavaEngine {
 public:
 
@@ -96,6 +79,7 @@ public:
 	LavaDescriptorManager global_descriptor_allocator_;
 	std::unique_ptr<LavaBuffer> global_data_buffer_;
 	VkDescriptorSetLayout global_descriptor_set_layout_;
+	VkDescriptorSetLayout global_lights_descriptor_set_layout_;
 	VkDescriptorSet global_descriptor_set_;
 
 	std::shared_ptr<LavaImage> default_texture_image_pink;
@@ -104,6 +88,14 @@ public:
 
 	std::chrono::steady_clock::time_point chrono_now_;
 	std::chrono::steady_clock::time_point chrono_last_update_;
+
+	static const unsigned int kMaxLights = 100;
+
+	void allocate_lights(std::vector<std::optional<struct LightComponent>>& light_component_vector);
+	void update_lights(std::vector<std::optional<struct LightComponent>>& light_component_vector,
+		std::vector<std::optional<struct TransformComponent>>& transform_vector);
+
+
 
 	void updateMainCamera(struct CameraComponent* camera_component,
 		struct TransformComponent* camera_tr);

@@ -31,4 +31,6 @@ layout (location = 0) out vec4 outFragColor;
 void main() 
 {
   outFragColor = vec4(globalData.ambientColor,1.0);
+	outFragColor *= texture(baseColorTex,inUV);
+	outFragColor.w = 1.0;
 }

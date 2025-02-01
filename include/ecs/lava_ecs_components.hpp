@@ -179,6 +179,10 @@ enum LightType {
 
 
 
+
+
+
+
 struct  LightComponent {
   bool enabled_;
   LightType type_;
@@ -196,6 +200,10 @@ struct  LightComponent {
   float cutoff_;
   float outer_cutoff_;
 
+  bool allocated_;
+  std::unique_ptr<class LavaBuffer> light_data_buffer_;
+  VkDescriptorSet descriptor_set_;
+
   LightComponent() {
     enabled_ = true;
     type_ = LIGHT_TYPE_DIRECTIONAL;
@@ -210,6 +218,7 @@ struct  LightComponent {
     strength_ = 0.5f;
     cutoff_ = cosf(3.1416f * 10.0f / 180.0f);
     outer_cutoff_ = cosf(3.1416f * 30.0f / 180.0f);
+    allocated_ = false;
   }
 
   LightComponent(size_t entity) {
@@ -226,27 +235,28 @@ struct  LightComponent {
     strength_ = 0.5f;
     cutoff_ = cosf(3.1416f * 10.0f / 180.0f);
     outer_cutoff_ = cosf(3.1416f * 30.0f / 180.0f);
+    allocated_ = false;
   }
+
 };
 
 
-//This structure will be loaded on the pbr shader
 struct LightShaderStruct {
   float pos[3];
   int enabled;
 
   float dir[3];
   int type;
-  
+
   float diff_color[3];
   float quad_att;
-  
+
   float spec_color[3];
   float linear_att;
-  
+
   float spot_dir[3];
   float constant_att;
-  
+
   float shininess;
   float strength;
   float cutoff;
@@ -279,7 +289,7 @@ struct LightShaderStruct {
     outer_cutoff = cosf(3.1416f * 30.0f / 180.0f);
   }
 
-  void config(LightComponent light, TransformComponent tr) {
+  void config(LightComponent& light, TransformComponent& tr) {
     enabled = light.enabled_;
     type = (int)light.type_;
     pos[0] = tr.pos_.x;
@@ -298,7 +308,7 @@ struct LightShaderStruct {
     glm::vec3 forwardVector = glm::vec3(rotationMatrix[2]);
     forwardVector = glm::normalize(forwardVector);
 
-    
+
     //float pitch = glm::radians(tr.rot_.x); // Rotación en el eje X
     //float yaw = glm::radians(tr.rot_.y);   // Rotación en el eje Y
     //float roll = glm::radians(tr.rot_.z);
@@ -326,6 +336,9 @@ struct LightShaderStruct {
     outer_cutoff = light.outer_cutoff_;
   }
 };
+
+
+//This structure will be loaded on the pbr shader
 
 
 #endif // !__LAVA_ECS_COMPONENTS_H__

@@ -23,7 +23,7 @@ namespace vkinit {
     VkRenderingAttachmentInfo* depth_attachment);
 
   VkRenderingAttachmentInfo DepthAttachmentInfo(
-    VkImageView view, VkImageLayout layout /*= VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL*/);
+    VkImageView view, VkImageLayout layout , VkAttachmentLoadOp loadOp);
 
 }
 

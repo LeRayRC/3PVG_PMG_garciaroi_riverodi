@@ -81,19 +81,23 @@ LavaPipeline::LavaPipeline(PipelineConfig config){
 			break;
 		case PIPELINE_BLEND_ONE_ONE:
 			pipeline_builder.EnableBlending(config.blend_mode);
+			//pipeline_builder.EnableDepthTest(false, VK_COMPARE_OP_GREATER_OR_EQUAL);
+			//pipeline_builder.DisableDepthtest();
 			break;
 		default:
 			break;
 	}
 	//pipeline_builder.DisableBlending();
 	
+			pipeline_builder.EnableDepthTest(true, VK_COMPARE_OP_GREATER_OR_EQUAL);
+
+	pipeline_builder.SetDepthFormat(config.swap_chain->get_depth_image().image_format);
 	//no depth testing
 	//pipeline_builder.DisableDepthtest();
-	pipeline_builder.EnableDepthTest(true, VK_COMPARE_OP_GREATER_OR_EQUAL);
+	//pipeline_builder.EnableDepthTest(true, VK_COMPARE_OP_GREATER_OR_EQUAL);
 
 	//connect the image format we will draw into, from draw image
 	pipeline_builder.SetColorAttachmentFormat(config.swap_chain->get_draw_image().image_format);
-	pipeline_builder.SetDepthFormat(config.swap_chain->get_depth_image().image_format);
 
 	//finally build the pipeline
 	pipeline_ = pipeline_builder.BuildPipeline(device_);
@@ -145,16 +149,16 @@ void LavaPipeline::configureDescriptorSet(VkPipelineLayoutCreateInfo* info,
 			builder.addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 			builder.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 
-			VkDescriptorBindingFlags bindingFlags[2] = {
-				VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT, // Binding 0
-				VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT, // Binding 1
-			};
+			//VkDescriptorBindingFlags bindingFlags[2] = {
+			//	VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT, // Binding 0
+			//	VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT, // Binding 1
+			//};
 
-			VkDescriptorSetLayoutBindingFlagsCreateInfo bindingFlagsInfo = {};
-			bindingFlagsInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO;
-			bindingFlagsInfo.bindingCount = (uint32_t)builder.bindings_.size();
-			bindingFlagsInfo.pBindingFlags = bindingFlags;
-			descriptor_set_layouts_[1] = builder.build(device_, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT , &bindingFlagsInfo, VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT);
+			//VkDescriptorSetLayoutBindingFlagsCreateInfo bindingFlagsInfo = {};
+			//bindingFlagsInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO;
+			//bindingFlagsInfo.bindingCount = (uint32_t)builder.bindings_.size();
+			/*bindingFlagsInfo.pBindingFlags = bindingFlags;*/
+			descriptor_set_layouts_[1] = builder.build(device_, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT , nullptr);
 
 			break;
 		}
@@ -172,22 +176,30 @@ void LavaPipeline::configureDescriptorSet(VkPipelineLayoutCreateInfo* info,
 			builder.addBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER); // roughness_metallic_texture
 			builder.addBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER); // opacity
 			builder.addBinding(4, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER); // floats values(struct)
-			builder.addBinding(5, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER); // Light structure
+			//builder.addBinding(5, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER); // Light structure
 
-			VkDescriptorBindingFlags bindingFlags[6] = {
-				VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT, // Binding 0
-				VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT, // Binding 1
-				VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT, // Binding 2
-				VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT, // Binding 3
-				VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT, // Binding 4
-				VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT
-			};
+			//VkDescriptorBindingFlags bindingFlags[6] = {
+			//	VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT, // Binding 0
+			//	VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT, // Binding 1
+			//	VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT, // Binding 2
+			//	VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT, // Binding 3
+			//	VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT, // Binding 4
+			//	VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT
+			//};
 
-			VkDescriptorSetLayoutBindingFlagsCreateInfo bindingFlagsInfo = {};
-			bindingFlagsInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO;
-			bindingFlagsInfo.bindingCount = (uint32_t)builder.bindings_.size();
-			bindingFlagsInfo.pBindingFlags = bindingFlags;
-			descriptor_set_layouts_[1] = builder.build(device_, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT, &bindingFlagsInfo, VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT);
+			//VkDescriptorSetLayoutBindingFlagsCreateInfo bindingFlagsInfo = {};
+			//bindingFlagsInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO;
+			//bindingFlagsInfo.bindingCount = (uint32_t)builder.bindings_.size();
+			//bindingFlagsInfo.pBindingFlags = nullptr;  //bindingFlags;
+			descriptor_set_layouts_[1] = builder.build(device_, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT, nullptr);
+			builder.clear();
+
+
+			builder.addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+
+			//descriptor_set_light_layout_ 
+			
+			
 			break;
 		}
 	default:
@@ -195,11 +207,10 @@ void LavaPipeline::configureDescriptorSet(VkPipelineLayoutCreateInfo* info,
 	}
 	
 
+	descriptor_set_layouts_[2] = global_layout;
 	
-	
-
 	info->pSetLayouts = descriptor_set_layouts_;
-	info->setLayoutCount = 2;
+	info->setLayoutCount = 3;
 
 
 	descriptor_set_ = descriptor_manager->allocate(descriptor_set_layouts_[1]);

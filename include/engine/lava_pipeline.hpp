@@ -29,7 +29,7 @@ private:
 	VkPipelineLayout layout_;
 	VkPipeline pipeline_;
 	VkDevice device_;
-	VkDescriptorSetLayout descriptor_set_layouts_[2];
+	VkDescriptorSetLayout descriptor_set_layouts_[3];
 	VkDescriptorSet descriptor_set_;
 
 	
