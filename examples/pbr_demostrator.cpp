@@ -57,14 +57,26 @@ void ecs_light_imgui(std::vector<std::optional<TransformComponent>>& transform_v
 			if (light_it->value().type_ != LightType::LIGHT_TYPE_DIRECTIONAL) {
 				ImGui::DragFloat3("Light Pos", &light_transform_it->value().pos_.x, 0.01f, -10.0f, 10.0f);
 			}
-			ImGui::DragFloat3("Light Rot", &light_transform_it->value().rot_.x, 0.05f, -360.0f, 360.0f);
+			if (light_it->value().type_ != LightType::LIGHT_TYPE_POINT) {
+				ImGui::DragFloat3("Light Rot", &light_transform_it->value().rot_.x, 0.05f, -360.0f, 360.0f);
+			}
 			ImGui::ColorEdit3("Base color", &light_it->value().base_color_.x);
 			ImGui::ColorEdit3("Specular color", &light_it->value().spec_color_.x);
-			ImGui::DragFloat("Linear Att", &light_it->value().linear_att_, 0.01f, 0.0f, 0.7f);
-			ImGui::DragFloat("Quadratic Att", &light_it->value().quad_att_, 0.001f, 0.0f, 1.8f);
-			ImGui::DragFloat("Constant Att", &light_it->value().constant_att_, 0.5f, -360.0f, 360.0f);
 			ImGui::DragFloat("Shininess", &light_it->value().shininess_, 0.5f, 1.0f, 256.0f);
 			ImGui::DragFloat("Strength", &light_it->value().strength_, 0.01f, 0.0f, 1.0f);
+			if (light_it->value().type_ != LightType::LIGHT_TYPE_DIRECTIONAL) {
+				ImGui::DragFloat("Linear Att", &light_it->value().linear_att_, 0.01f, 0.0f, 0.7f);
+				ImGui::DragFloat("Quadratic Att", &light_it->value().quad_att_, 0.001f, 0.0f, 1.8f);
+				ImGui::DragFloat("Constant Att", &light_it->value().constant_att_, 0.01f, 0.0f, 1.0f);
+				if (light_it->value().type_ == LightType::LIGHT_TYPE_SPOT) {
+					if (ImGui::DragFloat("CutOff", &light_it->value().cutoff_, 0.01f, 0.0f, 1.50f)) {
+						if (light_it->value().cutoff_ > light_it->value().outer_cutoff_) {
+							light_it->value().outer_cutoff_ = light_it->value().cutoff_ + 0.01f;
+						}
+					}
+					ImGui::DragFloat("Outer CutOff", &light_it->value().outer_cutoff_, 0.01f, light_it->value().cutoff_+0.01f, 1.57f);
+				}
+			}
 			ImGui::TreePop();
 		}
 		ImGui::PopID();

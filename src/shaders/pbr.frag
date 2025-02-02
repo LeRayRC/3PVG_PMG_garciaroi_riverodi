@@ -67,6 +67,48 @@ vec3 DirectionalLight(){
   return diffuse + specular;
 }
 
+vec3 PointLight() {
+    vec3 lightDir = normalize(light.pos - inPos);
+    float directionalIncidence = max(dot(inNormal, lightDir), 0.0);
+    // Specular
+    vec3 viewDirection = normalize(globalData.cameraPos - inPos);
+    vec3 reflectDirection = reflect(-lightDir, inNormal);
+
+    float specularValue = pow(max(dot(viewDirection, reflectDirection), 0.0), light.shininess);
+
+    vec3 diffuse = directionalIncidence * light.diff_color;
+    vec3 specular = light.strength * specularValue * light.spec_color;
+    // Attenuation
+    float distance = length(light.pos - inPos);
+    float attenuation = 1.0 / (light.constant_att + light.linear_att * distance + light.quad_att * distance * distance);
+    return diffuse * attenuation + specular * attenuation;
+}
+
+vec3 SpotLight() {
+    vec3 lightDir = normalize(light.pos - inPos);
+    float theta = dot(lightDir, normalize(-light.dir));
+    vec3 result = vec3(0.0, 0.0, 0.0);
+
+    float directionalIncidence = max(dot(inNormal, lightDir), 0.0);
+    // Specular
+    vec3 viewDirection = normalize(globalData.cameraPos - inPos);
+    vec3 reflectDirection = reflect(-lightDir, inNormal);
+
+    float specularValue = pow(max(dot(viewDirection, reflectDirection), 0.0), light.shininess);
+
+    vec3 diffuse = directionalIncidence * light.diff_color;
+    vec3 specular = light.strength * specularValue * light.spec_color;
+    // Attenuation
+    float distance = length(light.pos - inPos);
+    float attenuation = 1.0 / (light.constant_att + light.linear_att * distance + light.quad_att * distance * distance);
+
+    // Intensity
+    float epsilon = light.cutoff - light.outer_cutoff;
+    float intensity = clamp((theta - light.outer_cutoff) / epsilon, 0.0, 1.0);
+
+    result = (diffuse * intensity * attenuation) + (specular * intensity * attenuation);
+    return result;
+}
 
 void main() 
 {
@@ -78,14 +120,14 @@ void main()
         break;
        }
        case 1: {
-        //outFragColor = vec4(light.diff_color, 1.0);
+        outFragColor = vec4(PointLight(),1.0); 
         break;
        }
        default:{
-        //outFragColor = texture(metallicRogTex,inUV);
+        outFragColor = vec4(SpotLight(),1.0); 
         break;
        }
-
     }
   }
+  //outFragColor *= texture(baseColorTex,inUV); 
 }
