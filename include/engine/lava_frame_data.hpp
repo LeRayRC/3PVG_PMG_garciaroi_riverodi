@@ -43,7 +43,7 @@ public:
 
 
 	FrameData& getCurrentFrame() { return frames_[frame_number_ % FRAME_OVERLAP]; };
-	
+	int getCurrentFrameIndex() { return frame_number_ % FRAME_OVERLAP; }
 	//void initGlobalDescriptorSet(VkDescriptorSetLayout layout);
 	void increaseFrameNumber() { frame_number_++; };
 	uint64_t  frame_number_;

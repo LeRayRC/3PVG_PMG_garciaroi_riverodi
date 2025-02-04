@@ -2,6 +2,7 @@
 #define __LAVA_PBR_MATERIAL_H__ 1
 
 #include "lava_types.hpp"
+#include "ecs/lava_ecs_components.hpp"
 #include "lava_engine.hpp"
 
 
@@ -22,12 +23,31 @@ public:
 
 	std::string get_name() { return name_; }
 	
-	/*VkDescriptorSet get_descriptor_set() {
+	VkDescriptorSet get_descriptor_set() {
 		return descriptor_set_;
-	}*/
+	}
 
+	void UpdateBaseColorImage(std::shared_ptr<LavaImage> image) {
+		base_color_ = image;
+		UpdateDescriptorSet();
+	}
 
-	void UpdateGlobalDescriptorSet(LavaBuffer& buffer_properties) {
+	void UpdateBaseMetallicRoughnessImage(std::shared_ptr<LavaImage> image) {
+		metallic_roughness_ = image;
+		UpdateDescriptorSet();
+	}
+
+	void UpdateOpacityImage(std::shared_ptr<LavaImage> image) {
+		opacity_ = image;
+		UpdateDescriptorSet();
+	}
+
+	void UpdateNormalImage(std::shared_ptr<LavaImage> image) {
+		normal_ = image;
+		UpdateDescriptorSet();
+	}
+
+	void UpdateDescriptorSet() {
 		engine_->global_descriptor_allocator_.clear();
 		engine_->global_descriptor_allocator_.writeImage(
 			0,
@@ -54,8 +74,10 @@ public:
 			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 			VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 
-		buffer_properties.updateBufferData(&uniform_properties, sizeof(LavaPBRMaterialProperties));
-		engine_->global_descriptor_allocator_.writeBuffer(4, buffer_properties.get_buffer().buffer, sizeof(LavaPBRMaterialProperties), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+		pbr_data_buffer_->updateBufferData(&uniform_properties, sizeof(LavaPBRMaterialProperties));
+		engine_->global_descriptor_allocator_.writeBuffer(4, pbr_data_buffer_->get_buffer().buffer, sizeof(LavaPBRMaterialProperties), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+		engine_->global_descriptor_allocator_.updateSet(descriptor_set_);
+		engine_->global_descriptor_allocator_.clear();
 	}
 
 private:
@@ -70,6 +92,10 @@ private:
 	std::shared_ptr<LavaImage> normal_; // If null pick the global normal texture
 
 	LavaPBRMaterialProperties uniform_properties;
+	
+	VkDescriptorSet descriptor_set_;
+	std::unique_ptr<LavaBuffer> pbr_data_buffer_;
+
 
 	LavaEngine *engine_;
 

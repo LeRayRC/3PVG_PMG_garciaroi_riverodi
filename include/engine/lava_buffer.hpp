@@ -6,7 +6,6 @@
 
 #include "vk_mem_alloc.h"
 
-
 struct AllocatedBuffer {
 	VkBuffer buffer;
 	VmaAllocation allocation;
@@ -17,7 +16,7 @@ class LavaBuffer
 {
 public:
 	LavaBuffer();
-	LavaBuffer(class LavaAllocator& allocator, size_t alloc_size, VkBufferUsageFlags usage, VmaMemoryUsage memory_usage);
+	LavaBuffer(class LavaAllocator& allocator, size_t alloc_size, VkBufferUsageFlags usage, VmaMemoryUsage memory_usage, class LavaDevice* device = nullptr);
 	~LavaBuffer();
 
 	AllocatedBuffer get_buffer() { return buffer_; }
@@ -31,6 +30,7 @@ private:
 	void* mapped_data_;
 	bool initialized_;
 	bool mapped_;
+	class LavaDevice* device_;
 };
 
 

@@ -13,8 +13,11 @@ LavaNormalRenderSystem::LavaNormalRenderSystem(LavaEngine &engine) :
               &engine_.device_,
               &engine_.swap_chain_,
               &engine_.global_descriptor_allocator_,
-              engine_.global_descriptor_set_layout_,
-              PipelineFlags::PIPELINE_USE_PUSHCONSTANTS | PipelineFlags::PIPELINE_USE_DESCRIPTOR_SET) }
+							engine_.global_descriptor_set_layout_,
+							engine_.global_pbr_descriptor_set_layout_,
+							engine_.global_lights_descriptor_set_layout_,
+              PipelineFlags::PIPELINE_USE_PUSHCONSTANTS | PipelineFlags::PIPELINE_USE_DESCRIPTOR_SET,
+							PipelineBlendMode::PIPELINE_BLEND_DISABLE)}
 {
 
 
@@ -33,7 +36,7 @@ void LavaNormalRenderSystem::render(
 
 	//begin a render pass  connected to our draw image
 	VkRenderingAttachmentInfo color_attachment = vkinit::AttachmentInfo(engine_.swap_chain_.get_draw_image().image_view, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-	VkRenderingAttachmentInfo depth_attachment = vkinit::DepthAttachmentInfo(engine_.swap_chain_.get_depth_image().image_view, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+	VkRenderingAttachmentInfo depth_attachment = vkinit::DepthAttachmentInfo(engine_.swap_chain_.get_depth_image().image_view, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
 	//
 	VkRenderingInfo renderInfo = vkinit::RenderingInfo(engine_.swap_chain_.get_draw_extent(), &color_attachment, &depth_attachment);
 	vkCmdBeginRendering(engine_.commandBuffer, &renderInfo);

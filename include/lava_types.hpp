@@ -117,6 +117,33 @@ struct GPUDrawPushConstants {
 #define KEY_LEFT 263
 #define KEY_DOWN 264
 #define KEY_UP 265
+#define KEY_A   65
+#define KEY_B   66
+#define KEY_C   67
+#define KEY_D   68
+#define KEY_E   69
+#define KEY_F   70
+#define KEY_G   71
+#define KEY_H   72
+#define KEY_I   73
+#define KEY_J   74
+#define KEY_K   75
+#define KEY_L   76
+#define KEY_M   77
+#define KEY_N   78
+#define KEY_O   79
+#define KEY_P   80
+#define KEY_Q   81
+#define KEY_R   82
+#define KEY_S   83
+#define KEY_T   84
+#define KEY_U   85
+#define KEY_V   86
+#define KEY_W   87
+#define KEY_X   88
+#define KEY_Y   89
+#define KEY_Z   90
+
 
 //Redefine Mouse Buttons for easy use(can use glfw key defines for those not included)
 #define 	MOUSE_BUTTON_1   0
@@ -190,6 +217,12 @@ typedef enum PipelineFlags {
 	PIPELINE_USE_DESCRIPTOR_SET = 1 << 2,  //0100
 } PipelineFlags;
 
+typedef enum PipelineBlendMode {
+	PIPELINE_BLEND_DISABLE,
+	PIPELINE_BLEND_ONE_ONE,
+	PIPELINE_BLEND_ONE_ZERO
+} PipelineBlendMode;
+
 struct PipelineConfig {
 public:
 	PipelineType type;
@@ -198,8 +231,11 @@ public:
 	class LavaDevice* device;
 	class LavaSwapChain* swap_chain;
 	class LavaDescriptorManager* descriptor_manager;
-	VkDescriptorSetLayout descriptor_set_layout;
+	VkDescriptorSetLayout global_descriptor_set_layout;
+	VkDescriptorSetLayout global_pbr_descriptor_set_layout;
+	VkDescriptorSetLayout global_lights_descriptor_set_layout;
 	int pipeline_flags;
+	PipelineBlendMode blend_mode;
 };
 
 typedef enum MeshType {
@@ -236,7 +272,10 @@ struct GlobalSceneData {
 	glm::mat4 view;
 	glm::mat4 proj;
 	glm::mat4 viewproj;
-	glm::vec4 ambientColor;
+	glm::vec3 ambientColor;
+	int padding1;
+	glm::vec3 cameraPos;
+	int padding2;
 };
 
 struct CameraParameters {

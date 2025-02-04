@@ -89,16 +89,16 @@ void LavaDevice::createLogicalDevice(LavaSurface& surface) {
 	VkPhysicalDeviceFeatures2 device_features{};
 	device_features.sType =
 		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-	device_features.pNext = &indexing_features;
+	device_features.pNext = &buffer_device_address_feature_info;
 
 	vkGetPhysicalDeviceFeatures2(physical_device_, &device_features);
 
 
 
 	// 2. Verificar si la característica está soportada
-	if (!indexing_features.descriptorBindingSampledImageUpdateAfterBind) {
-		throw std::runtime_error("descriptorBindingSampledImageUpdateAfterBind not supported.");
-	}
+	//if (!indexing_features.descriptorBindingSampledImageUpdateAfterBind) {
+	//	throw std::runtime_error("descriptorBindingSampledImageUpdateAfterBind not supported.");
+	//}
 
 	
 
