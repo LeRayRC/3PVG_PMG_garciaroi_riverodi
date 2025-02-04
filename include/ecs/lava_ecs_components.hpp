@@ -4,6 +4,7 @@
 #include "lava_types.hpp"
 #include <glm/gtx/euler_angles.hpp>
 #include "scripting/lava_lua_script.hpp"
+#include "lava_global_helpers.hpp"
 
 
 struct RenderComponent {
@@ -128,32 +129,18 @@ struct CameraComponent {
   }
 
   void LookAt(glm::vec3& pos, glm::vec3& rot) {
-    float pitch = glm::radians(rot.x); // Rotación en el eje X
-    float yaw = glm::radians(rot.y);   // Rotación en el eje Y
-    float roll = glm::radians(rot.z);
+    view_ = GenerateViewMatrix(pos, rot);
 
-    //glm::mat4 rotation_matrix = glm::yawPitchRoll(yaw, pitch, roll);
+    //float pitch = glm::radians(rot.x); // Rotación en el eje X
+    //float yaw = glm::radians(rot.y);   // Rotación en el eje Y
+    //float roll = glm::radians(rot.z);
+    //glm::quat pitchRotation = glm::angleAxis(pitch, glm::vec3{ 1.f, 0.f, 0.f });
+    //glm::quat yawRotation = glm::angleAxis(yaw, glm::vec3{ 0.f, -1.f, 0.f });
 
-    //// Extraer el vector de dirección desde la matriz de rotación
-    //glm::vec3 view_direction = glm::vec3(rotation_matrix * glm::vec4(0.0f, 0.0f, 1.0f, 0.0f));
+    //glm::mat4 rotationMatrix = glm::toMat4(yawRotation) * glm::toMat4(pitchRotation);
 
-    //glm::vec3 up_vector = glm::vec3(0.0f, 1.0f, 0.0f);
-    //// Calculamos el punto objetivo (target)
-    //glm::vec3 target = pos + glm::normalize(view_direction);
-    ////// Generamos la matriz de vista
-    //view_ = glm::lookAt(pos, target, up_vector);
-
-    //glm::mat4 rotate_180_x = glm::rotate(glm::mat4(1.0f), glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-    //view_ = rotate_180_x * view_;
-
-
-    glm::quat pitchRotation = glm::angleAxis(pitch, glm::vec3{ 1.f, 0.f, 0.f });
-    glm::quat yawRotation = glm::angleAxis(yaw, glm::vec3{ 0.f, -1.f, 0.f });
-
-    glm::mat4 rotationMatrix = glm::toMat4(yawRotation) * glm::toMat4(pitchRotation);
-
-    glm::mat4 cameraTranslation = glm::translate(glm::mat4(1.f), pos);
-    view_ = glm::inverse(cameraTranslation * rotationMatrix);
+    //glm::mat4 cameraTranslation = glm::translate(glm::mat4(1.f), pos);
+    //view_ = glm::inverse(cameraTranslation * rotationMatrix);
   }
 };
 
@@ -199,9 +186,11 @@ struct  LightComponent {
   glm::vec3 spot_dir_;
   float cutoff_;
   float outer_cutoff_;
+  glm::mat4 viewproj_;
 
   bool allocated_;
   std::unique_ptr<class LavaBuffer> light_data_buffer_;
+  std::unique_ptr<class LavaBuffer> light_viewproj_buffer_;
   VkDescriptorSet descriptor_set_;
 
   LightComponent() {

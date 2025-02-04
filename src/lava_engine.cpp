@@ -16,6 +16,7 @@
 #include "engine/lava_pbr_material.hpp"
 #include "ecs/lava_ecs_components.hpp"
 #include "lava_transform.hpp"
+#include "lava_global_helpers.hpp"
 #include <future>
 #include <chrono>
 
@@ -194,6 +195,7 @@ void LavaEngine::initGlobalData() {
 	//Descriptor set layout of every light
 	builder.clear();
 	builder.addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+	builder.addBinding(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
 	global_lights_descriptor_set_layout_ = builder.build(device_.get_device(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
 
 	builder.clear();
@@ -597,10 +599,17 @@ void LavaEngine::allocate_lights(std::vector<std::optional<class LightComponent>
 		global_descriptor_allocator_.clear();
 		light_component.light_data_buffer_ = std::make_unique<LavaBuffer>(allocator_, sizeof(LightShaderStruct), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
 		light_component.light_data_buffer_->setMappedData();
+		light_component.light_viewproj_buffer_ = std::make_unique<LavaBuffer>(allocator_, sizeof(LightShaderStruct), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
+		light_component.light_viewproj_buffer_->setMappedData();
+
 		light_component.descriptor_set_ = global_descriptor_allocator_.allocate(global_lights_descriptor_set_layout_);
 		global_descriptor_allocator_.writeBuffer(0, light_component.light_data_buffer_->get_buffer().buffer, sizeof(LightShaderStruct), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+		global_descriptor_allocator_.writeBuffer(1, light_component.light_viewproj_buffer_->get_buffer().buffer, sizeof(glm::mat4), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
 		global_descriptor_allocator_.updateSet(light_component.descriptor_set_);
 		global_descriptor_allocator_.clear();
+
+
+
 		light_component.allocated_ = true;
 	}
 }
@@ -625,6 +634,22 @@ void LavaEngine::update_lights(std::vector<std::optional<class LightComponent>>&
 		LightShaderStruct light_shader_struct = {};
 		light_shader_struct.config(light_it->value(), light_transform_it->value());
 		light_component.light_data_buffer_->updateBufferData(&light_shader_struct, sizeof(LightShaderStruct));
+
+		glm::mat4 view = GenerateViewMatrix(
+			light_transform_it->value().pos_,
+			light_transform_it->value().rot_
+		);
+
+		float size = 1.0f; // Tamaño del área visible
+		float left = -size;
+		float right = size;
+		float bottom = -size;
+		float top = size;
+		glm::mat4 proj = glm::ortho(left, right, bottom, top, 5.0f, 0.1f);
+		proj[1][1] *= -1;
+		light_component.viewproj_ = proj * view;
+
+		light_component.light_viewproj_buffer_->updateBufferData(&light_component.viewproj_, sizeof(glm::mat4));
 
 	}
 

@@ -36,6 +36,10 @@ layout(set = 2, binding = 0) uniform LightProperties{
     float cutoff;
     float outer_cutoff;
 } light;
+layout(set = 2, binding = 1) uniform LightViewProj{
+  mat4 viewproj;
+}light_viewproj;
+
 
 //shader input
 layout (location = 0) in vec3 inColor;

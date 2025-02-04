@@ -54,9 +54,9 @@ void ecs_light_imgui(std::vector<std::optional<TransformComponent>>& transform_v
 			if (ImGui::Combo("Light Type", &type, lightTypes, IM_ARRAYSIZE(lightTypes))) {
 				light_it->value().type_ = (LightType)type;
 			}
-			if (light_it->value().type_ != LightType::LIGHT_TYPE_DIRECTIONAL) {
+			//if (light_it->value().type_ != LightType::LIGHT_TYPE_DIRECTIONAL) {
 				ImGui::DragFloat3("Light Pos", &light_transform_it->value().pos_.x, 0.01f, -10.0f, 10.0f);
-			}
+			//}
 			if (light_it->value().type_ != LightType::LIGHT_TYPE_POINT) {
 				ImGui::DragFloat3("Light Rot", &light_transform_it->value().rot_.x, 0.05f, -360.0f, 360.0f);
 			}
@@ -214,46 +214,47 @@ int main(int argc, char* argv[]) {
 		auto tr_component = ecs_manager.getComponent<TransformComponent>(light_entity);
 		if (tr_component) {
 			auto& tr = tr_component->value();
-			tr.rot_ = glm::vec3(0.0f, 1.5f, 0.0f);
+			tr.rot_ = glm::vec3(0.0f, 0.0f, 0.0f);
+			tr.pos_ = glm::vec3(0.0f, 0.0f, 0.0f);
 		}
 
 	}
 
-	{
-		size_t light_entity = ecs_manager.createEntity();
-		ecs_manager.addComponent<TransformComponent>(light_entity);
-		ecs_manager.addComponent<LightComponent>(light_entity);
-		
-		auto light_component = ecs_manager.getComponent<LightComponent>(light_entity);
-		if (light_component) {
-			auto& light = light_component->value();
-			light.enabled_ = false;
-			light.type_ = LIGHT_TYPE_DIRECTIONAL;
-			light.base_color_ = glm::vec3(0.0f, 1.0f, 0.0f);
-			light.spec_color_ = glm::vec3(0.0f, 0.0f, 0.0f);
-		}
+	//{
+	//	size_t light_entity = ecs_manager.createEntity();
+	//	ecs_manager.addComponent<TransformComponent>(light_entity);
+	//	ecs_manager.addComponent<LightComponent>(light_entity);
+	//	
+	//	auto light_component = ecs_manager.getComponent<LightComponent>(light_entity);
+	//	if (light_component) {
+	//		auto& light = light_component->value();
+	//		light.enabled_ = false;
+	//		light.type_ = LIGHT_TYPE_DIRECTIONAL;
+	//		light.base_color_ = glm::vec3(0.0f, 1.0f, 0.0f);
+	//		light.spec_color_ = glm::vec3(0.0f, 0.0f, 0.0f);
+	//	}
 
-		auto tr_component = ecs_manager.getComponent<TransformComponent>(light_entity);
-		if (tr_component) {
-			auto& tr = tr_component->value();
-			tr.rot_ = glm::vec3(0.0f, -1.5f, 0.0f);
-		}
-	}
+	//	auto tr_component = ecs_manager.getComponent<TransformComponent>(light_entity);
+	//	if (tr_component) {
+	//		auto& tr = tr_component->value();
+	//		tr.rot_ = glm::vec3(0.0f, -1.5f, 0.0f);
+	//	}
+	//}
 
-	{
-		size_t light_entity = ecs_manager.createEntity();
-		ecs_manager.addComponent<TransformComponent>(light_entity);
-		ecs_manager.addComponent<LightComponent>(light_entity);
+	//{
+	//	size_t light_entity = ecs_manager.createEntity();
+	//	ecs_manager.addComponent<TransformComponent>(light_entity);
+	//	ecs_manager.addComponent<LightComponent>(light_entity);
 
-		auto light_component = ecs_manager.getComponent<LightComponent>(light_entity);
-		if (light_component) {
-			auto& light = light_component->value();
-			light.enabled_ = false;
-			light.type_ = LIGHT_TYPE_DIRECTIONAL;
-			light.base_color_ = glm::vec3(0.0f, 0.0f, 1.0f);
-			light.spec_color_ = glm::vec3(0.0f, 0.0f, 0.0f);
-		}
-	}
+	//	auto light_component = ecs_manager.getComponent<LightComponent>(light_entity);
+	//	if (light_component) {
+	//		auto& light = light_component->value();
+	//		light.enabled_ = false;
+	//		light.type_ = LIGHT_TYPE_DIRECTIONAL;
+	//		light.base_color_ = glm::vec3(0.0f, 0.0f, 1.0f);
+	//		light.spec_color_ = glm::vec3(0.0f, 0.0f, 0.0f);
+	//	}
+	//}
 
 
 		
@@ -311,7 +312,7 @@ int main(int argc, char* argv[]) {
 		engine.renderImgui();
 		ecs_render_imgui(ecs_manager, camera_entity);
 		ecs_light_imgui(ecs_manager.getComponentList<TransformComponent>(), ecs_manager.getComponentList<LightComponent>());
-		pbr_render_system.render(ecs_manager.getComponentList<TransformComponent>(),
+		pbr_render_system.renderWithShadows(ecs_manager.getComponentList<TransformComponent>(),
 			ecs_manager.getComponentList<RenderComponent>(), ecs_manager.getComponentList<LightComponent>());
 		//normal_render_system.render(ecs_manager.getComponentList<TransformComponent>(),
 		//	ecs_manager.getComponentList<RenderComponent>());

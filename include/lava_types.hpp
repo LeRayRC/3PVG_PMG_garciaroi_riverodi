@@ -208,7 +208,8 @@ struct MaterialPBRProperties {
 
 typedef enum PipelineType {
 	PIPELINE_TYPE_NORMAL, 
-	PIPELINE_TYPE_PBR
+	PIPELINE_TYPE_PBR,
+	PIPELINE_TYPE_SHADOW
 } PipelineType;
 
 typedef enum PipelineFlags {
