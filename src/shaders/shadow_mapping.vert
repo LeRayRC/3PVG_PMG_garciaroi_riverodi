@@ -2,8 +2,6 @@
 #extension GL_GOOGLE_include_directive : require
 #extension GL_EXT_buffer_reference : require
 
-#include "input_structures.glsl"
-
 struct Vertex {
 	vec3 position;
 	float uv_x;
@@ -40,5 +38,5 @@ void main()
 	//output data
 	vec4 pos = PushConstants.render_matrix *vec4(v.position, 1.0);
 
-	gl_Position = globalData.viewproj * pos;
+	gl_Position = light_viewproj.viewproj * pos;
 }
