@@ -204,3 +204,16 @@ workspace "Motor"
         files "examples/pbr_demostrator.cpp"
         files "src/shaders/*"
         files "examples/assets/*"
+    project"Shadows"
+        kind "ConsoleApp" -- This was WindowedApp
+        language "C++"
+        targetdir "build/%{prj.name}/%{cfg.buildcfg}"
+        includedirs "include"
+        links "Motor"
+        conan_config_exec("Debug")
+        conan_config_exec("Release")
+        conan_config_exec("RelWithDebInfo")
+        debugargs { _MAIN_SCRIPT_DIR .. "/examples/data" }
+        files "examples/shadows_demostrator.cpp"
+        files "src/shaders/*"
+        files "examples/assets/*"

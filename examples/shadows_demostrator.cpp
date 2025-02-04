@@ -119,8 +119,24 @@ int main(int argc, char* argv[]) {
 	//////ASSETS END/////
 	/////////////////////
 
+	{
+		size_t entity = ecs_manager.createEntity();
+		ecs_manager.addComponent<TransformComponent>(entity);
+		ecs_manager.addComponent<RenderComponent>(entity);
 
+		auto transform_component = ecs_manager.getComponent<TransformComponent>(entity);
+		if (transform_component) {
+			auto& transform = transform_component->value();
+			transform.pos_ = glm::vec3(0.0f, 0.0f, -1.0f);
+			transform.scale_ = glm::vec3(10.0f, 10.0f, 10.0f);
+		}
 
+		auto render_component = ecs_manager.getComponent<RenderComponent>(entity);
+		if (render_component) {
+			auto& render = render_component->value();
+			render.mesh_ = mesh_;
+		}
+	}
 
 	{
 		size_t entity = ecs_manager.createEntity();
@@ -130,7 +146,7 @@ int main(int argc, char* argv[]) {
 		auto transform_component = ecs_manager.getComponent<TransformComponent>(entity);
 		if (transform_component) {
 			auto& transform = transform_component->value();
-			transform.pos_ = glm::vec3(0.0f, 0.0f, -2.0f);
+			transform.pos_ = glm::vec3(0.2f, 0.0f, -2.0f);
 			transform.scale_ = glm::vec3(10.0f, 10.0f, 10.0f);
 		}
 
