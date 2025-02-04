@@ -14,6 +14,8 @@ LavaPBRRenderSystem::LavaPBRRenderSystem(LavaEngine &engine) :
 							&engine_.swap_chain_,
 							&engine_.global_descriptor_allocator_,
 							engine_.global_descriptor_set_layout_,
+							engine_.global_pbr_descriptor_set_layout_,
+							engine_.global_lights_descriptor_set_layout_,
 							PipelineFlags::PIPELINE_USE_PUSHCONSTANTS | PipelineFlags::PIPELINE_USE_DESCRIPTOR_SET,
 							PipelineBlendMode::PIPELINE_BLEND_ONE_ONE)},
 	pipeline_first_light_{ PipelineConfig(
@@ -24,15 +26,14 @@ LavaPBRRenderSystem::LavaPBRRenderSystem(LavaEngine &engine) :
 													&engine_.swap_chain_,
 													&engine_.global_descriptor_allocator_,
 													engine_.global_descriptor_set_layout_,
+													engine_.global_pbr_descriptor_set_layout_,
+													engine_.global_lights_descriptor_set_layout_,
 													PipelineFlags::PIPELINE_USE_PUSHCONSTANTS | PipelineFlags::PIPELINE_USE_DESCRIPTOR_SET,
 													PipelineBlendMode::PIPELINE_BLEND_ONE_ZERO)}
 {
 
-	pbr_data_buffer_ = std::make_unique<LavaBuffer>(engine.allocator_, sizeof(LavaPBRMaterialProperties), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
-	pbr_data_buffer_->setMappedData();
 
-	light_data_buffer_ = std::make_unique<LavaBuffer>(engine.allocator_, sizeof(LightShaderStruct), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
-	light_data_buffer_->setMappedData();
+
 }
 
 
@@ -100,11 +101,6 @@ void LavaPBRRenderSystem::render(
 			active_pipeline->get_layout(),
 			0, 1, &engine_.global_descriptor_set_, 0, nullptr);
 
-		VkDescriptorSet pbr_descriptor_set = active_pipeline->get_descriptor_set();
-		vkCmdBindDescriptorSets(engine_.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-			active_pipeline->get_layout(),
-			1, 1, &pbr_descriptor_set, 0, nullptr);
-
 
 		vkCmdBindDescriptorSets(engine_.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
 			active_pipeline->get_layout(),
@@ -124,6 +120,11 @@ void LavaPBRRenderSystem::render(
 
 			std::shared_ptr<LavaMesh> lava_mesh = render_it->value().mesh_;
 			std::shared_ptr<MeshAsset> mesh = lava_mesh->mesh_;
+
+			VkDescriptorSet pbr_descriptor_set = lava_mesh->get_material()->get_descriptor_set();
+			vkCmdBindDescriptorSets(engine_.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+				active_pipeline->get_layout(),
+				1, 1, &pbr_descriptor_set, 0, nullptr);
 
 			GPUDrawPushConstants push_constants;
 			glm::mat4 model = glm::mat4(1.0f);

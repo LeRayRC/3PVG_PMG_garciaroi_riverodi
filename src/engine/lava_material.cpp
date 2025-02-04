@@ -10,6 +10,8 @@ LavaMaterial::LavaMaterial(LavaEngine& engine, MaterialProperties prop) :
               &engine.swap_chain_,
               &engine.global_descriptor_allocator_,
               engine.global_descriptor_set_layout_,
+              engine.global_pbr_descriptor_set_layout_,
+              engine.global_lights_descriptor_set_layout_,
               prop.pipeline_flags) },
   descriptor_manager_{ engine.global_descriptor_allocator_ }
  {

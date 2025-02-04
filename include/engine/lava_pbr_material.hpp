@@ -23,44 +23,31 @@ public:
 
 	std::string get_name() { return name_; }
 	
-	/*VkDescriptorSet get_descriptor_set() {
+	VkDescriptorSet get_descriptor_set() {
 		return descriptor_set_;
-	}*/
-
-	void UpdateGlobalDescriptorSet(LavaBuffer& buffer_properties) {
-		engine_->global_descriptor_allocator_.clear();
-		engine_->global_descriptor_allocator_.writeImage(
-			0,
-			base_color_->get_allocated_image().image_view,
-			base_color_->get_sampler(),
-			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-			VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-		engine_->global_descriptor_allocator_.writeImage(
-			1,
-			normal_->get_allocated_image().image_view,
-			normal_->get_sampler(),
-			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-			VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-		engine_->global_descriptor_allocator_.writeImage(
-			2,
-			metallic_roughness_->get_allocated_image().image_view,
-			metallic_roughness_->get_sampler(),
-			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-			VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-		engine_->global_descriptor_allocator_.writeImage(
-			3,
-			opacity_->get_allocated_image().image_view,
-			opacity_->get_sampler(),
-			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-			VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-
-		buffer_properties.updateBufferData(&uniform_properties, sizeof(LavaPBRMaterialProperties));
-		engine_->global_descriptor_allocator_.writeBuffer(4, buffer_properties.get_buffer().buffer, sizeof(LavaPBRMaterialProperties), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
 	}
 
+	void UpdateBaseColorImage(std::shared_ptr<LavaImage> image) {
+		base_color_ = image;
+		UpdateDescriptorSet();
+	}
 
-	void UpdateGlobalDescriptorSet(LavaBuffer& buffer_properties,
-	LavaBuffer& light_buffer_properties, LightShaderStruct& light_parameter) {
+	void UpdateBaseMetallicRoughnessImage(std::shared_ptr<LavaImage> image) {
+		metallic_roughness_ = image;
+		UpdateDescriptorSet();
+	}
+
+	void UpdateOpacityImage(std::shared_ptr<LavaImage> image) {
+		opacity_ = image;
+		UpdateDescriptorSet();
+	}
+
+	void UpdateNormalImage(std::shared_ptr<LavaImage> image) {
+		normal_ = image;
+		UpdateDescriptorSet();
+	}
+
+	void UpdateDescriptorSet() {
 		engine_->global_descriptor_allocator_.clear();
 		engine_->global_descriptor_allocator_.writeImage(
 			0,
@@ -87,10 +74,10 @@ public:
 			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 			VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 
-		buffer_properties.updateBufferData(&uniform_properties, sizeof(LavaPBRMaterialProperties));
-		engine_->global_descriptor_allocator_.writeBuffer(4, buffer_properties.get_buffer().buffer, sizeof(LavaPBRMaterialProperties), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-		light_buffer_properties.updateBufferData(&light_parameter, sizeof(LightShaderStruct));
-		engine_->global_descriptor_allocator_.writeBuffer(5, light_buffer_properties.get_buffer().buffer, sizeof(LightShaderStruct), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+		pbr_data_buffer_->updateBufferData(&uniform_properties, sizeof(LavaPBRMaterialProperties));
+		engine_->global_descriptor_allocator_.writeBuffer(4, pbr_data_buffer_->get_buffer().buffer, sizeof(LavaPBRMaterialProperties), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+		engine_->global_descriptor_allocator_.updateSet(descriptor_set_);
+		engine_->global_descriptor_allocator_.clear();
 	}
 
 private:
@@ -106,6 +93,9 @@ private:
 
 	LavaPBRMaterialProperties uniform_properties;
 	
+	VkDescriptorSet descriptor_set_;
+	std::unique_ptr<LavaBuffer> pbr_data_buffer_;
+
 
 	LavaEngine *engine_;
 

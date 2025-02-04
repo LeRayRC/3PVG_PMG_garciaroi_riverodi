@@ -157,6 +157,7 @@ LavaEngine::~LavaEngine(){
 	vkDeviceWaitIdle(device_.get_device());
 	vkDestroyDescriptorSetLayout(device_.get_device(), global_descriptor_set_layout_, nullptr);
 	vkDestroyDescriptorSetLayout(device_.get_device(), global_lights_descriptor_set_layout_, nullptr);
+	vkDestroyDescriptorSetLayout(device_.get_device(), global_pbr_descriptor_set_layout_, nullptr);
 
 	//pipelines_.clear();
 	/*main_deletion_queue_.flush();*/
@@ -195,7 +196,13 @@ void LavaEngine::initGlobalData() {
 	builder.addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
 	global_lights_descriptor_set_layout_ = builder.build(device_.get_device(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
 
-
+	builder.clear();
+	builder.addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER); // base color texture
+	builder.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER); // normal
+	builder.addBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER); // roughness_metallic_texture
+	builder.addBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER); // opacity
+	builder.addBinding(4, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+	global_pbr_descriptor_set_layout_ = builder.build(device_.get_device(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
 }
 
 void LavaEngine::updateMainCamera(struct CameraComponent* camera_component,

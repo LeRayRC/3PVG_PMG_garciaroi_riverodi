@@ -22,8 +22,6 @@ private:
 	LavaPipeline pipeline_first_light_;
 
 
-	std::unique_ptr<LavaBuffer> pbr_data_buffer_;
-	std::unique_ptr<LavaBuffer> light_data_buffer_;
 };
 
 

@@ -231,7 +231,9 @@ public:
 	class LavaDevice* device;
 	class LavaSwapChain* swap_chain;
 	class LavaDescriptorManager* descriptor_manager;
-	VkDescriptorSetLayout descriptor_set_layout;
+	VkDescriptorSetLayout global_descriptor_set_layout;
+	VkDescriptorSetLayout global_pbr_descriptor_set_layout;
+	VkDescriptorSetLayout global_lights_descriptor_set_layout;
 	int pipeline_flags;
 	PipelineBlendMode blend_mode;
 };

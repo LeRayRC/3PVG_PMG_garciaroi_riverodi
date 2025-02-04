@@ -113,6 +113,8 @@ int main(int argc, char* argv[]) {
 
 	std::shared_ptr<LavaMesh> mesh_ = std::make_shared<LavaMesh>(engine, mesh_properties);
 
+	//Needs to be call every time an image or property is updated
+	basic_material.UpdateDescriptorSet();
 	/////////////////////
 	//////ASSETS END/////
 	/////////////////////
@@ -211,6 +213,7 @@ int main(int argc, char* argv[]) {
 	LavaInput* input = engine.window_.get_input();
 
 	while (!engine.shouldClose()) {
+		
 
 		//auto &tr = ecs_manager.getComponent<TransformComponent>(entity)->value();
 		//tr.rot_ = glm::vec3(0.1f * engine.frame_data_.frame_number_,

@@ -7,7 +7,7 @@ LavaPBRMaterial::LavaPBRMaterial(LavaEngine& engine, MaterialPBRProperties prop)
   name_ = prop.name;
   base_color_ = engine.default_texture_image_pink;
   
-  metallic_roughness_ = engine.default_texture_image_black;
+  metallic_roughness_ = engine.default_texture_image_white;
   uniform_properties.metallic_factor_ = 0.5f;
   uniform_properties.roughness_factor_ = 0.5f;
 
@@ -16,8 +16,17 @@ LavaPBRMaterial::LavaPBRMaterial(LavaEngine& engine, MaterialPBRProperties prop)
   opacity_ = engine.default_texture_image_white;
   uniform_properties.opacity_mask_ = 0.5f;
 
-  normal_ = engine.default_texture_image_black;
+  normal_ = engine.default_texture_image_white;
   uniform_properties.use_normal_ = 0.0f;
+
+  pbr_data_buffer_ = std::make_unique<LavaBuffer>(engine.allocator_, 
+    sizeof(LavaPBRMaterialProperties), 
+    VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
+    VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE,
+    &engine_->device_);
+  pbr_data_buffer_->setMappedData();
+  descriptor_set_ = engine_->global_descriptor_allocator_.allocate(engine_->global_pbr_descriptor_set_layout_);
+  UpdateDescriptorSet();
 }
 
 //LavaMaterialImage LavaMaterial::get_image(unsigned int index) {

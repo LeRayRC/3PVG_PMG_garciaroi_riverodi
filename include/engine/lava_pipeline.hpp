@@ -36,9 +36,9 @@ private:
 	void configurePushConstants(VkPipelineLayoutCreateInfo* info,
 		VkPushConstantRange* range);
 	void configureDescriptorSet(VkPipelineLayoutCreateInfo* info, 
-		VkDescriptorSetLayout layout, 
-		PipelineType type,
-		class LavaDescriptorManager* descriptor_manager);
+		VkDescriptorSetLayout global_layout,
+		VkDescriptorSetLayout global_pbr_layout,
+		VkDescriptorSetLayout global_lights_layout);
 	void configureAttributes(VkPipelineLayoutCreateInfo* info);
 };
 

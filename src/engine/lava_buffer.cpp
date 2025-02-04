@@ -1,8 +1,11 @@
 #include "engine/lava_buffer.hpp"
 #include "engine/lava_allocator.hpp"
+#include "engine/lava_device.hpp"
+
 
 #define VMA_IMPLEMENTATION
 #include "vk_mem_alloc.h"
+
 
 
 LavaBuffer::LavaBuffer() {
@@ -12,8 +15,9 @@ LavaBuffer::LavaBuffer() {
 
 
 
-LavaBuffer::LavaBuffer(LavaAllocator& allocator, size_t alloc_size, VkBufferUsageFlags usage, VmaMemoryUsage memory_usage)
+LavaBuffer::LavaBuffer(LavaAllocator& allocator, size_t alloc_size, VkBufferUsageFlags usage, VmaMemoryUsage memory_usage, LavaDevice* device)
 {
+	device_ = device;
 	allocator_ = &allocator;
 	// allocate buffer
 	VkBufferCreateInfo buffer_info = { .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
@@ -44,6 +48,9 @@ LavaBuffer::~LavaBuffer(){
 	if (initialized_) {
 		if (mapped_) {
 			vmaUnmapMemory(allocator_->get_allocator(), buffer_.allocation);
+		}
+		if (device_) {
+			vkDeviceWaitIdle(device_->get_device());
 		}
 		vmaDestroyBuffer(allocator_->get_allocator(), buffer_.buffer, buffer_.allocation);
 	}

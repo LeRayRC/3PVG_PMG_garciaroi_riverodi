@@ -80,6 +80,7 @@ public:
 	std::unique_ptr<LavaBuffer> global_data_buffer_;
 	VkDescriptorSetLayout global_descriptor_set_layout_;
 	VkDescriptorSetLayout global_lights_descriptor_set_layout_;
+	VkDescriptorSetLayout global_pbr_descriptor_set_layout_;
 	VkDescriptorSet global_descriptor_set_;
 
 	std::shared_ptr<LavaImage> default_texture_image_pink;

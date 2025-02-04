@@ -112,7 +112,6 @@ vec3 SpotLight() {
 
 void main() 
 {
-  //vec4 texColor = texture(baseColorTex,inUV);
   if(light.enabled == 1){
     switch(light.type){
       case 0: {
@@ -129,5 +128,5 @@ void main()
        }
     }
   }
-  //outFragColor *= texture(baseColorTex,inUV); 
+  outFragColor *= texture(baseColorTex,inUV); 
 }
