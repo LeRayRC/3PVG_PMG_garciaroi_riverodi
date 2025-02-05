@@ -11,6 +11,7 @@ layout (location = 3) out vec3 outPos;
 layout (location = 4) out vec3 tangentLightPos;
 layout (location = 5) out vec3 tangentViewPos;
 layout (location = 6) out vec3 tangentFragPos;
+layout (location = 7) out vec4 fragPosLightSpace;
 
 struct Vertex {
 	vec3 position;
@@ -32,6 +33,10 @@ layout(set = 1, binding = 4) uniform LavaPBRMaterialProperties {
 	float opacity_mask_;
 	float use_normal_;
 }properties;
+
+layout(set = 2, binding = 1) uniform  LightViewProj{   
+	mat4 viewproj;
+} light_viewproj;
 
 layout(buffer_reference, std430) readonly buffer VertexBuffer{ 
 	Vertex vertices[];
@@ -71,4 +76,7 @@ void main()
     //vs_out.TangentLightPos = TBN * lightPos; //TO DO: LIGHTS
     //tangentViewPos  = TBN * viewPos; //TO DO: LIGHTS
     tangentFragPos  = TBN * pos.xyz;
+
+	//Light pos space 
+	fragPosLightSpace = light_viewproj.viewproj * pos;
 }

@@ -251,7 +251,7 @@ int main(int argc, char* argv[]) {
 	camera_tr.pos_ = glm::vec3(0.0f, 0.0f, 0.0f);
 	auto& camera_component = ecs_manager.getComponent<CameraComponent>(camera_entity)->value();
 
-	engine.global_scene_data_.ambientColor = glm::vec3(0.2f, 0.2f, 0.2f);
+	engine.global_scene_data_.ambientColor = glm::vec3(0.1f, 0.1f, 0.1f);
 
 	LavaInput* input = engine.window_.get_input();
 

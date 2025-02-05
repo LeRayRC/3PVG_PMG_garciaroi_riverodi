@@ -127,7 +127,7 @@ public:
 
 	std::vector<std::shared_ptr<LavaMesh>> meshes_;
 	
-
+	void setDynamicViewportAndScissor();
 	void initGlobalData();
 	void initImgui();
 	void drawImgui(VkCommandBuffer cmd, VkImageView targetImageView);

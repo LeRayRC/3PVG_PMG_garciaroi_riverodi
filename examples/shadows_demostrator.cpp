@@ -146,7 +146,7 @@ int main(int argc, char* argv[]) {
 		auto transform_component = ecs_manager.getComponent<TransformComponent>(entity);
 		if (transform_component) {
 			auto& transform = transform_component->value();
-			transform.pos_ = glm::vec3(0.2f, 0.0f, -2.0f);
+			transform.pos_ = glm::vec3(0.0f, 0.0f, -2.0f);
 			transform.scale_ = glm::vec3(10.0f, 10.0f, 10.0f);
 		}
 
@@ -208,7 +208,7 @@ int main(int argc, char* argv[]) {
 			auto& light = light_component->value();
 			light.enabled_ = true;
 			light.type_ = LIGHT_TYPE_DIRECTIONAL;
-			light.base_color_ = glm::vec3(1.0f, 0.0f, 0.0f);
+			light.base_color_ = glm::vec3(1.0f, 1.0f, 1.0f);
 			light.spec_color_ = glm::vec3(0.0f, 0.0f, 0.0f);
 		}
 		auto tr_component = ecs_manager.getComponent<TransformComponent>(light_entity);
@@ -219,6 +219,29 @@ int main(int argc, char* argv[]) {
 		}
 
 	}
+
+
+	//{
+	//	size_t light_entity = ecs_manager.createEntity();
+	//	ecs_manager.addComponent<TransformComponent>(light_entity);
+	//	ecs_manager.addComponent<LightComponent>(light_entity);
+
+	//	auto light_component = ecs_manager.getComponent<LightComponent>(light_entity);
+	//	if (light_component) {
+	//		auto& light = light_component->value();
+	//		light.enabled_ = false;
+	//		light.type_ = LIGHT_TYPE_DIRECTIONAL;
+	//		light.base_color_ = glm::vec3(1.0f, 0.0f, 0.0f);
+	//		light.spec_color_ = glm::vec3(0.0f, 0.0f, 0.0f);
+	//	}
+	//	auto tr_component = ecs_manager.getComponent<TransformComponent>(light_entity);
+	//	if (tr_component) {
+	//		auto& tr = tr_component->value();
+	//		tr.rot_ = glm::vec3(0.0f, 0.0f, 0.0f);
+	//		tr.pos_ = glm::vec3(1.0f, 0.0f, 0.0f);
+	//	}
+
+	//}
 
 	//{
 	//	size_t light_entity = ecs_manager.createEntity();
@@ -264,7 +287,7 @@ int main(int argc, char* argv[]) {
 	ecs_manager.addComponent<CameraComponent>(camera_entity);
 
 	auto& camera_tr = ecs_manager.getComponent<TransformComponent>(camera_entity)->value();
-	camera_tr.rot_ = glm::vec3(0.0f, 0.0f, 0.0f);
+	camera_tr.rot_ = glm::vec3(0.5f, 0.0f, 0.0f);
 	camera_tr.pos_ = glm::vec3(0.0f, 0.0f, 0.0f);
 	auto& camera_component = ecs_manager.getComponent<CameraComponent>(camera_entity)->value();
 
@@ -299,10 +322,10 @@ int main(int argc, char* argv[]) {
 			camera_tr.pos_.x -= (1.0f * engine.dt_);
 		}
 		if (input->isInputDown(KEY_W)) {
-			camera_tr.pos_.x += (1.0f * engine.dt_);
+			camera_tr.pos_.y += (1.0f * engine.dt_);
 		}
-		if (input->isInputDown(KEY_W)) {
-			camera_tr.pos_.x -= (1.0f * engine.dt_);
+		if (input->isInputDown(KEY_S)) {
+			camera_tr.pos_.y -= (1.0f * engine.dt_);
 		}
 
 

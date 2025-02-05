@@ -606,8 +606,8 @@ void LavaEngine::allocate_lights(std::vector<std::optional<class LightComponent>
 		light_component.descriptor_set_ = global_descriptor_allocator_.allocate(global_lights_descriptor_set_layout_);
 		global_descriptor_allocator_.writeBuffer(0, light_component.light_data_buffer_->get_buffer().buffer, sizeof(LightShaderStruct), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
 		global_descriptor_allocator_.writeBuffer(1, light_component.light_viewproj_buffer_->get_buffer().buffer, sizeof(glm::mat4), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-		global_descriptor_allocator_.writeImage(2, swap_chain_.get_depth_image().image_view,
-			swap_chain_.get_depth_sampler(),
+		global_descriptor_allocator_.writeImage(2, swap_chain_.get_shadowmap_image().image_view,
+			swap_chain_.get_shadowmap_sampler(),
 			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 			VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 		global_descriptor_allocator_.updateSet(light_component.descriptor_set_);
@@ -658,6 +658,26 @@ void LavaEngine::update_lights(std::vector<std::optional<class LightComponent>>&
 
 	}
 
+}
+
+
+void LavaEngine::setDynamicViewportAndScissor() {
+	//set dynamic viewport and scissor
+	VkViewport viewport = {};
+	viewport.x = 0;
+	viewport.y = 0;
+	viewport.width = (float)swap_chain_.get_draw_extent().width;
+	viewport.height = (float)swap_chain_.get_draw_extent().height;
+	viewport.minDepth = 0.0f;
+	viewport.maxDepth = 1.0f;
+	vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+
+	VkRect2D scissor = {};
+	scissor.offset.x = 0;
+	scissor.offset.y = 0;
+	scissor.extent.width = swap_chain_.get_draw_extent().width;
+	scissor.extent.height = swap_chain_.get_draw_extent().height;
+	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 }
 
 

@@ -140,7 +140,27 @@ void LavaSwapChain::createSwapChain(class LavaSurface& use_surface, VkExtent2D w
 		printf("Error creating depth image view!\n");
 	}
 
-	//Create depth map sampler
+
+	//Create shadow map on the swapchain
+	shadowmap_image_.image_format = VK_FORMAT_D32_SFLOAT;
+	shadowmap_image_.image_extent = draw_image_extent;
+	VkImageUsageFlags shadowmap_image_usages{};
+	shadowmap_image_usages |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+	shadowmap_image_usages |= VK_IMAGE_USAGE_SAMPLED_BIT;
+
+	VkImageCreateInfo shadowmap_img_info = vkinit::ImageCreateInfo(shadowmap_image_.image_format,
+		shadowmap_image_usages, draw_image_extent);
+
+	//allocate and create the image
+	vmaCreateImage(allocator_, &shadowmap_img_info, &rimg_allocinfo, &shadowmap_image_.image, &shadowmap_image_.allocation, nullptr);
+
+	//build a image-view for the draw image to use for rendering
+	VkImageViewCreateInfo shadowmap_view_info = vkinit::ImageViewCreateInfo(shadowmap_image_.image_format, shadowmap_image_.image, VK_IMAGE_ASPECT_DEPTH_BIT);
+
+	if (vkCreateImageView(device_->get_device(), &shadowmap_view_info, nullptr, &shadowmap_image_.image_view) !=
+		VK_SUCCESS) {
+		printf("Error creating shadowmap image view!\n");
+	}
 
 	VkSamplerCreateInfo sampler_info{};
 	sampler_info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -159,7 +179,7 @@ void LavaSwapChain::createSwapChain(class LavaSurface& use_surface, VkExtent2D w
 	sampler_info.minLod = 0.0f;
 	sampler_info.maxLod = 0.0f; // Sin mipmaps
 
-	vkCreateSampler(device_->get_device(), &sampler_info, nullptr, &depth_image_sampler_);
+	vkCreateSampler(device_->get_device(), &sampler_info, nullptr, &shadowmap_sampler_);
 
 
 }
@@ -193,7 +213,9 @@ void LavaSwapChain::createImageViews()
 
 LavaSwapChain::~LavaSwapChain()
 {
-	vkDestroySampler(device_->get_device(), depth_image_sampler_, nullptr);
+	vkDestroySampler(device_->get_device(), shadowmap_sampler_, nullptr);
+	vkDestroyImageView(device_->get_device(), shadowmap_image_.image_view, nullptr);
+	vmaDestroyImage(allocator_, shadowmap_image_.image, shadowmap_image_.allocation);
 	//Destroy Swap Chain
 	vkDestroyImageView(device_->get_device(), depth_image_.image_view, nullptr);
 	vmaDestroyImage(allocator_, depth_image_.image, depth_image_.allocation);

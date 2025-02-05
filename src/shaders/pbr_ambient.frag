@@ -138,7 +138,8 @@ void main()
     
     switch(light.type){
       case 0: {
-        outFragColor = (1.0 - shadow) * vec4(DirectionalLight(),1.0); 
+        outFragColor = (1.0 - shadow) * vec4(DirectionalLight(),1.0);
+        //outFragColor = vec4(DirectionalLight(),1.0); 
         break;
        }
        case 1: {
@@ -152,4 +153,5 @@ void main()
     }
   }
   outFragColor *= texture(baseColorTex,inUV);
+  //outFragColor.xyz += globalData.ambientColor;
 }
