@@ -196,6 +196,7 @@ void LavaEngine::initGlobalData() {
 	builder.clear();
 	builder.addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
 	builder.addBinding(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+	builder.addBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 	global_lights_descriptor_set_layout_ = builder.build(device_.get_device(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
 
 	builder.clear();
@@ -605,6 +606,10 @@ void LavaEngine::allocate_lights(std::vector<std::optional<class LightComponent>
 		light_component.descriptor_set_ = global_descriptor_allocator_.allocate(global_lights_descriptor_set_layout_);
 		global_descriptor_allocator_.writeBuffer(0, light_component.light_data_buffer_->get_buffer().buffer, sizeof(LightShaderStruct), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
 		global_descriptor_allocator_.writeBuffer(1, light_component.light_viewproj_buffer_->get_buffer().buffer, sizeof(glm::mat4), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+		global_descriptor_allocator_.writeImage(2, swap_chain_.get_depth_image().image_view,
+			swap_chain_.get_depth_sampler(),
+			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 		global_descriptor_allocator_.updateSet(light_component.descriptor_set_);
 		global_descriptor_allocator_.clear();
 
