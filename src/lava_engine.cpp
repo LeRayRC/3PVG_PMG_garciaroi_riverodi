@@ -645,14 +645,26 @@ void LavaEngine::update_lights(std::vector<std::optional<class LightComponent>>&
 			light_transform_it->value().rot_
 		);
 
-		float size = 1.0f; // Tamaño del área visible
-		float left = -size;
-		float right = size;
-		float bottom = -size;
-		float top = size;
-		glm::mat4 proj = glm::ortho(left, right, bottom, top, 5.0f, 0.1f);
-		proj[1][1] *= -1;
-		light_component.viewproj_ = proj * view;
+		if(light_component.type_ == LIGHT_TYPE_DIRECTIONAL) {
+			float size = 1.0f; // Tamaño del área visible
+			float left = -size;
+			float right = size;
+			float bottom = -size;
+			float top = size;
+			glm::mat4 proj = glm::ortho(left, right, bottom, top, 5.0f, 0.1f);
+			proj[1][1] *= -1;
+			light_component.viewproj_ = proj * view;
+		}
+		else if (light_component.type_ == LIGHT_TYPE_SPOT) {
+			float fov = 2.0f * light_component.outer_cutoff_;
+
+			float near = 10000.0f; // Plano cercano
+			float far = 0.1f; // Plano lejano
+			// Generar la matriz de proyección en perspectiva
+			glm::mat4 proj = glm::perspective(glm::radians(fov), (float)window_extent_.width / (float)window_extent_.height, near, far);
+			proj[1][1] *= -1;
+			light_component.viewproj_ = proj * view;
+		}
 
 		light_component.light_viewproj_buffer_->updateBufferData(&light_component.viewproj_, sizeof(glm::mat4));
 

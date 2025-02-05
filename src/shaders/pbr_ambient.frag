@@ -121,12 +121,12 @@ float ShadowCalculation(vec4 fragPosLightSpace)
 {
     vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
     projCoords = projCoords * 0.5 + 0.5;
-    projCoords.y = 1.0 - projCoords.y;
+    //projCoords.y = 1.0 - projCoords.y;
     float closestDepth = texture(shadowMap, projCoords.xy).r; 
     float currentDepth = projCoords.z;
     float shadow = currentDepth > closestDepth  ? 1.0 : 0.0;
 
-    return shadow;
+    return closestDepth;
 }
 
 
@@ -138,7 +138,8 @@ void main()
     
     switch(light.type){
       case 0: {
-        outFragColor = (1.0 - shadow) * vec4(DirectionalLight(),1.0);
+        outFragColor = shadow * vec4(DirectionalLight(),1.0);
+        //outFragColor = vec4(shadow,0.0,0.0,1.0);
         //outFragColor = vec4(DirectionalLight(),1.0); 
         break;
        }
@@ -147,7 +148,7 @@ void main()
         break;
        }
        default:{
-        outFragColor = vec4(SpotLight(),1.0); 
+        outFragColor = vec4(fragPosLightSpace.z, 0.0,0.0,1.0);//(1.0 - shadow) * vec4(SpotLight(),1.0); 
         break;
        }
     }

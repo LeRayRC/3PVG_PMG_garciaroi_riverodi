@@ -205,8 +205,8 @@ struct  LightComponent {
     constant_att_ = 1.0f;
     shininess_ = 90.0f;
     strength_ = 0.5f;
-    cutoff_ = cosf(3.1416f * 10.0f / 180.0f);
-    outer_cutoff_ = cosf(3.1416f * 30.0f / 180.0f);
+    cutoff_ = 10.0f; //cosf(3.1416f * 10.0f / 180.0f);
+    outer_cutoff_ = 30.0f;//cosf(3.1416f * 30.0f / 180.0f);
     allocated_ = false;
   }
 
@@ -222,8 +222,8 @@ struct  LightComponent {
     constant_att_ = 1.0f;
     shininess_ = 90.0f;
     strength_ = 0.5f;
-    cutoff_ = cosf(3.1416f * 10.0f / 180.0f);
-    outer_cutoff_ = cosf(3.1416f * 30.0f / 180.0f);
+    cutoff_ = 10.0f; //cosf(3.1416f * 10.0f / 180.0f);
+    outer_cutoff_ = 30.0f;//cosf(3.1416f * 30.0f / 180.0f);
     allocated_ = false;
   }
 
@@ -321,8 +321,8 @@ struct LightShaderStruct {
     spot_dir[0] = light.spot_dir_.x;
     spot_dir[1] = light.spot_dir_.y;
     spot_dir[2] = light.spot_dir_.z;
-    cutoff = light.cutoff_;
-    outer_cutoff = light.outer_cutoff_;
+    cutoff = cosf(glm::radians(light.cutoff_));
+    outer_cutoff = cosf(glm::radians(light.outer_cutoff_));
   }
 };
 

@@ -69,12 +69,13 @@ void ecs_light_imgui(std::vector<std::optional<TransformComponent>>& transform_v
 				ImGui::DragFloat("Quadratic Att", &light_it->value().quad_att_, 0.001f, 0.0f, 1.8f);
 				ImGui::DragFloat("Constant Att", &light_it->value().constant_att_, 0.01f, 0.0f, 1.0f);
 				if (light_it->value().type_ == LightType::LIGHT_TYPE_SPOT) {
-					if (ImGui::DragFloat("CutOff", &light_it->value().cutoff_, 0.01f, 0.0f, 1.50f)) {
+					if (ImGui::DragFloat("CutOff", &light_it->value().cutoff_, 1.00f, 0.0f, 90.0f)) {
 						if (light_it->value().cutoff_ > light_it->value().outer_cutoff_) {
-							light_it->value().outer_cutoff_ = light_it->value().cutoff_ + 0.01f;
+							light_it->value().outer_cutoff_ =  
+								glm::clamp(light_it->value().outer_cutoff_, light_it->value().cutoff_, 90.0f);
 						}
 					}
-					ImGui::DragFloat("Outer CutOff", &light_it->value().outer_cutoff_, 0.01f, light_it->value().cutoff_+0.01f, 1.57f);
+					ImGui::DragFloat("Outer CutOff", &light_it->value().outer_cutoff_, 0.01f, light_it->value().cutoff_+0.01f, 90.0f);
 				}
 			}
 			ImGui::TreePop();
@@ -207,14 +208,14 @@ int main(int argc, char* argv[]) {
 		if (light_component) {
 			auto& light = light_component->value();
 			light.enabled_ = true;
-			light.type_ = LIGHT_TYPE_DIRECTIONAL;
+			light.type_ = LIGHT_TYPE_SPOT;
 			light.base_color_ = glm::vec3(1.0f, 1.0f, 1.0f);
 			light.spec_color_ = glm::vec3(0.0f, 0.0f, 0.0f);
 		}
 		auto tr_component = ecs_manager.getComponent<TransformComponent>(light_entity);
 		if (tr_component) {
 			auto& tr = tr_component->value();
-			tr.rot_ = glm::vec3(0.0f, 0.0f, 0.0f);
+			tr.rot_ = glm::vec3(0.0f, 3.14f, 0.0f);
 			tr.pos_ = glm::vec3(0.0f, 0.0f, 0.0f);
 		}
 
@@ -287,8 +288,8 @@ int main(int argc, char* argv[]) {
 	ecs_manager.addComponent<CameraComponent>(camera_entity);
 
 	auto& camera_tr = ecs_manager.getComponent<TransformComponent>(camera_entity)->value();
-	camera_tr.rot_ = glm::vec3(0.5f, 0.0f, 0.0f);
-	camera_tr.pos_ = glm::vec3(0.0f, 0.0f, 0.0f);
+	camera_tr.rot_ = glm::vec3(0.0f, 0.0f, 0.0f);
+	camera_tr.pos_ = glm::vec3(0.5f, 0.0f, 0.0f);
 	auto& camera_component = ecs_manager.getComponent<CameraComponent>(camera_entity)->value();
 
 	engine.global_scene_data_.ambientColor = glm::vec3(0.2f, 0.2f, 0.2f);
