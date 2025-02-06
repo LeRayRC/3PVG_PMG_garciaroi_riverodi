@@ -39,7 +39,7 @@ layout(set = 2, binding = 0) uniform LightProperties{
 layout(set = 2, binding = 1) uniform LightViewProj{
   mat4 viewproj;
 }light_viewproj;
-layout(set = 2, binding = 2) uniform sampler2DShadow  shadowMap;
+layout(set = 2, binding = 2) uniform sampler2D  shadowMap;
 
 
 //shader input
@@ -120,13 +120,12 @@ vec3 SpotLight() {
 
 float ShadowCalculation(vec4 fragPosLightSpace)
 {
-    vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
-    float currentDepth = projCoords.z;
-    projCoords = projCoords * 0.5 + 0.5;
-    //float closestDepth = texture(shadowMap, projCoords.xy).r; 
-    //float shadow = currentDepth < closestDepth  ? 1.0 : 0.0;
-    float shadow = texture(shadowMap, vec3(projCoords.xy, currentDepth));
-    return shadow;
+	vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+  float currentDepth = projCoords.z;
+  projCoords = projCoords * 0.5 + 0.5;
+  float closestDepth = texture(shadowMap, projCoords.xy).r; 
+  float shadow = currentDepth < closestDepth  ? 1.0 : 0.0;
+  return shadow;
 }
 
 
@@ -134,7 +133,7 @@ void main()
 {
 
   if(light.enabled == 1){
-    //float shadow = ShadowCalculation(fragPosLightSpace); 
+    float shadow_fr = ShadowCalculation(fragPosLightSpace); 
     
     switch(light.type){
       case 0: {
@@ -148,8 +147,11 @@ void main()
         break;
        }
        case 2: {
+
+
+
         vec3 lightColor = SpotLight();
-        outFragColor = vec4(lightColor * (1.0 - shadow), 1.0);
+        outFragColor = vec4(lightColor * (1.0 - shadow_fr), 1.0);
         break;
        }
        default:{
@@ -160,6 +162,6 @@ void main()
   }
   //vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
   //outFragColor = vec4(projCoords.xy, 0.0, 1.0);
-  //outFragColor *= texture(baseColorTex,inUV);
+  outFragColor *= texture(baseColorTex,inUV);
   outFragColor.xyz += globalData.ambientColor;
 }
