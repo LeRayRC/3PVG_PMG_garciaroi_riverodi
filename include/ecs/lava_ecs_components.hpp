@@ -206,7 +206,7 @@ struct  LightComponent {
     shininess_ = 90.0f;
     strength_ = 0.5f;
     cutoff_ = 10.0f; //cosf(3.1416f * 10.0f / 180.0f);
-    outer_cutoff_ = 30.0f;//cosf(3.1416f * 30.0f / 180.0f);
+    outer_cutoff_ = 10.0f;//cosf(3.1416f * 30.0f / 180.0f);
     allocated_ = false;
   }
 
@@ -223,7 +223,7 @@ struct  LightComponent {
     shininess_ = 90.0f;
     strength_ = 0.5f;
     cutoff_ = 10.0f; //cosf(3.1416f * 10.0f / 180.0f);
-    outer_cutoff_ = 30.0f;//cosf(3.1416f * 30.0f / 180.0f);
+    outer_cutoff_ = 10.0f;//cosf(3.1416f * 30.0f / 180.0f);
     allocated_ = false;
   }
 

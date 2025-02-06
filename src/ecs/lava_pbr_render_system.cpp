@@ -266,6 +266,9 @@ void LavaPBRRenderSystem::renderWithShadows(
 			model = glm::rotate(model, glm::radians(transform_it->value().rot_.z), glm::vec3(0.0f, 0.0f, 1.0f));
 			model = glm::scale(model, transform_it->value().scale_);
 
+
+
+
 			// Vincular los Vertex y Index Buffers
 			GPUMeshBuffers& meshBuffers = mesh->meshBuffers;
 			VkDeviceSize offsets[] = { 0 };
@@ -308,6 +311,14 @@ void LavaPBRRenderSystem::renderWithShadows(
 		active_pipeline = &pipeline_first_light_;
 		vkCmdBindPipeline(engine_.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, active_pipeline->get_pipeline());
 
+		vkCmdBindDescriptorSets(engine_.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+			active_pipeline->get_layout(),
+			0, 1, &engine_.global_descriptor_set_, 0, nullptr);
+
+		vkCmdBindDescriptorSets(engine_.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+			active_pipeline->get_layout(),
+			2, 1, &light_it->value().descriptor_set_, 0, nullptr);
+
 		transform_it = transform_vector.begin();
 		render_it = render_vector.begin();
 		transform_end = transform_vector.end();
@@ -335,6 +346,11 @@ void LavaPBRRenderSystem::renderWithShadows(
 				model = glm::rotate(model, glm::radians(transform_it->value().rot_.y), glm::vec3(0.0f, 1.0f, 0.0f));
 				model = glm::rotate(model, glm::radians(transform_it->value().rot_.z), glm::vec3(0.0f, 0.0f, 1.0f));
 				model = glm::scale(model, transform_it->value().scale_);
+
+
+				glm::vec4 pos = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+				glm::vec4 fragPosLightSpace = light_it->value().viewproj_ * model * pos;
+				glm::vec4 projCoords = fragPosLightSpace / fragPosLightSpace.w;
 
 				// Vincular los Vertex y Index Buffers
 				GPUMeshBuffers& meshBuffers = mesh->meshBuffers;

@@ -7,11 +7,12 @@
 layout (location = 0) out vec3 outColor;
 layout (location = 1) out vec2 outUV;
 layout (location = 2) out vec3 outNormal;
-layout (location = 3) out vec3 outPos;
+layout (location = 3) out vec4 outPos;
 layout (location = 4) out vec3 tangentLightPos;
 layout (location = 5) out vec3 tangentViewPos;
 layout (location = 6) out vec3 tangentFragPos;
 layout (location = 7) out vec4 fragPosLightSpace;
+layout (location = 8) out float shadow;
 
 struct Vertex {
 	vec3 position;
@@ -38,6 +39,10 @@ layout(set = 2, binding = 1) uniform  LightViewProj{
 	mat4 viewproj;
 } light_viewproj;
 
+
+layout(set = 2, binding = 2) uniform sampler2D  shadowMap;
+
+
 layout(buffer_reference, std430) readonly buffer VertexBuffer{ 
 	Vertex vertices[];
 };
@@ -58,7 +63,7 @@ void main()
 
 	//output data
 	vec4 pos = PushConstants.render_matrix *vec4(v.position, 1.0);
-	outPos = pos.xyz;
+	outPos = pos;
 
 	gl_Position = globalData.viewproj * pos;
 	outColor = v.color.xyz;
@@ -67,6 +72,17 @@ void main()
 	outUV.y = v.uv_y;
 	outNormal = normalize(PushConstants.render_matrix * vec4(v.normal,0.0)).xyz;
 
+	//Light pos space 
+	fragPosLightSpace = light_viewproj.viewproj * pos;
+
+	vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+  float currentDepth = projCoords.z;
+  projCoords = projCoords * 0.5 + 0.5;
+  float closestDepth = texture(shadowMap, projCoords.xy).r; 
+  shadow = currentDepth < closestDepth  ? 1.0 : 0.0;
+
+  //float shadow = texture(shadowMap, vec3(projCoords.xy, currentDepth));
+  //return shadow;
 
 	//Normal Mapping Calculations
     vec3 T = normalize(vec3(PushConstants.render_matrix * vec4(v.tangent,   0.0)));
@@ -77,6 +93,5 @@ void main()
     //tangentViewPos  = TBN * viewPos; //TO DO: LIGHTS
     tangentFragPos  = TBN * pos.xyz;
 
-	//Light pos space 
-	fragPosLightSpace = light_viewproj.viewproj * pos;
+	
 }

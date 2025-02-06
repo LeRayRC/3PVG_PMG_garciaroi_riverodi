@@ -164,20 +164,21 @@ void LavaSwapChain::createSwapChain(class LavaSurface& use_surface, VkExtent2D w
 
 	VkSamplerCreateInfo sampler_info{};
 	sampler_info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-	sampler_info.magFilter = VK_FILTER_NEAREST; // Sin suavizado
-	sampler_info.minFilter = VK_FILTER_NEAREST; // Sin suavizado
-	sampler_info.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-	sampler_info.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-	sampler_info.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+	sampler_info.magFilter = VK_FILTER_LINEAR; // Sin suavizado
+	sampler_info.minFilter = VK_FILTER_LINEAR; // Sin suavizado
+	sampler_info.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+	sampler_info.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+	sampler_info.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
 	sampler_info.anisotropyEnable = VK_FALSE;
 	sampler_info.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
 	sampler_info.unnormalizedCoordinates = VK_FALSE;
-	sampler_info.compareEnable = VK_FALSE; // Sin PCF
-	sampler_info.compareOp = VK_COMPARE_OP_ALWAYS;
+	sampler_info.compareEnable = VK_TRUE; // Sin PCF
+	sampler_info.compareOp = VK_COMPARE_OP_GREATER_OR_EQUAL;
 	sampler_info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
 	sampler_info.mipLodBias = 0.0f;
 	sampler_info.minLod = 0.0f;
 	sampler_info.maxLod = 0.0f; // Sin mipmaps
+
 
 	vkCreateSampler(device_->get_device(), &sampler_info, nullptr, &shadowmap_sampler_);
 

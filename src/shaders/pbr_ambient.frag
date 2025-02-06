@@ -39,18 +39,19 @@ layout(set = 2, binding = 0) uniform LightProperties{
 layout(set = 2, binding = 1) uniform LightViewProj{
   mat4 viewproj;
 }light_viewproj;
-layout(set = 2, binding = 2) uniform sampler2D shadowMap;
+layout(set = 2, binding = 2) uniform sampler2DShadow  shadowMap;
 
 
 //shader input
 layout (location = 0) in vec3 inColor;
 layout (location = 1) in vec2 inUV;
 layout (location = 2) in vec3 inNormal;
-layout (location = 3) in vec3 inPos;
+layout (location = 3) in vec4 inPos;
 layout (location = 4) in vec3 TangentLightPos;
 layout (location = 5) in vec3 TangentViewPos;
 layout (location = 6) in vec3 TangentFragPos;
 layout (location = 7) in vec4 fragPosLightSpace;
+layout (location = 8) in float shadow;
 
 
 //output write
@@ -64,7 +65,7 @@ vec3 DirectionalLight(){
   vec3 normal_norm = normalize(inNormal);
   float directionalIncidence = max(dot(normal_norm, light.dir), 0.0);
   //Specular
-  vec3 viewDirection = normalize(globalData.cameraPos - inPos);
+  vec3 viewDirection = normalize(globalData.cameraPos - inPos.xyz);
   vec3 reflectDirection = reflect(-light.dir, normal_norm);
 
   float specularValue = pow(max(dot(viewDirection, reflectDirection), 0.0), light.shininess);
@@ -75,10 +76,10 @@ vec3 DirectionalLight(){
 }
 
 vec3 PointLight() {
-    vec3 lightDir = normalize(light.pos - inPos);
+    vec3 lightDir = normalize(light.pos - inPos.xyz);
     float directionalIncidence = max(dot(inNormal, lightDir), 0.0);
     // Specular
-    vec3 viewDirection = normalize(globalData.cameraPos - inPos);
+    vec3 viewDirection = normalize(globalData.cameraPos - inPos.xyz);
     vec3 reflectDirection = reflect(-lightDir, inNormal);
 
     float specularValue = pow(max(dot(viewDirection, reflectDirection), 0.0), light.shininess);
@@ -86,19 +87,19 @@ vec3 PointLight() {
     vec3 diffuse = directionalIncidence * light.diff_color;
     vec3 specular = light.strength * specularValue * light.spec_color;
     // Attenuation
-    float distance = length(light.pos - inPos);
+    float distance = length(light.pos - inPos.xyz);
     float attenuation = 1.0 / (light.constant_att + light.linear_att * distance + light.quad_att * distance * distance);
     return diffuse * attenuation + specular * attenuation;
 }
 
 vec3 SpotLight() {
-    vec3 lightDir = normalize(light.pos - inPos);
+    vec3 lightDir = normalize(light.pos - inPos.xyz);
     float theta = dot(lightDir, normalize(-light.dir));
     vec3 result = vec3(0.0, 0.0, 0.0);
 
     float directionalIncidence = max(dot(inNormal, lightDir), 0.0);
     // Specular
-    vec3 viewDirection = normalize(globalData.cameraPos - inPos);
+    vec3 viewDirection = normalize(globalData.cameraPos - inPos.xyz);
     vec3 reflectDirection = reflect(-lightDir, inNormal);
 
     float specularValue = pow(max(dot(viewDirection, reflectDirection), 0.0), light.shininess);
@@ -106,7 +107,7 @@ vec3 SpotLight() {
     vec3 diffuse = directionalIncidence * light.diff_color;
     vec3 specular = light.strength * specularValue * light.spec_color;
     // Attenuation
-    float distance = length(light.pos - inPos);
+    float distance = length(light.pos - inPos.xyz);
     float attenuation = 1.0 / (light.constant_att + light.linear_att * distance + light.quad_att * distance * distance);
 
     // Intensity
@@ -120,13 +121,12 @@ vec3 SpotLight() {
 float ShadowCalculation(vec4 fragPosLightSpace)
 {
     vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
-    projCoords = projCoords * 0.5 + 0.5;
-    //projCoords.y = 1.0 - projCoords.y;
-    float closestDepth = texture(shadowMap, projCoords.xy).r; 
     float currentDepth = projCoords.z;
-    float shadow = currentDepth > closestDepth  ? 1.0 : 0.0;
-
-    return closestDepth;
+    projCoords = projCoords * 0.5 + 0.5;
+    //float closestDepth = texture(shadowMap, projCoords.xy).r; 
+    //float shadow = currentDepth < closestDepth  ? 1.0 : 0.0;
+    float shadow = texture(shadowMap, vec3(projCoords.xy, currentDepth));
+    return shadow;
 }
 
 
@@ -134,11 +134,11 @@ void main()
 {
 
   if(light.enabled == 1){
-    float shadow = ShadowCalculation(fragPosLightSpace); 
+    //float shadow = ShadowCalculation(fragPosLightSpace); 
     
     switch(light.type){
       case 0: {
-        outFragColor = shadow * vec4(DirectionalLight(),1.0);
+        //outFragColor = shadow * vec4(DirectionalLight(),1.0);
         //outFragColor = vec4(shadow,0.0,0.0,1.0);
         //outFragColor = vec4(DirectionalLight(),1.0); 
         break;
@@ -147,12 +147,19 @@ void main()
         outFragColor = vec4(PointLight(),1.0); 
         break;
        }
+       case 2: {
+        vec3 lightColor = SpotLight();
+        outFragColor = vec4(lightColor * (1.0 - shadow), 1.0);
+        break;
+       }
        default:{
-        outFragColor = vec4(fragPosLightSpace.z, 0.0,0.0,1.0);//(1.0 - shadow) * vec4(SpotLight(),1.0); 
+        //outFragColor = vec4(abs(fragPosLightSpace.z), 0.0,0.0,1.0);  //(1.0 - shadow) * vec4(SpotLight(),1.0); 
         break;
        }
     }
   }
-  outFragColor *= texture(baseColorTex,inUV);
-  //outFragColor.xyz += globalData.ambientColor;
+  //vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+  //outFragColor = vec4(projCoords.xy, 0.0, 1.0);
+  //outFragColor *= texture(baseColorTex,inUV);
+  outFragColor.xyz += globalData.ambientColor;
 }
