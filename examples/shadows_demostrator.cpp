@@ -220,6 +220,28 @@ int main(int argc, char* argv[]) {
 		}
 
 	}
+
+	{
+		size_t light_entity = ecs_manager.createEntity();
+		ecs_manager.addComponent<TransformComponent>(light_entity);
+		ecs_manager.addComponent<LightComponent>(light_entity);
+
+		auto light_component = ecs_manager.getComponent<LightComponent>(light_entity);
+		if (light_component) {
+			auto& light = light_component->value();
+			light.enabled_ = true;
+			light.type_ = LIGHT_TYPE_SPOT;
+			light.base_color_ = glm::vec3(1.0f, 1.0f, 1.0f);
+			light.spec_color_ = glm::vec3(0.0f, 0.0f, 0.0f);
+		}
+		auto tr_component = ecs_manager.getComponent<TransformComponent>(light_entity);
+		if (tr_component) {
+			auto& tr = tr_component->value();
+			tr.rot_ = glm::vec3(0.0f, 3.14f, 0.0f);
+			tr.pos_ = glm::vec3(0.0f, 0.0f, 1.0f);
+		}
+
+	}
 		
 	//Create Camera entity
 	size_t camera_entity = ecs_manager.createEntity();
@@ -251,9 +273,6 @@ int main(int argc, char* argv[]) {
 		//ImGui::DragFloat("Camera Rot X", &camera_tr.rot_.x, 0.5f, 88.0f, 268.0f);
 		//ImGui::DragFloat("Camera Rot Y", &camera_tr.rot_.y, 0.5f, -360.0f, 360.0f);
 
-		engine.allocate_lights(ecs_manager.getComponentList<LightComponent>());
-		engine.update_lights(ecs_manager.getComponentList<LightComponent>(),ecs_manager.getComponentList<TransformComponent>());
-		engine.updateMainCamera(&camera_component, &camera_tr);
 
 		if (input->isInputDown(KEY_D)) {
 			camera_tr.pos_.x += (1.0f * engine.dt_);
@@ -268,6 +287,9 @@ int main(int argc, char* argv[]) {
 			camera_tr.pos_.y -= (1.0f * engine.dt_);
 		}
 
+		engine.allocate_lights(ecs_manager.getComponentList<LightComponent>());
+		engine.update_lights(ecs_manager.getComponentList<LightComponent>(),ecs_manager.getComponentList<TransformComponent>());
+		engine.updateMainCamera(&camera_component, &camera_tr);
 
 		engine.beginFrame();
 		engine.clearWindow();

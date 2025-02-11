@@ -223,7 +223,7 @@ void LavaPBRRenderSystem::renderWithShadows(
 		{
 			VkClearValue clear_value;
 			clear_value.color = { 0.0f,0.0f,0.0f,0.0f };
-			VkRenderingAttachmentInfo color_attachment = vkinit::AttachmentInfo(engine_.swap_chain_.get_draw_image().image_view, &clear_value, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+			VkRenderingAttachmentInfo color_attachment = vkinit::AttachmentInfo(engine_.swap_chain_.get_draw_image().image_view, NULL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 			VkRenderingAttachmentInfo depth_attachment = vkinit::DepthAttachmentInfo(engine_.swap_chain_.get_shadowmap_image().image_view, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
 			VkRenderingInfo renderInfo = vkinit::RenderingInfo(engine_.swap_chain_.get_draw_extent(), &color_attachment, &depth_attachment);
 			vkCmdBeginRendering(engine_.commandBuffer, &renderInfo);
@@ -299,16 +299,30 @@ void LavaPBRRenderSystem::renderWithShadows(
 
 
 		{
-			VkClearValue clear_value;
-			clear_value.color = { 1.0f,1.0f,1.0f,1.0f };
-			VkRenderingAttachmentInfo color_attachment = vkinit::AttachmentInfo(engine_.swap_chain_.get_draw_image().image_view, &clear_value, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-			VkRenderingAttachmentInfo depth_attachment = vkinit::DepthAttachmentInfo(engine_.swap_chain_.get_depth_image().image_view, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
+			VkRenderingAttachmentInfo color_attachment;
+			VkRenderingAttachmentInfo depth_attachment;
+			if (lights_rendered < 1) {
+				VkClearValue clear_value;
+				clear_value.color = { 1.0f,1.0f,1.0f,1.0f };
+				color_attachment = vkinit::AttachmentInfo(engine_.swap_chain_.get_draw_image().image_view, &clear_value, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+				depth_attachment = vkinit::DepthAttachmentInfo(engine_.swap_chain_.get_depth_image().image_view, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
+			}
+			else {
+				color_attachment = vkinit::AttachmentInfo(engine_.swap_chain_.get_draw_image().image_view, NULL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+				depth_attachment = vkinit::DepthAttachmentInfo(engine_.swap_chain_.get_depth_image().image_view, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_LOAD);
+			}
 			VkRenderingInfo renderInfo = vkinit::RenderingInfo(engine_.swap_chain_.get_draw_extent(), &color_attachment, &depth_attachment);
 			vkCmdBeginRendering(engine_.commandBuffer, &renderInfo);
 		}
 		engine_.setDynamicViewportAndScissor();
 
-		active_pipeline = &pipeline_first_light_;
+
+		if (lights_rendered >= 1) {
+			active_pipeline = &pipeline_;
+		}
+		else {
+			active_pipeline = &pipeline_first_light_;
+		}
 		vkCmdBindPipeline(engine_.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, active_pipeline->get_pipeline());
 
 		vkCmdBindDescriptorSets(engine_.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -329,6 +343,8 @@ void LavaPBRRenderSystem::renderWithShadows(
 
 				//Clean Descriptor sets for current frame
 				frame_data.descriptor_manager.clear();
+
+		
 
 				std::shared_ptr<LavaMesh> lava_mesh = render_it->value().mesh_;
 				std::shared_ptr<MeshAsset> mesh = lava_mesh->mesh_;
