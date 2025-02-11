@@ -102,7 +102,7 @@ int main(int argc, char* argv[]) {
 	///////////////////////
 	MaterialPBRProperties mat_properties = {};
 	mat_properties.name = "PBR Material";
-	mat_properties.pipeline_flags = PipelineFlags::PIPELINE_USE_PUSHCONSTANTS | PipelineFlags::PIPELINE_USE_DESCRIPTOR_SET;
+	//mat_properties.pipeline_flags = PipelineFlags::PIPELINE_USE_PUSHCONSTANTS | PipelineFlags::PIPELINE_USE_DESCRIPTOR_SET;
 
 	LavaPBRMaterial basic_material(engine, mat_properties);
 
@@ -221,6 +221,7 @@ int main(int argc, char* argv[]) {
 
 	}
 
+	
 	{
 		size_t light_entity = ecs_manager.createEntity();
 		ecs_manager.addComponent<TransformComponent>(light_entity);
