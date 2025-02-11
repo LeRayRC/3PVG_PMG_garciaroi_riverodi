@@ -37,6 +37,7 @@ public:
     void EnableBlending(PipelineBlendMode blend_mode);
 
     void SetColorAttachmentFormat(VkFormat format);
+    void DisableColorAttachment(VkFormat format);
 
     void SetDepthFormat(VkFormat format);
 
