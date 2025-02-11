@@ -163,5 +163,5 @@ void main()
   //vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
   //outFragColor = vec4(projCoords.xy, 0.0, 1.0);
   outFragColor *= texture(baseColorTex,inUV);
-  //outFragColor.xyz += globalData.ambientColor;
+  outFragColor.xyz += globalData.ambientColor;
 }

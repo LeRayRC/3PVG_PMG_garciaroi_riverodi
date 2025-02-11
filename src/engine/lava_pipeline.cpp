@@ -97,7 +97,13 @@ LavaPipeline::LavaPipeline(PipelineConfig config){
 	//pipeline_builder.EnableDepthTest(true, VK_COMPARE_OP_GREATER_OR_EQUAL);
 
 	//connect the image format we will draw into, from draw image
-	pipeline_builder.SetColorAttachmentFormat(config.swap_chain->get_draw_image().image_format);
+	if (config.pipeline_flags & PipelineFlags::PIPELINE_DONT_USE_COLOR_ATTACHMENT) {
+		pipeline_builder.DisableColorAttachment(config.swap_chain->get_draw_image().image_format);
+	}
+	else {
+		pipeline_builder.SetColorAttachmentFormat(config.swap_chain->get_draw_image().image_format);
+
+	}
 
 	//finally build the pipeline
 	pipeline_ = pipeline_builder.BuildPipeline(device_);

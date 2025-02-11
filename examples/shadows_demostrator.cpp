@@ -54,9 +54,9 @@ void ecs_light_imgui(std::vector<std::optional<TransformComponent>>& transform_v
 			if (ImGui::Combo("Light Type", &type, lightTypes, IM_ARRAYSIZE(lightTypes))) {
 				light_it->value().type_ = (LightType)type;
 			}
-			if (light_it->value().type_ != LightType::LIGHT_TYPE_DIRECTIONAL) {
+			//if (light_it->value().type_ != LightType::LIGHT_TYPE_DIRECTIONAL) {
 				ImGui::DragFloat3("Light Pos", &light_transform_it->value().pos_.x, 0.01f, -10.0f, 10.0f);
-			}
+			//}
 			if (light_it->value().type_ != LightType::LIGHT_TYPE_POINT) {
 				ImGui::DragFloat3("Light Rot", &light_transform_it->value().rot_.x, 0.05f, -360.0f, 360.0f);
 			}
@@ -69,12 +69,13 @@ void ecs_light_imgui(std::vector<std::optional<TransformComponent>>& transform_v
 				ImGui::DragFloat("Quadratic Att", &light_it->value().quad_att_, 0.001f, 0.0f, 1.8f);
 				ImGui::DragFloat("Constant Att", &light_it->value().constant_att_, 0.01f, 0.0f, 1.0f);
 				if (light_it->value().type_ == LightType::LIGHT_TYPE_SPOT) {
-					if (ImGui::DragFloat("CutOff", &light_it->value().cutoff_, 0.01f, 0.0f, 1.50f)) {
+					if (ImGui::DragFloat("CutOff", &light_it->value().cutoff_, 1.00f, 0.0f, 90.0f)) {
 						if (light_it->value().cutoff_ > light_it->value().outer_cutoff_) {
-							light_it->value().outer_cutoff_ = light_it->value().cutoff_ + 0.01f;
+							light_it->value().outer_cutoff_ =  
+								glm::clamp(light_it->value().outer_cutoff_, light_it->value().cutoff_, 90.0f);
 						}
 					}
-					ImGui::DragFloat("Outer CutOff", &light_it->value().outer_cutoff_, 0.01f, light_it->value().cutoff_+0.01f, 1.57f);
+					ImGui::DragFloat("Outer CutOff", &light_it->value().outer_cutoff_, 0.01f, light_it->value().cutoff_+0.01f, 90.0f);
 				}
 			}
 			ImGui::TreePop();
@@ -101,7 +102,7 @@ int main(int argc, char* argv[]) {
 	///////////////////////
 	MaterialPBRProperties mat_properties = {};
 	mat_properties.name = "PBR Material";
-	mat_properties.pipeline_flags = PipelineFlags::PIPELINE_USE_PUSHCONSTANTS | PipelineFlags::PIPELINE_USE_DESCRIPTOR_SET;
+	//mat_properties.pipeline_flags = PipelineFlags::PIPELINE_USE_PUSHCONSTANTS | PipelineFlags::PIPELINE_USE_DESCRIPTOR_SET;
 
 	LavaPBRMaterial basic_material(engine, mat_properties);
 
@@ -119,8 +120,24 @@ int main(int argc, char* argv[]) {
 	//////ASSETS END/////
 	/////////////////////
 
+	{
+		size_t entity = ecs_manager.createEntity();
+		ecs_manager.addComponent<TransformComponent>(entity);
+		ecs_manager.addComponent<RenderComponent>(entity);
 
+		auto transform_component = ecs_manager.getComponent<TransformComponent>(entity);
+		if (transform_component) {
+			auto& transform = transform_component->value();
+			transform.pos_ = glm::vec3(0.0f, 0.0f, -1.0f);
+			transform.scale_ = glm::vec3(10.0f, 10.0f, 10.0f);
+		}
 
+		auto render_component = ecs_manager.getComponent<RenderComponent>(entity);
+		if (render_component) {
+			auto& render = render_component->value();
+			render.mesh_ = mesh_;
+		}
+	}
 
 	{
 		size_t entity = ecs_manager.createEntity();
@@ -191,39 +208,20 @@ int main(int argc, char* argv[]) {
 		if (light_component) {
 			auto& light = light_component->value();
 			light.enabled_ = true;
-			light.type_ = LIGHT_TYPE_DIRECTIONAL;
-			light.base_color_ = glm::vec3(1.0f, 0.0f, 0.0f);
+			light.type_ = LIGHT_TYPE_SPOT;
+			light.base_color_ = glm::vec3(1.0f, 1.0f, 1.0f);
 			light.spec_color_ = glm::vec3(0.0f, 0.0f, 0.0f);
 		}
 		auto tr_component = ecs_manager.getComponent<TransformComponent>(light_entity);
 		if (tr_component) {
 			auto& tr = tr_component->value();
-			tr.rot_ = glm::vec3(0.0f, 1.5f, 0.0f);
+			tr.rot_ = glm::vec3(0.0f, 3.14f, 0.0f);
+			tr.pos_ = glm::vec3(0.0f, 0.0f, 1.0f);
 		}
 
 	}
 
-	{
-		size_t light_entity = ecs_manager.createEntity();
-		ecs_manager.addComponent<TransformComponent>(light_entity);
-		ecs_manager.addComponent<LightComponent>(light_entity);
-		
-		auto light_component = ecs_manager.getComponent<LightComponent>(light_entity);
-		if (light_component) {
-			auto& light = light_component->value();
-			light.enabled_ = false;
-			light.type_ = LIGHT_TYPE_DIRECTIONAL;
-			light.base_color_ = glm::vec3(0.0f, 1.0f, 0.0f);
-			light.spec_color_ = glm::vec3(0.0f, 0.0f, 0.0f);
-		}
-
-		auto tr_component = ecs_manager.getComponent<TransformComponent>(light_entity);
-		if (tr_component) {
-			auto& tr = tr_component->value();
-			tr.rot_ = glm::vec3(0.0f, -1.5f, 0.0f);
-		}
-	}
-
+	
 	{
 		size_t light_entity = ecs_manager.createEntity();
 		ecs_manager.addComponent<TransformComponent>(light_entity);
@@ -232,14 +230,19 @@ int main(int argc, char* argv[]) {
 		auto light_component = ecs_manager.getComponent<LightComponent>(light_entity);
 		if (light_component) {
 			auto& light = light_component->value();
-			light.enabled_ = false;
-			light.type_ = LIGHT_TYPE_DIRECTIONAL;
-			light.base_color_ = glm::vec3(0.0f, 0.0f, 1.0f);
+			light.enabled_ = true;
+			light.type_ = LIGHT_TYPE_SPOT;
+			light.base_color_ = glm::vec3(1.0f, 1.0f, 1.0f);
 			light.spec_color_ = glm::vec3(0.0f, 0.0f, 0.0f);
 		}
+		auto tr_component = ecs_manager.getComponent<TransformComponent>(light_entity);
+		if (tr_component) {
+			auto& tr = tr_component->value();
+			tr.rot_ = glm::vec3(0.0f, 3.14f, 0.0f);
+			tr.pos_ = glm::vec3(0.0f, 0.0f, 1.0f);
+		}
+
 	}
-
-
 		
 	//Create Camera entity
 	size_t camera_entity = ecs_manager.createEntity();
@@ -248,10 +251,10 @@ int main(int argc, char* argv[]) {
 
 	auto& camera_tr = ecs_manager.getComponent<TransformComponent>(camera_entity)->value();
 	camera_tr.rot_ = glm::vec3(0.0f, 0.0f, 0.0f);
-	camera_tr.pos_ = glm::vec3(0.0f, 0.0f, 0.0f);
+	camera_tr.pos_ = glm::vec3(0.5f, 0.0f, 0.0f);
 	auto& camera_component = ecs_manager.getComponent<CameraComponent>(camera_entity)->value();
 
-	engine.global_scene_data_.ambientColor = glm::vec3(0.1f, 0.1f, 0.1f);
+	engine.global_scene_data_.ambientColor = glm::vec3(0.2f, 0.2f, 0.2f);
 
 	LavaInput* input = engine.window_.get_input();
 
@@ -271,9 +274,6 @@ int main(int argc, char* argv[]) {
 		//ImGui::DragFloat("Camera Rot X", &camera_tr.rot_.x, 0.5f, 88.0f, 268.0f);
 		//ImGui::DragFloat("Camera Rot Y", &camera_tr.rot_.y, 0.5f, -360.0f, 360.0f);
 
-		engine.allocate_lights(ecs_manager.getComponentList<LightComponent>());
-		engine.update_lights(ecs_manager.getComponentList<LightComponent>(),ecs_manager.getComponentList<TransformComponent>());
-		engine.updateMainCamera(&camera_component, &camera_tr);
 
 		if (input->isInputDown(KEY_D)) {
 			camera_tr.pos_.x += (1.0f * engine.dt_);
@@ -282,12 +282,15 @@ int main(int argc, char* argv[]) {
 			camera_tr.pos_.x -= (1.0f * engine.dt_);
 		}
 		if (input->isInputDown(KEY_W)) {
-			camera_tr.pos_.x += (1.0f * engine.dt_);
+			camera_tr.pos_.y += (1.0f * engine.dt_);
 		}
-		if (input->isInputDown(KEY_W)) {
-			camera_tr.pos_.x -= (1.0f * engine.dt_);
+		if (input->isInputDown(KEY_S)) {
+			camera_tr.pos_.y -= (1.0f * engine.dt_);
 		}
 
+		engine.allocate_lights(ecs_manager.getComponentList<LightComponent>());
+		engine.update_lights(ecs_manager.getComponentList<LightComponent>(),ecs_manager.getComponentList<TransformComponent>());
+		engine.updateMainCamera(&camera_component, &camera_tr);
 
 		engine.beginFrame();
 		engine.clearWindow();
@@ -295,7 +298,7 @@ int main(int argc, char* argv[]) {
 		engine.renderImgui();
 		ecs_render_imgui(ecs_manager, camera_entity);
 		ecs_light_imgui(ecs_manager.getComponentList<TransformComponent>(), ecs_manager.getComponentList<LightComponent>());
-		pbr_render_system.render(ecs_manager.getComponentList<TransformComponent>(),
+		pbr_render_system.renderWithShadows(ecs_manager.getComponentList<TransformComponent>(),
 			ecs_manager.getComponentList<RenderComponent>(), ecs_manager.getComponentList<LightComponent>());
 		//normal_render_system.render(ecs_manager.getComponentList<TransformComponent>(),
 		//	ecs_manager.getComponentList<RenderComponent>());

@@ -69,6 +69,8 @@ void CopyImageToImage(VkCommandBuffer cmd, VkImage source, VkImage destination,
 
 void TransitionImage(VkCommandBuffer cmd, VkImage image,
 	VkImageLayout currentLayout, VkImageLayout newLayout);
+void TransitionImage(VkCommandBuffer cmd, VkImage image,
+	VkImageLayout currentLayout, VkImageLayout newLayout, bool is_depthmap);
 
 VkImageSubresourceRange  ImageSubresourceRange(VkImageAspectFlags aspectMask);
 

@@ -26,7 +26,8 @@ public:
 
 	AllocatedImage get_draw_image() const { return draw_image_; }
 	AllocatedImage get_depth_image() const { return depth_image_; }
-
+	AllocatedImage get_shadowmap_image() const { return shadowmap_image_; }
+	VkSampler get_shadowmap_sampler() const { return shadowmap_sampler_; }
 	std::vector<VkImage> get_swap_chain_images() const { return swap_chain_images_; }
 
 	std::vector<VkImageView> get_swap_chain_image_views() const { return swap_chain_image_views_; }
@@ -46,6 +47,9 @@ private:
 	AllocatedImage draw_image_;
 	AllocatedImage depth_image_;
 	VkExtent2D draw_extent_;
+	AllocatedImage shadowmap_image_;
+	VkSampler shadowmap_sampler_;
+
 
 	//Main Swap Chain Resources
 	VkSwapchainKHR swap_chain_;

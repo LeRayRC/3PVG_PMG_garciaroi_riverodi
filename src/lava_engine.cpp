@@ -16,6 +16,7 @@
 #include "engine/lava_pbr_material.hpp"
 #include "ecs/lava_ecs_components.hpp"
 #include "lava_transform.hpp"
+#include "lava_global_helpers.hpp"
 #include <future>
 #include <chrono>
 
@@ -194,6 +195,8 @@ void LavaEngine::initGlobalData() {
 	//Descriptor set layout of every light
 	builder.clear();
 	builder.addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+	builder.addBinding(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+	builder.addBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 	global_lights_descriptor_set_layout_ = builder.build(device_.get_device(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
 
 	builder.clear();
@@ -337,6 +340,7 @@ void LavaEngine::endFrame() {
 
 	dt_ = std::chrono::duration_cast<std::chrono::microseconds>(chrono_now_ - chrono_last_update_).count() / 1000000.0f;
 	chrono_last_update_ = chrono_now_;
+	vkDeviceWaitIdle(device_.get_device());
 }
 
 void LavaEngine::mainLoop() {
@@ -597,10 +601,21 @@ void LavaEngine::allocate_lights(std::vector<std::optional<class LightComponent>
 		global_descriptor_allocator_.clear();
 		light_component.light_data_buffer_ = std::make_unique<LavaBuffer>(allocator_, sizeof(LightShaderStruct), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
 		light_component.light_data_buffer_->setMappedData();
+		light_component.light_viewproj_buffer_ = std::make_unique<LavaBuffer>(allocator_, sizeof(LightShaderStruct), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
+		light_component.light_viewproj_buffer_->setMappedData();
+
 		light_component.descriptor_set_ = global_descriptor_allocator_.allocate(global_lights_descriptor_set_layout_);
 		global_descriptor_allocator_.writeBuffer(0, light_component.light_data_buffer_->get_buffer().buffer, sizeof(LightShaderStruct), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+		global_descriptor_allocator_.writeBuffer(1, light_component.light_viewproj_buffer_->get_buffer().buffer, sizeof(glm::mat4), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+		global_descriptor_allocator_.writeImage(2, swap_chain_.get_shadowmap_image().image_view,
+			swap_chain_.get_shadowmap_sampler(),
+			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 		global_descriptor_allocator_.updateSet(light_component.descriptor_set_);
 		global_descriptor_allocator_.clear();
+
+
+
 		light_component.allocated_ = true;
 	}
 }
@@ -626,8 +641,56 @@ void LavaEngine::update_lights(std::vector<std::optional<class LightComponent>>&
 		light_shader_struct.config(light_it->value(), light_transform_it->value());
 		light_component.light_data_buffer_->updateBufferData(&light_shader_struct, sizeof(LightShaderStruct));
 
+		glm::mat4 view = GenerateViewMatrix(
+			light_transform_it->value().pos_,
+			light_transform_it->value().rot_
+		);
+
+		if(light_component.type_ == LIGHT_TYPE_DIRECTIONAL) {
+			float size = 1.0f; // Tamaño del área visible
+			float left = -size;
+			float right = size;
+			float bottom = -size;
+			float top = size;
+			glm::mat4 proj = glm::ortho(left, right, bottom, top, 5.0f, 0.1f);
+			proj[1][1] *= -1;
+			light_component.viewproj_ = proj * view;
+		}
+		else if (light_component.type_ == LIGHT_TYPE_SPOT) {
+			float fov = 2.0f * light_component.outer_cutoff_;
+
+			float near = 10000.0f; // Plano cercano
+			float far = 0.1f; // Plano lejano
+			// Generar la matriz de proyección en perspectiva
+			glm::mat4 proj = glm::perspective(glm::radians(fov), (float)window_extent_.width / (float)window_extent_.height, near, far);
+			proj[1][1] *= -1;
+			light_component.viewproj_ = proj * view;
+		}
+
+		light_component.light_viewproj_buffer_->updateBufferData(&light_component.viewproj_, sizeof(glm::mat4));
+
 	}
 
+}
+
+
+void LavaEngine::setDynamicViewportAndScissor() {
+	//set dynamic viewport and scissor
+	VkViewport viewport = {};
+	viewport.x = 0;
+	viewport.y = 0;
+	viewport.width = (float)swap_chain_.get_draw_extent().width;
+	viewport.height = (float)swap_chain_.get_draw_extent().height;
+	viewport.minDepth = 0.0f;
+	viewport.maxDepth = 1.0f;
+	vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+
+	VkRect2D scissor = {};
+	scissor.offset.x = 0;
+	scissor.offset.y = 0;
+	scissor.extent.width = swap_chain_.get_draw_extent().width;
+	scissor.extent.height = swap_chain_.get_draw_extent().height;
+	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 }
 
 

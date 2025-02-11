@@ -184,6 +184,13 @@ void PipelineBuilder::SetColorAttachmentFormat(VkFormat format)
     _render_info.pColorAttachmentFormats = &_color_attachmentformat;
 }
 
+void PipelineBuilder::DisableColorAttachment(VkFormat format) {
+  _color_attachmentformat = format;
+  // connect the format to the renderInfo  structure
+  _render_info.colorAttachmentCount = 0;
+  _render_info.pColorAttachmentFormats = nullptr;
+}
+
 void PipelineBuilder::SetDepthFormat(VkFormat format)
 {
     _render_info.depthAttachmentFormat = format;
@@ -198,8 +205,8 @@ void PipelineBuilder::DisableDepthtest()
     _depth_stencil.stencilTestEnable = VK_FALSE;
     _depth_stencil.front = {};
     _depth_stencil.back = {};
-    _depth_stencil.minDepthBounds = 0.f;
-    _depth_stencil.maxDepthBounds = 1.f;
+    _depth_stencil.minDepthBounds = 0.0f;
+    _depth_stencil.maxDepthBounds = 1.0f;
 }
 
 void PipelineBuilder::EnableDepthTest(bool depthWriteEnable, VkCompareOp op) {
@@ -210,6 +217,6 @@ void PipelineBuilder::EnableDepthTest(bool depthWriteEnable, VkCompareOp op) {
     _depth_stencil.stencilTestEnable = VK_FALSE;
     _depth_stencil.front = {};
     _depth_stencil.back = {};
-    _depth_stencil.minDepthBounds = 0.f;
-    _depth_stencil.maxDepthBounds = 1.f;
+    _depth_stencil.minDepthBounds = 0.0f;
+    _depth_stencil.maxDepthBounds = 1.0f;
 }

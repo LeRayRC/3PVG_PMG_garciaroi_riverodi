@@ -16,10 +16,15 @@ public:
 		std::vector<std::optional<RenderComponent>>&,
 		std::vector<std::optional<LightComponent>>& light_component_vector);
 
+	void renderWithShadows(std::vector<std::optional<TransformComponent>>&,
+		std::vector<std::optional<RenderComponent>>&,
+		std::vector<std::optional<LightComponent>>& light_component_vector);
+
 private:
 	class LavaEngine& engine_;
 	LavaPipeline pipeline_;
 	LavaPipeline pipeline_first_light_;
+	LavaPipeline pipeline_shadows_;
 
 
 };

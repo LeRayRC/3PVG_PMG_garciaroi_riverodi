@@ -11,10 +11,6 @@
 #include "scripting/lava_lua_script.hpp"
 #include "lava_world.hpp"
 
-
-
-
-
 void ecs_render_imgui(LavaECSManager& ecs_manager, size_t camera_entity) {
 	auto& camera_tr = ecs_manager.getComponent<TransformComponent>(camera_entity)->value();
 	auto& camera_camera = ecs_manager.getComponent<CameraComponent>(camera_entity)->value();
