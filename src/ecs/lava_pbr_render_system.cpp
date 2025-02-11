@@ -198,10 +198,10 @@ void LavaPBRRenderSystem::renderWithShadows(
 
 
 
-	auto transform_it = transform_vector.begin();
-	auto render_it = render_vector.begin();
-	auto transform_end = transform_vector.end();
-	auto render_end = render_vector.end();
+	//auto transform_it = transform_vector.begin();
+	//auto render_it = render_vector.begin();
+	//auto transform_end = transform_vector.end();
+	//auto render_end = render_vector.end();
 
 	auto light_transform_it = transform_vector.begin();
 	auto light_transform_end = transform_vector.end();
@@ -242,6 +242,10 @@ void LavaPBRRenderSystem::renderWithShadows(
 			active_pipeline->get_layout(),
 			2, 1, &light_it->value().descriptor_set_, 0, nullptr);
 
+		auto transform_it = transform_vector.begin();
+		auto render_it = render_vector.begin();
+		auto transform_end = transform_vector.end();
+		auto render_end = render_vector.end();
 		for (; transform_it != transform_end || render_it != render_end; transform_it++, render_it++) {
 			if (!transform_it->has_value()) continue;
 			if (!render_it->has_value()) continue;
