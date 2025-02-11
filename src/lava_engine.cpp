@@ -340,6 +340,7 @@ void LavaEngine::endFrame() {
 
 	dt_ = std::chrono::duration_cast<std::chrono::microseconds>(chrono_now_ - chrono_last_update_).count() / 1000000.0f;
 	chrono_last_update_ = chrono_now_;
+	vkDeviceWaitIdle(device_.get_device());
 }
 
 void LavaEngine::mainLoop() {
