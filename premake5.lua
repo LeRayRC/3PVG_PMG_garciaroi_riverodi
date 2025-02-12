@@ -64,6 +64,16 @@ workspace "Motor"
     cppdialect "C++23"
     startproject "Window"
 
+    function common_settings()
+        removefiles { 
+            "src/shaders/*.spv"
+        }
+
+        prebuildcommands {
+            "..\\tools\\compileshaders.bat"
+        }
+    end
+
     filter "configurations:Debug"
         defines { "DEBUG" }
         symbols "On"
@@ -204,6 +214,7 @@ workspace "Motor"
         files "examples/pbr_demostrator.cpp"
         files "src/shaders/*"
         files "examples/assets/*"
+        common_settings()
     project"Shadows"
         kind "ConsoleApp" -- This was WindowedApp
         language "C++"
@@ -217,7 +228,4 @@ workspace "Motor"
         files "examples/shadows_demostrator.cpp"
         files "src/shaders/*"
         files "examples/assets/*"
-
-        prebuildcommands {
-            "..\\tools\\compileshaders.bat"
-         }
+        common_settings()

@@ -12,6 +12,10 @@ public:
 		}
 		return *instance;
 	}
+
+	static void ReleaseWorld() {
+		instance.reset();
+	}
 	
 	void setECSManager(class LavaECSManager* ecs_manager) {
 		this->ecs_manager_ = ecs_manager;
@@ -25,6 +29,9 @@ public:
 private:
 	LavaWorld();
 	class LavaECSManager* ecs_manager_;
+
+	LavaWorld(const LavaWorld&) = delete;
+	LavaWorld& operator=(const LavaWorld&) = delete;
 
 	friend std::unique_ptr<LavaWorld> std::make_unique<LavaWorld>();
 	static std::unique_ptr<LavaWorld> instance;
