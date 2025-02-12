@@ -1,7 +1,7 @@
 @echo off
 set originaldir=%cd%
 set shadersdir=..\src\shaders\
-set compiler=C:\VulkanSDK\1.3.290.0\Bin\glslc.exe
+set compiler=glslc.exe
 
 :: Cambia al directorio de shaders
 cd /d %shadersdir%
