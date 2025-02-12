@@ -219,5 +219,5 @@ workspace "Motor"
         files "examples/assets/*"
 
         prebuildcommands {
-            "C:\\ESAT\\3PVG_PMG_garciaroi_riverodi\\tools\\compileshaders.bat"
+            "..\\tools\\compileshaders.bat"
          }
