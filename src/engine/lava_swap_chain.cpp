@@ -142,45 +142,45 @@ void LavaSwapChain::createSwapChain(class LavaSurface& use_surface, VkExtent2D w
 
 
 	//Create shadow map on the swapchain
-	shadowmap_image_.image_format = VK_FORMAT_D32_SFLOAT;
-	shadowmap_image_.image_extent = draw_image_extent;
-	VkImageUsageFlags shadowmap_image_usages{};
-	shadowmap_image_usages |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-	shadowmap_image_usages |= VK_IMAGE_USAGE_SAMPLED_BIT;
-
-	VkImageCreateInfo shadowmap_img_info = vkinit::ImageCreateInfo(shadowmap_image_.image_format,
-		shadowmap_image_usages, draw_image_extent);
-
-	//allocate and create the image
-	vmaCreateImage(allocator_, &shadowmap_img_info, &rimg_allocinfo, &shadowmap_image_.image, &shadowmap_image_.allocation, nullptr);
-
-	//build a image-view for the draw image to use for rendering
-	VkImageViewCreateInfo shadowmap_view_info = vkinit::ImageViewCreateInfo(shadowmap_image_.image_format, shadowmap_image_.image, VK_IMAGE_ASPECT_DEPTH_BIT);
-
-	if (vkCreateImageView(device_->get_device(), &shadowmap_view_info, nullptr, &shadowmap_image_.image_view) !=
-		VK_SUCCESS) {
-		printf("Error creating shadowmap image view!\n");
-	}
-
-	VkSamplerCreateInfo sampler_info{};
-	sampler_info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-	sampler_info.magFilter = VK_FILTER_LINEAR; 
-	sampler_info.minFilter = VK_FILTER_LINEAR;
-	sampler_info.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-	sampler_info.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-	sampler_info.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-	sampler_info.anisotropyEnable = VK_FALSE;
-	sampler_info.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK;
-	sampler_info.unnormalizedCoordinates = VK_FALSE;
-	sampler_info.compareEnable = VK_FALSE; // Sin PCF
-	sampler_info.compareOp = VK_COMPARE_OP_ALWAYS;
-	sampler_info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
-	sampler_info.mipLodBias = 0.0f;
-	sampler_info.minLod = 0.0f;
-	sampler_info.maxLod = 0.0f; // Sin mipmaps
-
-
-	vkCreateSampler(device_->get_device(), &sampler_info, nullptr, &shadowmap_sampler_);
+	//shadowmap_image_.image_format = VK_FORMAT_D32_SFLOAT;
+	//shadowmap_image_.image_extent = draw_image_extent;
+	//VkImageUsageFlags shadowmap_image_usages{};
+	//shadowmap_image_usages |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+	//shadowmap_image_usages |= VK_IMAGE_USAGE_SAMPLED_BIT;
+	//
+	//VkImageCreateInfo shadowmap_img_info = vkinit::ImageCreateInfo(shadowmap_image_.image_format,
+	//	shadowmap_image_usages, draw_image_extent);
+	//
+	////allocate and create the image
+	//vmaCreateImage(allocator_, &shadowmap_img_info, &rimg_allocinfo, &shadowmap_image_.image, &shadowmap_image_.allocation, nullptr);
+	//
+	////build a image-view for the draw image to use for rendering
+	//VkImageViewCreateInfo shadowmap_view_info = vkinit::ImageViewCreateInfo(shadowmap_image_.image_format, shadowmap_image_.image, VK_IMAGE_ASPECT_DEPTH_BIT);
+	//
+	//if (vkCreateImageView(device_->get_device(), &shadowmap_view_info, nullptr, &shadowmap_image_.image_view) !=
+	//	VK_SUCCESS) {
+	//	printf("Error creating shadowmap image view!\n");
+	//}
+	//
+	//VkSamplerCreateInfo sampler_info{};
+	//sampler_info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+	//sampler_info.magFilter = VK_FILTER_LINEAR; 
+	//sampler_info.minFilter = VK_FILTER_LINEAR;
+	//sampler_info.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+	//sampler_info.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+	//sampler_info.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+	//sampler_info.anisotropyEnable = VK_FALSE;
+	//sampler_info.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK;
+	//sampler_info.unnormalizedCoordinates = VK_FALSE;
+	//sampler_info.compareEnable = VK_FALSE; // Sin PCF
+	//sampler_info.compareOp = VK_COMPARE_OP_ALWAYS;
+	//sampler_info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
+	//sampler_info.mipLodBias = 0.0f;
+	//sampler_info.minLod = 0.0f;
+	//sampler_info.maxLod = 0.0f; // Sin mipmaps
+	//
+	//
+	//vkCreateSampler(device_->get_device(), &sampler_info, nullptr, &shadowmap_sampler_);
 
 
 }
@@ -214,9 +214,9 @@ void LavaSwapChain::createImageViews()
 
 LavaSwapChain::~LavaSwapChain()
 {
-	vkDestroySampler(device_->get_device(), shadowmap_sampler_, nullptr);
-	vkDestroyImageView(device_->get_device(), shadowmap_image_.image_view, nullptr);
-	vmaDestroyImage(allocator_, shadowmap_image_.image, shadowmap_image_.allocation);
+	//vkDestroySampler(device_->get_device(), shadowmap_sampler_, nullptr);
+	//vkDestroyImageView(device_->get_device(), shadowmap_image_.image_view, nullptr);
+	//vmaDestroyImage(allocator_, shadowmap_image_.image, shadowmap_image_.allocation);
 	//Destroy Swap Chain
 	vkDestroyImageView(device_->get_device(), depth_image_.image_view, nullptr);
 	vmaDestroyImage(allocator_, depth_image_.image, depth_image_.allocation);

@@ -92,9 +92,9 @@ public:
 
 	static const unsigned int kMaxLights = 100;
 
-	void allocate_lights(std::vector<std::optional<struct LightComponent>>& light_component_vector);
-	void update_lights(std::vector<std::optional<struct LightComponent>>& light_component_vector,
-		std::vector<std::optional<struct TransformComponent>>& transform_vector);
+	//void allocate_lights(std::vector<std::optional<struct LightComponent>>& light_component_vector);
+	//void update_lights(std::vector<std::optional<struct LightComponent>>& light_component_vector,
+	//	std::vector<std::optional<struct TransformComponent>>& transform_vector);
 
 
 
@@ -127,7 +127,7 @@ public:
 
 	std::vector<std::shared_ptr<LavaMesh>> meshes_;
 	
-	void setDynamicViewportAndScissor();
+	void setDynamicViewportAndScissor(const VkExtent2D& extend);
 	void initGlobalData();
 	void initImgui();
 	void drawImgui(VkCommandBuffer cmd, VkImageView targetImageView);

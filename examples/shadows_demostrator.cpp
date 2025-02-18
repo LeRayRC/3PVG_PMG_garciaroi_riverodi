@@ -288,8 +288,8 @@ int main(int argc, char* argv[]) {
 			camera_tr.pos_.y -= (1.0f * engine.dt_);
 		}
 
-		engine.allocate_lights(ecs_manager.getComponentList<LightComponent>());
-		engine.update_lights(ecs_manager.getComponentList<LightComponent>(),ecs_manager.getComponentList<TransformComponent>());
+		//engine.allocate_lights(ecs_manager.getComponentList<LightComponent>());
+		//engine.update_lights(ecs_manager.getComponentList<LightComponent>(),ecs_manager.getComponentList<TransformComponent>());
 		engine.updateMainCamera(&camera_component, &camera_tr);
 
 		engine.beginFrame();
