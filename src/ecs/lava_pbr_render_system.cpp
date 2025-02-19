@@ -530,6 +530,8 @@ void LavaPBRRenderSystem::update_lights(std::vector<std::optional<struct LightCo
 		light_shader_struct.config(light_it->value(), light_transform_it->value());
 		light_component.light_data_buffer_->updateBufferData(&light_shader_struct, sizeof(LightShaderStruct));
 
+
+		//glm::vec3 forward = CalculateForwardVector(light_transform_it->value().rot_);
 		glm::mat4 view = GenerateViewMatrix(
 			light_transform_it->value().pos_,
 			light_transform_it->value().rot_
@@ -546,7 +548,7 @@ void LavaPBRRenderSystem::update_lights(std::vector<std::optional<struct LightCo
 			light_component.viewproj_ = proj * view;
 		}
 		else if (light_component.type_ == LIGHT_TYPE_SPOT) {
-			float fov = 2.0f * light_component.outer_cutoff_;
+			float fov = 2.0f * light_component.cutoff_;
 
 			float near = 10000.0f; // Plano cercano
 			float far = 0.1f; // Plano lejano

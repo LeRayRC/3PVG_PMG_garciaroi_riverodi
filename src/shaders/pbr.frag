@@ -51,7 +51,6 @@ layout (location = 4) in vec3 TangentLightPos;
 layout (location = 5) in vec3 TangentViewPos;
 layout (location = 6) in vec3 TangentFragPos;
 layout (location = 7) in vec4 fragPosLightSpace;
-layout (location = 8) in float shadow;
 
 
 //output write
@@ -94,7 +93,7 @@ vec3 PointLight() {
 
 vec3 SpotLight() {
     vec3 lightDir = normalize(light.pos - inPos.xyz);
-    float theta = dot(lightDir, normalize(-light.dir));
+    float theta = dot(lightDir, normalize(light.dir));
     vec3 result = vec3(0.0, 0.0, 0.0);
 
     float directionalIncidence = max(dot(inNormal, lightDir), 0.0);
@@ -134,12 +133,9 @@ void main()
 
   if(light.enabled == 1){
     float shadow_fr = ShadowCalculation(fragPosLightSpace); 
-    
     switch(light.type){
       case 0: {
-        //outFragColor = shadow * vec4(DirectionalLight(),1.0);
-        //outFragColor = vec4(shadow,0.0,0.0,1.0);
-        //outFragColor = vec4(DirectionalLight(),1.0); 
+        outFragColor = vec4(DirectionalLight(),1.0); 
         break;
        }
        case 1: {
@@ -147,21 +143,14 @@ void main()
         break;
        }
        case 2: {
-
-
-
         vec3 lightColor = SpotLight();
         outFragColor = vec4(lightColor * (1.0 - shadow_fr), 1.0);
         break;
        }
        default:{
-        //outFragColor = vec4(abs(fragPosLightSpace.z), 0.0,0.0,1.0);  //(1.0 - shadow) * vec4(SpotLight(),1.0); 
         break;
        }
     }
   }
-  //vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
-  //outFragColor = vec4(projCoords.xy, 0.0, 1.0);
   outFragColor *= texture(baseColorTex,inUV);
-  //outFragColor.xyz += globalData.ambientColor;
 }
