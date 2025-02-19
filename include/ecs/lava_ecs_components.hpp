@@ -129,6 +129,7 @@ struct CameraComponent {
   }
 
   void LookAt(glm::vec3& pos, glm::vec3& rot) {
+    //glm::vec3 forward = CalculateForwardVector(rot);
     view_ = GenerateViewMatrix(pos, rot);
 
     //float pitch = glm::radians(rot.x); // Rotación en el eje X

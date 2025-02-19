@@ -586,101 +586,103 @@ void LavaEngine::renderImgui() {
 }
 
 
-void LavaEngine::allocate_lights(std::vector<std::optional<class LightComponent>>& light_component_vector) {
+//void LavaEngine::allocate_lights(std::vector<std::optional<class LightComponent>>& light_component_vector) {
+//
+//	auto light_it = light_component_vector.begin();
+//	auto light_end = light_component_vector.end();
+//	//for each light we iterate over the every render component 
+//	for (; light_it != light_end; light_it++)
+//	{
+//		if (!light_it->has_value()) continue;
+//
+//		if (light_it->value().allocated_) continue;
+//
+//		LightComponent& light_component = light_it->value();
+//		global_descriptor_allocator_.clear();
+//		light_component.light_data_buffer_ = std::make_unique<LavaBuffer>(allocator_, sizeof(LightShaderStruct), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
+//		light_component.light_data_buffer_->setMappedData();
+//		light_component.light_viewproj_buffer_ = std::make_unique<LavaBuffer>(allocator_, sizeof(LightShaderStruct), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
+//		light_component.light_viewproj_buffer_->setMappedData();
+//
+//		light_component.descriptor_set_ = global_descriptor_allocator_.allocate(global_lights_descriptor_set_layout_);
+//		global_descriptor_allocator_.writeBuffer(0, light_component.light_data_buffer_->get_buffer().buffer, sizeof(LightShaderStruct), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+//		global_descriptor_allocator_.writeBuffer(1, light_component.light_viewproj_buffer_->get_buffer().buffer, sizeof(glm::mat4), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+//		
+//		global_descriptor_allocator_.writeImage(2, swap_chain_.get_shadowmap_image().image_view,
+//			swap_chain_.get_shadowmap_sampler(),
+//			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+//			VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+//
+//		global_descriptor_allocator_.updateSet(light_component.descriptor_set_);
+//		global_descriptor_allocator_.clear();
+//
+//
+//
+//		light_component.allocated_ = true;
+//	}
+//}
+//
+//void LavaEngine::update_lights(std::vector<std::optional<class LightComponent>>& light_component_vector,
+//	std::vector<std::optional<class TransformComponent>>& transform_vector) {
+//
+//	auto light_transform_it = transform_vector.begin();
+//	auto light_transform_end = transform_vector.end();
+//	auto light_it = light_component_vector.begin();
+//	auto light_end = light_component_vector.end();
+//	//for each light we iterate over the every render component 
+//	for (; light_transform_it != light_transform_end || light_it != light_end; light_transform_it++, light_it++)
+//	{
+//		if (!light_transform_it->has_value()) continue;
+//		if (!light_it->has_value()) continue;
+//
+//		if (!light_it->value().allocated_) continue;
+//
+//		LightComponent& light_component = light_it->value();
+//
+//		LightShaderStruct light_shader_struct = {};
+//		light_shader_struct.config(light_it->value(), light_transform_it->value());
+//		light_component.light_data_buffer_->updateBufferData(&light_shader_struct, sizeof(LightShaderStruct));
+//
+//		glm::mat4 view = GenerateViewMatrix(
+//			light_transform_it->value().pos_,
+//			light_transform_it->value().rot_
+//		);
+//
+//		if(light_component.type_ == LIGHT_TYPE_DIRECTIONAL) {
+//			float size = 1.0f; // Tamaño del área visible
+//			float left = -size;
+//			float right = size;
+//			float bottom = -size;
+//			float top = size;
+//			glm::mat4 proj = glm::ortho(left, right, bottom, top, 5.0f, 0.1f);
+//			proj[1][1] *= -1;
+//			light_component.viewproj_ = proj * view;
+//		}
+//		else if (light_component.type_ == LIGHT_TYPE_SPOT) {
+//			float fov = 2.0f * light_component.outer_cutoff_;
+//
+//			float near = 10000.0f; // Plano cercano
+//			float far = 0.1f; // Plano lejano
+//			// Generar la matriz de proyección en perspectiva
+//			glm::mat4 proj = glm::perspective(glm::radians(fov), (float)window_extent_.width / (float)window_extent_.height, near, far);
+//			proj[1][1] *= -1;
+//			light_component.viewproj_ = proj * view;
+//		}
+//
+//		light_component.light_viewproj_buffer_->updateBufferData(&light_component.viewproj_, sizeof(glm::mat4));
+//
+//	}
+//
+//}
 
-	auto light_it = light_component_vector.begin();
-	auto light_end = light_component_vector.end();
-	//for each light we iterate over the every render component 
-	for (; light_it != light_end; light_it++)
-	{
-		if (!light_it->has_value()) continue;
 
-		if (light_it->value().allocated_) continue;
-
-		LightComponent& light_component = light_it->value();
-		global_descriptor_allocator_.clear();
-		light_component.light_data_buffer_ = std::make_unique<LavaBuffer>(allocator_, sizeof(LightShaderStruct), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
-		light_component.light_data_buffer_->setMappedData();
-		light_component.light_viewproj_buffer_ = std::make_unique<LavaBuffer>(allocator_, sizeof(LightShaderStruct), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
-		light_component.light_viewproj_buffer_->setMappedData();
-
-		light_component.descriptor_set_ = global_descriptor_allocator_.allocate(global_lights_descriptor_set_layout_);
-		global_descriptor_allocator_.writeBuffer(0, light_component.light_data_buffer_->get_buffer().buffer, sizeof(LightShaderStruct), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-		global_descriptor_allocator_.writeBuffer(1, light_component.light_viewproj_buffer_->get_buffer().buffer, sizeof(glm::mat4), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-		global_descriptor_allocator_.writeImage(2, swap_chain_.get_shadowmap_image().image_view,
-			swap_chain_.get_shadowmap_sampler(),
-			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-			VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-		global_descriptor_allocator_.updateSet(light_component.descriptor_set_);
-		global_descriptor_allocator_.clear();
-
-
-
-		light_component.allocated_ = true;
-	}
-}
-
-void LavaEngine::update_lights(std::vector<std::optional<class LightComponent>>& light_component_vector,
-	std::vector<std::optional<class TransformComponent>>& transform_vector) {
-
-	auto light_transform_it = transform_vector.begin();
-	auto light_transform_end = transform_vector.end();
-	auto light_it = light_component_vector.begin();
-	auto light_end = light_component_vector.end();
-	//for each light we iterate over the every render component 
-	for (; light_transform_it != light_transform_end || light_it != light_end; light_transform_it++, light_it++)
-	{
-		if (!light_transform_it->has_value()) continue;
-		if (!light_it->has_value()) continue;
-
-		if (!light_it->value().allocated_) continue;
-
-		LightComponent& light_component = light_it->value();
-
-		LightShaderStruct light_shader_struct = {};
-		light_shader_struct.config(light_it->value(), light_transform_it->value());
-		light_component.light_data_buffer_->updateBufferData(&light_shader_struct, sizeof(LightShaderStruct));
-
-		glm::mat4 view = GenerateViewMatrix(
-			light_transform_it->value().pos_,
-			light_transform_it->value().rot_
-		);
-
-		if(light_component.type_ == LIGHT_TYPE_DIRECTIONAL) {
-			float size = 1.0f; // Tamaño del área visible
-			float left = -size;
-			float right = size;
-			float bottom = -size;
-			float top = size;
-			glm::mat4 proj = glm::ortho(left, right, bottom, top, 5.0f, 0.1f);
-			proj[1][1] *= -1;
-			light_component.viewproj_ = proj * view;
-		}
-		else if (light_component.type_ == LIGHT_TYPE_SPOT) {
-			float fov = 2.0f * light_component.outer_cutoff_;
-
-			float near = 10000.0f; // Plano cercano
-			float far = 0.1f; // Plano lejano
-			// Generar la matriz de proyección en perspectiva
-			glm::mat4 proj = glm::perspective(glm::radians(fov), (float)window_extent_.width / (float)window_extent_.height, near, far);
-			proj[1][1] *= -1;
-			light_component.viewproj_ = proj * view;
-		}
-
-		light_component.light_viewproj_buffer_->updateBufferData(&light_component.viewproj_, sizeof(glm::mat4));
-
-	}
-
-}
-
-
-void LavaEngine::setDynamicViewportAndScissor() {
+void LavaEngine::setDynamicViewportAndScissor(const VkExtent2D& extend) {
 	//set dynamic viewport and scissor
 	VkViewport viewport = {};
 	viewport.x = 0;
 	viewport.y = 0;
-	viewport.width = (float)swap_chain_.get_draw_extent().width;
-	viewport.height = (float)swap_chain_.get_draw_extent().height;
+	viewport.width = (float)extend.width;
+	viewport.height = (float)extend.height;
 	viewport.minDepth = 0.0f;
 	viewport.maxDepth = 1.0f;
 	vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
@@ -688,8 +690,8 @@ void LavaEngine::setDynamicViewportAndScissor() {
 	VkRect2D scissor = {};
 	scissor.offset.x = 0;
 	scissor.offset.y = 0;
-	scissor.extent.width = swap_chain_.get_draw_extent().width;
-	scissor.extent.height = swap_chain_.get_draw_extent().height;
+	scissor.extent.width = (float)extend.width;//swap_chain_.get_draw_extent().width;
+	scissor.extent.height = (float)extend.height;//swap_chain_.get_draw_extent().height;
 	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 }
 

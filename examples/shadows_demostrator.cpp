@@ -215,8 +215,8 @@ int main(int argc, char* argv[]) {
 		auto tr_component = ecs_manager.getComponent<TransformComponent>(light_entity);
 		if (tr_component) {
 			auto& tr = tr_component->value();
-			tr.rot_ = glm::vec3(0.0f, 3.14f, 0.0f);
-			tr.pos_ = glm::vec3(0.0f, 0.0f, 1.0f);
+			tr.rot_ = glm::vec3(0.0f, 0.0f, 0.0f);
+			tr.pos_ = glm::vec3(0.0f, 0.0f, 0.0f);
 		}
 
 	}
@@ -238,8 +238,8 @@ int main(int argc, char* argv[]) {
 		auto tr_component = ecs_manager.getComponent<TransformComponent>(light_entity);
 		if (tr_component) {
 			auto& tr = tr_component->value();
-			tr.rot_ = glm::vec3(0.0f, 3.14f, 0.0f);
-			tr.pos_ = glm::vec3(0.0f, 0.0f, 1.0f);
+			tr.rot_ = glm::vec3(0.0f, 0.0f, 0.0f);
+			tr.pos_ = glm::vec3(0.0f, 0.0f, 0.0f);
 		}
 
 	}
@@ -251,7 +251,7 @@ int main(int argc, char* argv[]) {
 
 	auto& camera_tr = ecs_manager.getComponent<TransformComponent>(camera_entity)->value();
 	camera_tr.rot_ = glm::vec3(0.0f, 0.0f, 0.0f);
-	camera_tr.pos_ = glm::vec3(0.5f, 0.0f, 0.0f);
+	camera_tr.pos_ = glm::vec3(0.0f, 0.0f, 0.0f);
 	auto& camera_component = ecs_manager.getComponent<CameraComponent>(camera_entity)->value();
 
 	engine.global_scene_data_.ambientColor = glm::vec3(0.2f, 0.2f, 0.2f);
@@ -288,8 +288,8 @@ int main(int argc, char* argv[]) {
 			camera_tr.pos_.y -= (1.0f * engine.dt_);
 		}
 
-		engine.allocate_lights(ecs_manager.getComponentList<LightComponent>());
-		engine.update_lights(ecs_manager.getComponentList<LightComponent>(),ecs_manager.getComponentList<TransformComponent>());
+		//engine.allocate_lights(ecs_manager.getComponentList<LightComponent>());
+		//engine.update_lights(ecs_manager.getComponentList<LightComponent>(),ecs_manager.getComponentList<TransformComponent>());
 		engine.updateMainCamera(&camera_component, &camera_tr);
 
 		engine.beginFrame();

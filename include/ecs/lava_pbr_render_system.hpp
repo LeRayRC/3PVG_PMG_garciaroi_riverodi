@@ -26,7 +26,13 @@ private:
 	LavaPipeline pipeline_first_light_;
 	LavaPipeline pipeline_shadows_;
 
+	//Shadow Maps Images
+	AllocatedImage shadowmap_image_;
+	VkSampler shadowmap_sampler_;
 
+	void allocate_lights(std::vector<std::optional<struct LightComponent>>& light_component_vector);
+	void update_lights(std::vector<std::optional<struct LightComponent>>& light_component_vector,
+		std::vector<std::optional<struct TransformComponent>>& transform_vector);
 };
 
 
