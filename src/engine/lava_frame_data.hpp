@@ -13,9 +13,9 @@
 #ifndef __LAVA_FRAME_DATA_H__
 #define __LAVA_FRAME_DATA_H__ 1
 
-#include "lava/common/lava_types.hpp"
 #include "engine/lava_descriptor_manager.hpp"
 #include "lava/engine/lava_buffer.hpp"
+#include "lava/engine/lava_engine.hpp"
 
 struct FrameData {
 	VkCommandPool command_pool;

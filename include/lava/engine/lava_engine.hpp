@@ -16,6 +16,23 @@
 #include "lava/window/lava_window.hpp"
 #include "lava/engine/lava_descriptors.hpp"
 
+
+ // push constants for our mesh object draws
+struct GPUDrawPushConstants {
+	glm::mat4 world_matrix;
+	VkDeviceAddress vertex_buffer;
+};
+
+struct GlobalSceneData {
+	glm::mat4 view;
+	glm::mat4 proj;
+	glm::mat4 viewproj;
+	glm::vec3 ambientColor;
+	int padding1;
+	glm::vec3 cameraPos;
+	int padding2;
+};
+
 class LavaEngine {
 public:
 
@@ -49,7 +66,6 @@ public:
 
 	//DeletionQueue main_deletion_queue_;
 	GlobalSceneData global_scene_data_;
-	CameraParameters camera_parameters_;
 	static std::vector<std::function<void()>> end_frame_callbacks;
 
 	LavaWindow window_;
@@ -91,8 +107,6 @@ public:
 	void beginFrame();
 	void endFrame();
 	void clearWindow();
-	void mainLoop();
-	void render();
 	void pollEvents() { glfwPollEvents(); }
 	virtual void renderImgui();
 

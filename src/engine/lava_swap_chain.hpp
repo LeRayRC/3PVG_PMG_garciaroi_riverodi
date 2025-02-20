@@ -15,6 +15,7 @@
 
 #include "lava/common/lava_types.hpp"
 #include "engine/lava_vulkan_helpers.hpp"
+#include "engine/lava_image.hpp"
 
 class LavaSwapChain {
 public:

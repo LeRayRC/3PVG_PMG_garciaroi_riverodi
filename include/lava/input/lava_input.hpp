@@ -13,7 +13,95 @@
 #ifndef  __LAVA_INPUT_
 #define  __LAVA_INPUT_ 1
 
-#include "lava/common/lava_types.hpp"
+ //Key Actions
+#define KEY_PRESS 0x0001
+#define KEY_RELEASE 0x0002
+#define KEY_REPEAT 0x0004
+#define SUSTAIN_TIL_RELEASE 0x0008
+
+//Redefine Keys for easy use(can use glfw key defines for those not included)
+#define KEY_SPACE 32
+#define KEY_ESCAPE 256
+#define KEY_ENTER 257
+#define KEY_TAB 258
+#define KEY_BACKSPACE 259
+#define KEY_RIGHT 262
+#define KEY_LEFT 263
+#define KEY_DOWN 264
+#define KEY_UP 265
+#define KEY_A   65
+#define KEY_B   66
+#define KEY_C   67
+#define KEY_D   68
+#define KEY_E   69
+#define KEY_F   70
+#define KEY_G   71
+#define KEY_H   72
+#define KEY_I   73
+#define KEY_J   74
+#define KEY_K   75
+#define KEY_L   76
+#define KEY_M   77
+#define KEY_N   78
+#define KEY_O   79
+#define KEY_P   80
+#define KEY_Q   81
+#define KEY_R   82
+#define KEY_S   83
+#define KEY_T   84
+#define KEY_U   85
+#define KEY_V   86
+#define KEY_W   87
+#define KEY_X   88
+#define KEY_Y   89
+#define KEY_Z   90
+
+
+//Redefine Mouse Buttons for easy use(can use glfw key defines for those not included)
+#define 	MOUSE_BUTTON_1   0
+#define 	MOUSE_BUTTON_2   1
+#define 	MOUSE_BUTTON_3   2
+
+struct KeyProperties {
+	KeyProperties() {
+		current_frame_properties = 0;
+		past_frame_properties = 0;
+		last_action_time = 0;
+	}
+	int32_t current_frame_properties;
+	int32_t past_frame_properties;
+
+	double last_action_time;
+};
+
+typedef struct GamepadStateWrapper {
+	GamepadStateWrapper() {
+		for (int i = 0; i < 6; i++) {
+			state.axes[i] = 0;
+			state.buttons[i] = 0;
+		}
+		for (int i = 6; i < 15; i++) {
+			state.buttons[i] = 0;
+		}
+		is_active = false;
+	}
+	GLFWgamepadstate state;
+	bool is_active;
+}GamepadState;
+
+typedef struct GamePadActionWrapper {
+	GamePadActionWrapper(int game_pad_, int game_pad_button_) {
+		game_pad = game_pad_;
+		game_pad_button = game_pad_button_;
+	}
+	GamePadActionWrapper() {
+		game_pad = 0;
+		game_pad_button = 0;
+	}
+	int game_pad;
+	int game_pad_button;
+}GamePadAction;
+
 
 class LavaInput {
 

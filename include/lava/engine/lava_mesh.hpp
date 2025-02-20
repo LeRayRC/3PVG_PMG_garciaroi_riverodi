@@ -13,7 +13,6 @@
  **/
 
 #include "lava/engine/lava_engine.hpp"
-#include "lava/common/lava_types.hpp"
 #include "fastgltf/core.hpp"
 
 struct GPUMeshBuffers {
@@ -36,6 +35,22 @@ struct MeshAsset {
 	uint32_t index_count;
 	//GeoSurface surfaces[5];
 	GPUMeshBuffers meshBuffers;
+};
+
+typedef enum MeshType {
+	MESH_FBX,
+	MESH_OBJ,
+	MESH_GLTF,
+	MESH_CUSTOM,
+} MeshType;
+
+struct MeshProperties {
+	std::string name = "Generic Mesh";
+	MeshType type = MESH_GLTF;
+	std::filesystem::path mesh_path;
+	class LavaPBRMaterial* material;
+	std::vector<Vertex> vertex;
+	std::vector<uint32_t> index;
 };
 
 

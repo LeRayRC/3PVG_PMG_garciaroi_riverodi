@@ -5,6 +5,40 @@
 #include "engine/lava_swap_chain.hpp"
 #include "lava/common/lava_types.hpp"
 
+typedef enum PipelineType {
+	PIPELINE_TYPE_NORMAL,
+	PIPELINE_TYPE_PBR,
+	PIPELINE_TYPE_SHADOW
+} PipelineType;
+
+typedef enum PipelineFlags {
+	PIPELINE_USE_ATTRIBUTES = 1,					//0001
+	PIPELINE_USE_PUSHCONSTANTS = 1 << 1,	//0010
+	PIPELINE_USE_DESCRIPTOR_SET = 1 << 2,  //0100
+	PIPELINE_DONT_USE_COLOR_ATTACHMENT = 1 << 3, //1000
+} PipelineFlags;
+
+typedef enum PipelineBlendMode {
+	PIPELINE_BLEND_DISABLE,
+	PIPELINE_BLEND_ONE_ONE,
+	PIPELINE_BLEND_ONE_ZERO
+} PipelineBlendMode;
+
+struct PipelineConfig {
+public:
+	PipelineType type;
+	const char* vertex_shader_path;
+	const char* fragment_shader_path;
+	class LavaDevice* device;
+	class LavaSwapChain* swap_chain;
+	class LavaDescriptorManager* descriptor_manager;
+	VkDescriptorSetLayout global_descriptor_set_layout;
+	VkDescriptorSetLayout global_pbr_descriptor_set_layout;
+	VkDescriptorSetLayout global_lights_descriptor_set_layout;
+	int pipeline_flags;
+	PipelineBlendMode blend_mode;
+};
+
 class LavaPipeline
 {
 public:

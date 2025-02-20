@@ -5,6 +5,11 @@
 #include "lava/ecs/lava_ecs_components.hpp"
 #include "lava/engine/lava_engine.hpp"
 
+struct MaterialPBRProperties {
+	std::string name = "PBR_MATERIAL";
+};
+
+
 struct LavaPBRMaterialProperties {
 	float metallic_factor_; //Determines the metallic value of the metallic parts of the texture
 	float roughness_factor_; //Determines the roughness value of the metallic parts of the texture Default value 0.5f

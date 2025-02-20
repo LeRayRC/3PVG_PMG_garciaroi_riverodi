@@ -26,6 +26,7 @@ private:
 	std::unique_ptr<class LavaPipeline> pipeline_first_light_;
 	std::unique_ptr<class LavaPipeline> pipeline_shadows_;
 
+	//std::unique_ptr<class LavaImage> shadowmap_image_;
 	//Shadow Maps Images
 	AllocatedImage shadowmap_image_;
 	VkSampler shadowmap_sampler_;

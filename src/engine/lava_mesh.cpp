@@ -308,7 +308,7 @@ bool LavaMesh::loadAsGLTF(std::filesystem::path file_path) {
     }
     
     if (gltf.materials[0].normalTexture.has_value()) {
-        int normal_index = gltf.materials[0].normalTexture.value().textureIndex;
+        int normal_index = (int)gltf.materials[0].normalTexture.value().textureIndex;
         material_->normal_ = loadImage(engine_, gltf, gltf.images[normal_index]);
         material_->uniform_properties.use_normal_ = 1.0f;
         constexpr bool calc_tangents = sizeof(t) == sizeof(VertexWithTangents);
@@ -364,7 +364,7 @@ bool LavaMesh::loadAsGLTF(std::filesystem::path file_path) {
     }
 
     if (gltf.materials[0].pbrData.metallicRoughnessTexture.has_value()) {
-        int mt_rg_index = gltf.materials[0].pbrData.metallicRoughnessTexture.value().textureIndex;
+        int mt_rg_index = (int)gltf.materials[0].pbrData.metallicRoughnessTexture.value().textureIndex;
         material_->metallic_roughness_ = loadImage(engine_, gltf, gltf.images[mt_rg_index]);
     }
   }

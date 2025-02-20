@@ -4,7 +4,7 @@
 #include "lava/common/lava_types.hpp"
 #include "engine/lava_vulkan_helpers.hpp"
 #include "engine/lava_descriptor_manager.hpp"
-
+#include "lava/engine/lava_engine.hpp"
 
 LavaPipeline::LavaPipeline(PipelineConfig config){
 

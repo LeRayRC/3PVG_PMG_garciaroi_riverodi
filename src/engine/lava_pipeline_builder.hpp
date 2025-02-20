@@ -2,6 +2,8 @@
 #define __LAVA_PIPELINE_BUILDER_H_ 1
 
 #include "lava/common/lava_types.hpp"
+#include "engine/lava_pipeline.hpp"
+
 
 class PipelineBuilder {
 public:

@@ -95,9 +95,9 @@ workspace "Motor"
         targetdir "build/%{cfg.buildcfg}"
         includedirs {"include", "src"}
         conan_config_lib()
-        --pchheader "stdafx.hpp"
-        --pchsource "src/stdafx.cpp"
-        --forceincludes { "lava/stdafx.hpp" }
+        pchheader "stdafx.hpp"
+        pchsource "src/stdafx.cpp"
+        forceincludes { "stdafx.hpp" }
         files {
                 "premake5.lua",
                 "src/build/conanfile.txt",
@@ -226,8 +226,12 @@ workspace "Motor"
         conan_config_exec("Debug")
         conan_config_exec("Release")
         conan_config_exec("RelWithDebInfo")
+        pchheader "stdafx.hpp"
+        pchsource "src/stdafx.cpp"
+        forceincludes { "stdafx.hpp" }
         debugargs { _MAIN_SCRIPT_DIR .. "/examples/data" }
         files "examples/shadows_demostrator.cpp"
         files "src/shaders/*"
+        files "src/stdafx.cpp"
         files "examples/assets/*"
         common_settings()
