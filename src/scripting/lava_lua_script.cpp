@@ -1,5 +1,5 @@
-#include "scripting/lava_lua_script.hpp"
-#include "scripting/lava_lua_wrapper.hpp"
+#include "lava/scripting/lava_lua_script.hpp"
+#include "lava/scripting/lava_lua_wrapper.hpp"
 
 LavaLuaScript::LavaLuaScript()
 	: state_{ luaL_newstate(),&lua_close }

@@ -1,13 +1,15 @@
 #include "engine/lava_image.hpp"
-#include "lava_vulkan_inits.hpp"
-#include "lava_vulkan_helpers.hpp"
-#include "engine/lava_buffer.hpp"
-#include "lava_engine.hpp"
+#include "engine/lava_vulkan_inits.hpp"
+#include "engine/lava_vulkan_helpers.hpp"
+#include "lava/engine/lava_buffer.hpp"
+#include "engine/lava_device.hpp"
+#include "lava/engine/lava_engine.hpp"
+#include "engine/lava_allocator.hpp"
 
 LavaImage::LavaImage(LavaEngine* engine,void* data, VkExtent3D size, VkFormat format, VkImageUsageFlags usage, bool mipmapped){
 	engine_ = engine;
 	size_t data_size = size.depth * size.width * size.height * 4;
-	LavaBuffer upload_buffer = LavaBuffer(engine->allocator_,data_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
+	LavaBuffer upload_buffer = LavaBuffer(*engine->allocator_, data_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
 
 	memcpy(upload_buffer.get_buffer().info.pMappedData, data, data_size);
 
@@ -40,13 +42,13 @@ LavaImage::LavaImage(LavaEngine* engine,void* data, VkExtent3D size, VkFormat fo
 	sampler_info.magFilter = VK_FILTER_LINEAR;
 	sampler_info.minFilter = VK_FILTER_LINEAR;
 
-	vkCreateSampler(engine->device_.get_device(), &sampler_info, nullptr, &sampler_);
+	vkCreateSampler(engine->device_->get_device(), &sampler_info, nullptr, &sampler_);
 }
 
 LavaImage::~LavaImage(){
-	vkDestroySampler(engine_->device_.get_device(), sampler_, nullptr);
-	vkDestroyImageView(engine_->device_.get_device(), image_.image_view, nullptr);
-	vmaDestroyImage(engine_->allocator_.get_allocator(), image_.image, image_.allocation);
+	vkDestroySampler(engine_->device_->get_device(), sampler_, nullptr);
+	vkDestroyImageView(engine_->device_->get_device(), image_.image_view, nullptr);
+	vmaDestroyImage(engine_->allocator_->get_allocator(), image_.image, image_.allocation);
 
 }
 
@@ -68,7 +70,7 @@ void LavaImage::allocate(VkExtent3D size, VkFormat format, VkImageUsageFlags usa
 	alloc_info.requiredFlags = VkMemoryPropertyFlags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
 	// allocate and create the image
-	vmaCreateImage(engine_->allocator_.get_allocator(), &img_info, &alloc_info, &image_.image, &image_.allocation, nullptr);
+	vmaCreateImage(engine_->allocator_->get_allocator(), &img_info, &alloc_info, &image_.image, &image_.allocation, nullptr);
 
 	// if the format is a depth format, we will need to have it use the correct
 	// aspect flag
@@ -81,7 +83,7 @@ void LavaImage::allocate(VkExtent3D size, VkFormat format, VkImageUsageFlags usa
 	VkImageViewCreateInfo view_info = vkinit::ImageViewCreateInfo(format, image_.image, aspectFlag);
 	view_info.subresourceRange.levelCount = img_info.mipLevels;
 
-	if (vkCreateImageView(engine_->device_.get_device(), &view_info, nullptr, &image_.image_view) != VK_SUCCESS) {
+	if (vkCreateImageView(engine_->device_->get_device(), &view_info, nullptr, &image_.image_view) != VK_SUCCESS) {
 		printf("Failed to allocate LavaImage\n");
 		exit(-1);
 	}

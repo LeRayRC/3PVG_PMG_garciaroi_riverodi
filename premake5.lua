@@ -93,19 +93,21 @@ workspace "Motor"
     project "Motor"
         kind "StaticLib"
         targetdir "build/%{cfg.buildcfg}"
-        includedirs "include"
+        includedirs {"include", "src"}
         conan_config_lib()
-        pchheader "stdafx.hpp"
-        pchsource "src/stdafx.cpp"
-        forceincludes { "stdafx.hpp" }
+        --pchheader "stdafx.hpp"
+        --pchsource "src/stdafx.cpp"
+        --forceincludes { "lava/stdafx.hpp" }
         files {
                 "premake5.lua",
                 "src/build/conanfile.txt",
                 "src/build/conan.lua",
                 "src/*.cpp",
                 "include/*.hpp",
-                "include/*/*.hpp",
+                "include/*/*/*.hpp",
                 "src/*/*.cpp",
+                "src/*/*.hpp",
+                "src/*.hpp",
                 }
     project"Window"
         kind "ConsoleApp" -- This was WindowedApp
