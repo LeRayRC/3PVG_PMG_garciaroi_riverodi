@@ -2,6 +2,7 @@
 #include "lava/window/lava_window_system.hpp"
 #include "lava/ecs/lava_ecs.hpp"
 #include "lava/ecs/lava_pbr_render_system.hpp"
+#include "lava/ecs/lava_update_system.hpp"
 #include "lava/engine/lava_pbr_material.hpp"
 #include "lava/engine/lava_mesh.hpp"
 #include "imgui.h"
@@ -22,7 +23,6 @@ void ecs_render_imgui(LavaECSManager& ecs_manager, size_t camera_entity) {
 
 
 	ImGui::End();
-
 	
 }
 
@@ -86,13 +86,21 @@ void ecs_light_imgui(std::vector<std::optional<TransformComponent>>& transform_v
 
 }
 
+void UpdateOverride(size_t id, LavaECSManager* ecs_manager) {
 
+	auto transform_optional = ecs_manager->getComponent<TransformComponent>(id);
+	if (transform_optional) {
+		auto& transform_comp = transform_optional->value();
+		transform_comp.rot_.y += 0.1f;
+	}
+}
 
 int main(int argc, char* argv[]) {
 	std::shared_ptr<LavaWindowSystem>  lava_system = LavaWindowSystem::Get();
 	LavaEngine engine;
 	LavaECSManager ecs_manager;
 	LavaPBRRenderSystem pbr_render_system{ engine };
+	LavaUpdateSystem update_system{ engine };
 
 	LavaPBRMaterial basic_material(engine, MaterialPBRProperties());
 	MeshProperties mesh_properties = {};
@@ -108,6 +116,7 @@ int main(int argc, char* argv[]) {
 		size_t entity = ecs_manager.createEntity();
 		ecs_manager.addComponent<TransformComponent>(entity);
 		ecs_manager.addComponent<RenderComponent>(entity);
+		ecs_manager.addComponent<UpdateComponent>(entity);
 
 		auto transform_component = ecs_manager.getComponent<TransformComponent>(entity);
 		if (transform_component) {
@@ -120,6 +129,16 @@ int main(int argc, char* argv[]) {
 		if (render_component) {
 			auto& render = render_component->value();
 			render.mesh_ = mesh_;
+		}
+
+		auto update_component = ecs_manager.getComponent<UpdateComponent>(entity);
+		if (update_component) {
+			auto& update = update_component->value();
+			update.id = entity;
+			update.ecs_manager = &ecs_manager;
+			update.update_ = [](size_t id, LavaECSManager* ecs_manager) {
+				UpdateOverride(id, ecs_manager);
+				};
 		}
 	}
 	{
@@ -236,10 +255,14 @@ int main(int argc, char* argv[]) {
 
 			engine.updateMainCamera(&camera_component, &camera_tr);
 
+			update_system.update(ecs_manager.getComponentList<UpdateComponent>());
+
+
 			engine.beginFrame();
 			engine.clearWindow();
 
 			engine.renderImgui();
+
 
 			ecs_render_imgui(ecs_manager, camera_entity);
 			ecs_light_imgui(ecs_manager.getComponentList<TransformComponent>(), 
