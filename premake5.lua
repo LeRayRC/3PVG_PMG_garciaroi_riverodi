@@ -235,3 +235,21 @@ workspace "Motor"
         files "src/stdafx.cpp"
         files "examples/assets/*"
         common_settings()
+    project"Flycam"
+        kind "ConsoleApp" -- This was WindowedApp
+        language "C++"
+        targetdir "build/%{prj.name}/%{cfg.buildcfg}"
+        includedirs "include"
+        links "Motor"
+        conan_config_exec("Debug")
+        conan_config_exec("Release")
+        conan_config_exec("RelWithDebInfo")
+        pchheader "stdafx.hpp"
+        pchsource "src/stdafx.cpp"
+        forceincludes { "stdafx.hpp" }
+        debugargs { _MAIN_SCRIPT_DIR .. "/examples/data" }
+        files "examples/flycam_demostrator.cpp"
+        files "src/shaders/*"
+        files "src/stdafx.cpp"
+        files "examples/assets/*"
+        common_settings()

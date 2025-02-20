@@ -6,6 +6,7 @@
 #include "lava/scripting/lava_lua_script.hpp"
 #include "lava/common/lava_global_helpers.hpp"
 #include "lava/engine/lava_buffer.hpp"
+#include "lava/ecs/lava_ecs.hpp"
 
 
 struct RenderComponent {
@@ -148,12 +149,7 @@ struct LightShaderStruct {
     glm::vec3 forwardVector = glm::vec3(rotationMatrix[2]);
     forwardVector = glm::normalize(forwardVector);
 
-
-    //float pitch = glm::radians(tr.rot_.x); // Rotación en el eje X
-    //float yaw = glm::radians(tr.rot_.y);   // Rotación en el eje Y
-    //float roll = glm::radians(tr.rot_.z);
-    //glm::mat4 rotation_matrix = glm::yawPitchRoll(yaw, pitch, roll);
-    dir[0] = forwardVector.x; //glm::vec3(rotation_matrix * glm::vec4(0.0f, 0.0f, 1.0f, 0.0f));
+    dir[0] = forwardVector.x;
     dir[1] = forwardVector.y;
     dir[2] = forwardVector.z;
 
@@ -177,9 +173,11 @@ struct LightShaderStruct {
   }
 };
 
-
-//This structure will be loaded on the pbr shader
-
+struct UpdateComponent {
+  class LavaECSManager* ecs_manager;
+  size_t id;
+  std::function<void(size_t id, LavaECSManager* ecs_manager)> update_;
+};
 
 #endif // !__LAVA_ECS_COMPONENTS_H__
 
