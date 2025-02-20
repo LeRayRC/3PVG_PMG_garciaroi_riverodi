@@ -1,10 +1,11 @@
-#include "lava/engine/lava_engine.hpp"
 #include "lava/window/lava_window_system.hpp"
+#include "lava/common/lava_global_helpers.hpp"
+#include "lava/engine/lava_engine.hpp"
+#include "lava/engine/lava_pbr_material.hpp"
+#include "lava/engine/lava_mesh.hpp"
 #include "lava/ecs/lava_ecs.hpp"
 #include "lava/ecs/lava_pbr_render_system.hpp"
 #include "lava/ecs/lava_update_system.hpp"
-#include "lava/engine/lava_pbr_material.hpp"
-#include "lava/engine/lava_mesh.hpp"
 #include "imgui.h"
 
 void ecs_render_imgui(LavaECSManager& ecs_manager, size_t camera_entity) {
@@ -86,14 +87,7 @@ void ecs_light_imgui(std::vector<std::optional<TransformComponent>>& transform_v
 
 }
 
-void UpdateOverride(size_t id, LavaECSManager* ecs_manager) {
 
-	auto transform_optional = ecs_manager->getComponent<TransformComponent>(id);
-	if (transform_optional) {
-		auto& transform_comp = transform_optional->value();
-		transform_comp.rot_.y += 0.1f;
-	}
-}
 
 int main(int argc, char* argv[]) {
 	std::shared_ptr<LavaWindowSystem>  lava_system = LavaWindowSystem::Get();
@@ -134,10 +128,11 @@ int main(int argc, char* argv[]) {
 		auto update_component = ecs_manager.getComponent<UpdateComponent>(entity);
 		if (update_component) {
 			auto& update = update_component->value();
+
 			update.id = entity;
 			update.ecs_manager = &ecs_manager;
-			update.update_ = [](size_t id, LavaECSManager* ecs_manager) {
-				UpdateOverride(id, ecs_manager);
+			update.update_ = [](size_t id, LavaECSManager* ecs_manager, LavaEngine& engine) {
+				GenericUpdateWithInput(id, ecs_manager, engine);
 				};
 		}
 	}
@@ -249,30 +244,26 @@ int main(int argc, char* argv[]) {
 	
 	engine.global_scene_data_.ambientColor = glm::vec3(0.2f, 0.2f, 0.2f);
 
-	LavaInput* input = engine.window_.get_input();
-	{
-		while (!engine.shouldClose()) {
+	while (!engine.shouldClose()) {
 
-			engine.updateMainCamera(&camera_component, &camera_tr);
-
-			update_system.update(ecs_manager.getComponentList<UpdateComponent>());
+		engine.updateMainCamera(&camera_component, &camera_tr);
+		update_system.update(ecs_manager.getComponentList<UpdateComponent>());
 
 
-			engine.beginFrame();
-			engine.clearWindow();
-
-			engine.renderImgui();
+		engine.beginFrame();
+		engine.clearWindow();
 
 
-			ecs_render_imgui(ecs_manager, camera_entity);
-			ecs_light_imgui(ecs_manager.getComponentList<TransformComponent>(), 
-				ecs_manager.getComponentList<LightComponent>());
-			pbr_render_system.renderWithShadows(ecs_manager.getComponentList<TransformComponent>(),
-				ecs_manager.getComponentList<RenderComponent>(), ecs_manager.getComponentList<LightComponent>());
+		pbr_render_system.renderWithShadows(ecs_manager.getComponentList<TransformComponent>(),
+			ecs_manager.getComponentList<RenderComponent>(), ecs_manager.getComponentList<LightComponent>());
 
-			engine.endFrame();
-		}
+		ecs_render_imgui(ecs_manager, camera_entity);
+		ecs_light_imgui(ecs_manager.getComponentList<TransformComponent>(), 
+			ecs_manager.getComponentList<LightComponent>());
 
-		return 0;
+		engine.endFrame();
 	}
+
+	return 0;
+	
 }
