@@ -1,11 +1,9 @@
-#include "lava_types.hpp"
-#include "lava_engine.hpp"
-#include "lava_window_system.hpp"
-#include "engine/lava_pipeline.hpp"
-#include "engine/lava_image.hpp"
-#include "engine/lava_pbr_material.hpp"
-#include "ecs/lava_ecs.hpp"
-#include "ecs/lava_pbr_render_system.hpp"
+#include "lava/engine/lava_engine.hpp"
+#include "lava/window/lava_window_system.hpp"
+#include "lava/ecs/lava_ecs.hpp"
+#include "lava/ecs/lava_pbr_render_system.hpp"
+#include "lava/engine/lava_pbr_material.hpp"
+#include "lava/engine/lava_mesh.hpp"
 #include "imgui.h"
 
 
@@ -92,33 +90,22 @@ void ecs_light_imgui(std::vector<std::optional<TransformComponent>>& transform_v
 
 
 int main(int argc, char* argv[]) {
+
 	std::shared_ptr<LavaWindowSystem>  lava_system = LavaWindowSystem::Get();
 	LavaEngine engine;
 	LavaECSManager ecs_manager;
 	LavaPBRRenderSystem pbr_render_system{ engine };
 
-	///////////////////////
-	//////ASSETS START/////
-	///////////////////////
-	MaterialPBRProperties mat_properties = {};
-	mat_properties.name = "PBR Material";
-	//mat_properties.pipeline_flags = PipelineFlags::PIPELINE_USE_PUSHCONSTANTS | PipelineFlags::PIPELINE_USE_DESCRIPTOR_SET;
 
-	LavaPBRMaterial basic_material(engine, mat_properties);
-
+	LavaPBRMaterial basic_material(engine, MaterialPBRProperties());
 	MeshProperties mesh_properties = {};
-	mesh_properties.name = "Shiba Mesh";
-	mesh_properties.type = MESH_GLTF;
 	mesh_properties.mesh_path = "../examples/assets/Avocado.glb";
 	mesh_properties.material = &basic_material;
 
 	std::shared_ptr<LavaMesh> mesh_ = std::make_shared<LavaMesh>(engine, mesh_properties);
 
-	//Needs to be call every time an image or property is updated
+	//Needs to be call every time an image or property is updated and before rendering begins
 	basic_material.UpdateDescriptorSet();
-	/////////////////////
-	//////ASSETS END/////
-	/////////////////////
 
 	{
 		size_t entity = ecs_manager.createEntity();
@@ -139,6 +126,7 @@ int main(int argc, char* argv[]) {
 		}
 	}
 
+
 	{
 		size_t entity = ecs_manager.createEntity();
 		ecs_manager.addComponent<TransformComponent>(entity);
@@ -157,7 +145,6 @@ int main(int argc, char* argv[]) {
 			render.mesh_ = mesh_;
 		}
 	}
-
 	{
 		size_t entity = ecs_manager.createEntity();
 		ecs_manager.addComponent<TransformComponent>(entity);
@@ -175,7 +162,6 @@ int main(int argc, char* argv[]) {
 			render.mesh_ = mesh_;
 		}
 	}
-
 	{
 		size_t entity = ecs_manager.createEntity();
 		ecs_manager.addComponent<TransformComponent>(entity);
@@ -194,11 +180,6 @@ int main(int argc, char* argv[]) {
 			render.mesh_ = mesh_;
 		}
 	}
-	
-
-
-
-
 	{
 		size_t light_entity = ecs_manager.createEntity();
 		ecs_manager.addComponent<TransformComponent>(light_entity);
@@ -220,8 +201,6 @@ int main(int argc, char* argv[]) {
 		}
 
 	}
-
-	
 	{
 		size_t light_entity = ecs_manager.createEntity();
 		ecs_manager.addComponent<TransformComponent>(light_entity);
@@ -243,7 +222,7 @@ int main(int argc, char* argv[]) {
 		}
 
 	}
-		
+	
 	//Create Camera entity
 	size_t camera_entity = ecs_manager.createEntity();
 	ecs_manager.addComponent<TransformComponent>(camera_entity);
@@ -253,58 +232,28 @@ int main(int argc, char* argv[]) {
 	camera_tr.rot_ = glm::vec3(0.0f, 0.0f, 0.0f);
 	camera_tr.pos_ = glm::vec3(0.0f, 0.0f, 0.0f);
 	auto& camera_component = ecs_manager.getComponent<CameraComponent>(camera_entity)->value();
-
+	
 	engine.global_scene_data_.ambientColor = glm::vec3(0.2f, 0.2f, 0.2f);
 
 	LavaInput* input = engine.window_.get_input();
+	{
+		while (!engine.shouldClose()) {
 
-	while (!engine.shouldClose()) {
-		
+			engine.updateMainCamera(&camera_component, &camera_tr);
 
-		//auto &tr = ecs_manager.getComponent<TransformComponent>(entity)->value();
-		//tr.rot_ = glm::vec3(0.1f * engine.frame_data_.frame_number_,
-		//	0.02f * engine.frame_data_.frame_number_,
-		//	0.05f * engine.frame_data_.frame_number_);
-		auto& camera_tr = ecs_manager.getComponent<TransformComponent>(camera_entity)->value();
+			engine.beginFrame();
+			engine.clearWindow();
 
-		//if (ImGui::DragFloat3("Camera position", &camera_tr.pos_.x, 0.1f, -100.0f, 100.0f)) {
+			engine.renderImgui();
 
-		//}
-		//ImGui::DragFloat("Fov", &camera_camera.fov_, 0.1f, 0.0f, 180.0f);
-		//ImGui::DragFloat("Camera Rot X", &camera_tr.rot_.x, 0.5f, 88.0f, 268.0f);
-		//ImGui::DragFloat("Camera Rot Y", &camera_tr.rot_.y, 0.5f, -360.0f, 360.0f);
+			ecs_render_imgui(ecs_manager, camera_entity);
+			ecs_light_imgui(ecs_manager.getComponentList<TransformComponent>(), ecs_manager.getComponentList<LightComponent>());
+			pbr_render_system.renderWithShadows(ecs_manager.getComponentList<TransformComponent>(),
+				ecs_manager.getComponentList<RenderComponent>(), ecs_manager.getComponentList<LightComponent>());
 
-
-		if (input->isInputDown(KEY_D)) {
-			camera_tr.pos_.x += (1.0f * engine.dt_);
-		}
-		if (input->isInputDown(KEY_A)) {
-			camera_tr.pos_.x -= (1.0f * engine.dt_);
-		}
-		if (input->isInputDown(KEY_W)) {
-			camera_tr.pos_.y += (1.0f * engine.dt_);
-		}
-		if (input->isInputDown(KEY_S)) {
-			camera_tr.pos_.y -= (1.0f * engine.dt_);
+			engine.endFrame();
 		}
 
-		//engine.allocate_lights(ecs_manager.getComponentList<LightComponent>());
-		//engine.update_lights(ecs_manager.getComponentList<LightComponent>(),ecs_manager.getComponentList<TransformComponent>());
-		engine.updateMainCamera(&camera_component, &camera_tr);
-
-		engine.beginFrame();
-		engine.clearWindow();
-
-		engine.renderImgui();
-		ecs_render_imgui(ecs_manager, camera_entity);
-		ecs_light_imgui(ecs_manager.getComponentList<TransformComponent>(), ecs_manager.getComponentList<LightComponent>());
-		pbr_render_system.renderWithShadows(ecs_manager.getComponentList<TransformComponent>(),
-			ecs_manager.getComponentList<RenderComponent>(), ecs_manager.getComponentList<LightComponent>());
-		//normal_render_system.render(ecs_manager.getComponentList<TransformComponent>(),
-		//	ecs_manager.getComponentList<RenderComponent>());
-
-		engine.endFrame();
+		return 0;
 	}
-
-	return 0;
 }

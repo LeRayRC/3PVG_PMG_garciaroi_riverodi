@@ -1,8 +1,9 @@
-#include "ecs/lava_normal_render_system.hpp"
+#include "lava/ecs/lava_normal_render_system.hpp"
 
-#include "lava_engine.hpp"
-#include "lava_vulkan_inits.hpp"
-#include "engine/lava_mesh.hpp"
+#include "lava/engine/lava_engine.hpp"
+#include "engine/lava_vulkan_inits.hpp"
+#include "lava/engine/lava_mesh.hpp"
+#include "engine/lava_frame_data.hpp"
 
 LavaNormalRenderSystem::LavaNormalRenderSystem(LavaEngine &engine) : 
   engine_{engine},
@@ -10,9 +11,9 @@ LavaNormalRenderSystem::LavaNormalRenderSystem(LavaEngine &engine) :
 							PIPELINE_TYPE_PBR,
               "../src/shaders/normal.vert.spv",
               "../src/shaders/normal.frag.spv",
-              &engine_.device_,
-              &engine_.swap_chain_,
-              &engine_.global_descriptor_allocator_,
+              engine_.device_.get(),
+              engine_.swap_chain_.get(),
+              engine_.global_descriptor_allocator_.get(),
 							engine_.global_descriptor_set_layout_,
 							engine_.global_pbr_descriptor_set_layout_,
 							engine_.global_lights_descriptor_set_layout_,
@@ -31,22 +32,22 @@ void LavaNormalRenderSystem::render(
 	
 
 
-  TransitionImage(engine_.commandBuffer, engine_.swap_chain_.get_draw_image().image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-  TransitionImage(engine_.commandBuffer, engine_.swap_chain_.get_depth_image().image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+  TransitionImage(engine_.commandBuffer, engine_.swap_chain_->get_draw_image().image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+  TransitionImage(engine_.commandBuffer, engine_.swap_chain_->get_depth_image().image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
 
 	//begin a render pass  connected to our draw image
-	VkRenderingAttachmentInfo color_attachment = vkinit::AttachmentInfo(engine_.swap_chain_.get_draw_image().image_view, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-	VkRenderingAttachmentInfo depth_attachment = vkinit::DepthAttachmentInfo(engine_.swap_chain_.get_depth_image().image_view, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
+	VkRenderingAttachmentInfo color_attachment = vkinit::AttachmentInfo(engine_.swap_chain_->get_draw_image().image_view, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+	VkRenderingAttachmentInfo depth_attachment = vkinit::DepthAttachmentInfo(engine_.swap_chain_->get_depth_image().image_view, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
 	//
-	VkRenderingInfo renderInfo = vkinit::RenderingInfo(engine_.swap_chain_.get_draw_extent(), &color_attachment, &depth_attachment);
+	VkRenderingInfo renderInfo = vkinit::RenderingInfo(engine_.swap_chain_->get_draw_extent(), &color_attachment, &depth_attachment);
 	vkCmdBeginRendering(engine_.commandBuffer, &renderInfo);
 
 	//set dynamic viewport and scissor
 	VkViewport viewport = {};
 	viewport.x = 0;
 	viewport.y = 0;
-	viewport.width = (float)engine_.swap_chain_.get_draw_extent().width;
-	viewport.height = (float)engine_.swap_chain_.get_draw_extent().height;
+	viewport.width = (float)engine_.swap_chain_->get_draw_extent().width;
+	viewport.height = (float)engine_.swap_chain_->get_draw_extent().height;
 	viewport.minDepth = 0.0f;
 	viewport.maxDepth = 1.0f;
 
@@ -55,8 +56,8 @@ void LavaNormalRenderSystem::render(
 	VkRect2D scissor = {};
 	scissor.offset.x = 0;
 	scissor.offset.y = 0;
-	scissor.extent.width = engine_.swap_chain_.get_draw_extent().width;
-	scissor.extent.height = engine_.swap_chain_.get_draw_extent().height;
+	scissor.extent.width = engine_.swap_chain_->get_draw_extent().width;
+	scissor.extent.height = engine_.swap_chain_->get_draw_extent().height;
 
 	vkCmdSetScissor(engine_.commandBuffer, 0, 1, &scissor);
 
@@ -68,7 +69,7 @@ void LavaNormalRenderSystem::render(
 		0, 1, &engine_.global_descriptor_set_, 0, nullptr);
 
 
-	FrameData& frame_data = engine_.frame_data_.getCurrentFrame();
+	FrameData& frame_data = engine_.frame_data_->getCurrentFrame();
   //Draw everycomponent
   auto transform_it = transform_vector.begin();
   auto render_it = render_vector.begin();
@@ -147,15 +148,15 @@ void LavaNormalRenderSystem::render(
 
 	vkCmdEndRendering(engine_.commandBuffer);
 
-  TransitionImage(engine_.commandBuffer, engine_.swap_chain_.get_draw_image().image,
+  TransitionImage(engine_.commandBuffer, engine_.swap_chain_->get_draw_image().image,
     VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
   //Cambiamos la imagen a tipo presentable para enseñarla en la superficie
-  TransitionImage(engine_.commandBuffer, engine_.swap_chain_.get_swap_chain_images()[engine_.swap_chain_image_index],
+  TransitionImage(engine_.commandBuffer, engine_.swap_chain_->get_swap_chain_images()[engine_.swap_chain_image_index],
     VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
   // Devolvemos la imagen al swapchain
-  CopyImageToImage(engine_.commandBuffer, engine_.swap_chain_.get_draw_image().image,
-    engine_.swap_chain_.get_swap_chain_images()[engine_.swap_chain_image_index], engine_.swap_chain_.get_draw_extent(), engine_.window_extent_);
+  CopyImageToImage(engine_.commandBuffer, engine_.swap_chain_->get_draw_image().image,
+    engine_.swap_chain_->get_swap_chain_images()[engine_.swap_chain_image_index], engine_.swap_chain_->get_draw_extent(), engine_.window_extent_);
 
 }
 

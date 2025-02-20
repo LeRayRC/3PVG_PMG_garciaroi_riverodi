@@ -1,17 +1,19 @@
-#include "engine/lava_mesh.hpp"
+#include "lava/engine/lava_mesh.hpp"
 
-#include "lava_types.hpp"
+#include "lava/common/lava_types.hpp"
 #include <unordered_map>
 #include <filesystem>
 
 #include "lava_vulkan_inits.hpp"
-#include "engine/lava_buffer.hpp"
+#include "lava/engine/lava_buffer.hpp"
 
 #include <fastgltf/glm_element_traits.hpp>
 #include <fastgltf/core.hpp>
 #include <fastgltf/tools.hpp>
 
-#include "engine/lava_pbr_material.hpp"
+#include "lava/engine/lava_pbr_material.hpp"
+#include "engine/lava_allocator.hpp"
+#include "engine/lava_image.hpp"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -301,12 +303,12 @@ bool LavaMesh::loadAsGLTF(std::filesystem::path file_path) {
         material_->uniform_properties.specular_factor_ = gltf.materials[0].specular->specularFactor;
     }
     if (gltf.materials[0].pbrData.baseColorTexture.has_value()) {
-        int base_color_index = gltf.materials[0].pbrData.baseColorTexture.value().textureIndex;
+        int base_color_index = (int)gltf.materials[0].pbrData.baseColorTexture.value().textureIndex;
         material_->base_color_ = loadImage(engine_, gltf, gltf.images[base_color_index]);
     }
     
     if (gltf.materials[0].normalTexture.has_value()) {
-        int normal_index = gltf.materials[0].normalTexture.value().textureIndex;
+        int normal_index = (int)gltf.materials[0].normalTexture.value().textureIndex;
         material_->normal_ = loadImage(engine_, gltf, gltf.images[normal_index]);
         material_->uniform_properties.use_normal_ = 1.0f;
         constexpr bool calc_tangents = sizeof(t) == sizeof(VertexWithTangents);
@@ -362,7 +364,7 @@ bool LavaMesh::loadAsGLTF(std::filesystem::path file_path) {
     }
 
     if (gltf.materials[0].pbrData.metallicRoughnessTexture.has_value()) {
-        int mt_rg_index = gltf.materials[0].pbrData.metallicRoughnessTexture.value().textureIndex;
+        int mt_rg_index = (int)gltf.materials[0].pbrData.metallicRoughnessTexture.value().textureIndex;
         material_->metallic_roughness_ = loadImage(engine_, gltf, gltf.images[mt_rg_index]);
     }
   }
@@ -406,22 +408,22 @@ GPUMeshBuffers LavaMesh::upload(std::span<uint32_t> indices, std::span<t> vertic
     GPUMeshBuffers new_surface;
 
     //create vertex buffer
-    new_surface.vertex_buffer = std::make_unique<LavaBuffer>(engine_->allocator_,vertex_buffer_size, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+    new_surface.vertex_buffer = std::make_unique<LavaBuffer>(*engine_->allocator_,vertex_buffer_size, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
       VMA_MEMORY_USAGE_GPU_ONLY);
 
     //find the adress of the vertex buffer
     VkBufferDeviceAddressInfo deviceAdressInfo{ .sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO,.buffer = new_surface.vertex_buffer->buffer_.buffer };
     
-    new_surface.vertex_buffer_address = vkGetBufferDeviceAddress(engine_->device_.get_device(), &deviceAdressInfo);
+    new_surface.vertex_buffer_address = vkGetBufferDeviceAddress(engine_->device_->get_device(), &deviceAdressInfo);
 
     //create index buffer
-    new_surface.index_buffer = std::make_unique<LavaBuffer>(engine_->allocator_, index_buffer_size, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+    new_surface.index_buffer = std::make_unique<LavaBuffer>(*engine_->allocator_, index_buffer_size, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
       VMA_MEMORY_USAGE_GPU_ONLY);
 
-    LavaBuffer staging = LavaBuffer(engine_->allocator_, vertex_buffer_size + index_buffer_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY);
+    LavaBuffer staging = LavaBuffer(*engine_->allocator_, vertex_buffer_size + index_buffer_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY);
 
     void* data;// = staging.get_buffer().allocation;
-    vmaMapMemory(engine_->allocator_.get_allocator(), staging.get_buffer().allocation, &data);
+    vmaMapMemory(engine_->allocator_->get_allocator(), staging.get_buffer().allocation, &data);
 
     // copy vertex buffer
     memcpy(data, vertices.data(), vertex_buffer_size);
@@ -444,7 +446,7 @@ GPUMeshBuffers LavaMesh::upload(std::span<uint32_t> indices, std::span<t> vertic
       vkCmdCopyBuffer(cmd, staging.get_buffer().buffer, new_surface.index_buffer->get_buffer().buffer, 1, &indexCopy);
       });
 
-    vmaUnmapMemory(engine_->allocator_.get_allocator(), staging.get_buffer().allocation);
+    vmaUnmapMemory(engine_->allocator_->get_allocator(), staging.get_buffer().allocation);
     return new_surface;
   
 }

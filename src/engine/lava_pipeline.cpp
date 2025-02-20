@@ -1,10 +1,10 @@
 #include "engine/lava_pipeline.hpp"
 
 #include "engine/lava_pipeline_builder.hpp"
-#include "lava_types.hpp"
-#include "lava_vulkan_helpers.hpp"
+#include "lava/common/lava_types.hpp"
+#include "engine/lava_vulkan_helpers.hpp"
 #include "engine/lava_descriptor_manager.hpp"
-
+#include "lava/engine/lava_engine.hpp"
 
 LavaPipeline::LavaPipeline(PipelineConfig config){
 

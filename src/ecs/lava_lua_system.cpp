@@ -1,4 +1,4 @@
-#include "ecs/lava_lua_system.hpp"
+#include "lava/ecs/lava_lua_system.hpp"
 
 LavaLuaSystem::LavaLuaSystem()
 {

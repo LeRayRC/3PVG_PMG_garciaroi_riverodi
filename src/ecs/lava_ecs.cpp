@@ -1,5 +1,5 @@
-#include "ecs/lava_ecs.hpp"
-
+#include "lava/ecs/lava_ecs.hpp"
+#include "lava/ecs/lava_ecs_components.hpp"
 
 LavaECSManager::LavaECSManager(){
   last_entity = 0;

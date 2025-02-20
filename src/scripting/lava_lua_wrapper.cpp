@@ -1,6 +1,7 @@
-#include "scripting/lava_lua_wrapper.hpp"
-#include "ecs/lava_ecs.hpp"
-#include "lava_world.hpp"
+#include "lava/scripting/lava_lua_wrapper.hpp"
+#include "lava/ecs/lava_ecs.hpp"
+#include "lava/common/lava_world.hpp"
+#include "lava/ecs/lava_ecs_components.hpp"
 
 
 int ECS_CreateEntity(lua_State* L) {
