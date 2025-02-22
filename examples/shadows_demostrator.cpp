@@ -239,13 +239,15 @@ int main(int argc, char* argv[]) {
 			engine.beginFrame();
 			engine.clearWindow();
 
-			engine.renderImgui();
 
-			ecs_render_imgui(ecs_manager, camera_entity);
-			ecs_light_imgui(ecs_manager.getComponentList<TransformComponent>(), 
-				ecs_manager.getComponentList<LightComponent>());
+
+
 			pbr_render_system.renderWithShadows(ecs_manager.getComponentList<TransformComponent>(),
 				ecs_manager.getComponentList<RenderComponent>(), ecs_manager.getComponentList<LightComponent>());
+
+			ecs_render_imgui(ecs_manager, camera_entity);
+			ecs_light_imgui(ecs_manager.getComponentList<TransformComponent>(),
+				ecs_manager.getComponentList<LightComponent>());
 
 			engine.endFrame();
 		}

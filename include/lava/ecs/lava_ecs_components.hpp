@@ -176,8 +176,10 @@ struct LightShaderStruct {
 struct UpdateComponent {
   class LavaECSManager* ecs_manager;
   size_t id;
-  std::function<void(size_t id, LavaECSManager* ecs_manager)> update_;
+  std::function<void(size_t id, LavaECSManager* ecs_manager, class LavaEngine& engine)> update_;
 };
+
+
 
 #endif // !__LAVA_ECS_COMPONENTS_H__
 

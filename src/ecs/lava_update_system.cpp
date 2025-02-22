@@ -1,4 +1,5 @@
 #include "lava/ecs/lava_update_system.hpp"
+#include "lava/engine/lava_engine.hpp"
 
 LavaUpdateSystem::LavaUpdateSystem(class LavaEngine& engine) : engine_{engine} {
 
@@ -17,6 +18,6 @@ void LavaUpdateSystem::update(std::vector<std::optional<UpdateComponent>>& updat
     if (!update_it->has_value()) continue;
 
     auto& update_comp = update_it->value();
-    update_comp.update_(update_comp.id, update_comp.ecs_manager);
+    update_comp.update_(update_comp.id, update_comp.ecs_manager, engine_);
   }
 }

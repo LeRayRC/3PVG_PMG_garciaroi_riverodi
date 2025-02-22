@@ -2,6 +2,10 @@
 #define __LAVA_GLOBAL_HELPERS_H__ 1
 
 #include "lava/common/lava_types.hpp"
+#include "lava/ecs/lava_ecs.hpp"
+#include "lava/input/lava_input.hpp"
+#include "lava/engine/lava_engine.hpp"
+#include "lava/ecs/lava_ecs_components.hpp"
 
 static inline glm::mat4 GenerateViewMatrix(glm::vec3& pos, glm::vec3& rot) {
   float pitch = glm::radians(rot.x); // Rotaci�n en el eje X
@@ -34,4 +38,38 @@ static inline glm::vec3 CalculateForwardVector(const glm::vec3& rotation_degrees
 
   return forward;
 }
+
+//Example function for the UpdateComponent
+void GenericUpdateWithInput(size_t id, LavaECSManager* ecs_manager, LavaEngine& engine);
+//static inline void GenericUpdateWithInput(size_t id, LavaECSManager* ecs_manager, LavaEngine& engine) {
+//  //Get input from the engine current window
+//  LavaInput* input = engine.window_.get_input();
+//  glm::vec3 input_vector = glm::vec3(0.0f);
+//
+//  if (input->isInputDown(KEY_D) || input->isInputDown(KEY_RIGHT)) {
+//    input_vector.x = 1.0f;
+//  }
+//  else if (input->isInputDown(KEY_A) || input->isInputDown(KEY_LEFT)) {
+//    input_vector.x = -1.0f;
+//  }
+//
+//  if (input->isInputDown(KEY_W) || input->isInputDown(KEY_UP)) {
+//    input_vector.y = 1.0f;
+//  }
+//  else if (input->isInputDown(KEY_S) || input->isInputDown(KEY_DOWN)) {
+//    input_vector.y = -1.0f;
+//  }
+//
+//  const float epsilon = 1e-6f; // 0.000001
+//  float magnitude = glm::length(input_vector);
+//  if (magnitude > epsilon) {
+//    input_vector = (glm::normalize(input_vector) * (float)engine.dt_);
+//    auto transform_optional = ecs_manager->getComponent<TransformComponent>(id);
+//    if (transform_optional) {
+//      auto& transform_comp = transform_optional->value();
+//      transform_comp.pos_ += input_vector;
+//    }
+//  }
+//}
+
 #endif // !__LAVA_GLOBAL_HELPERS_H__
