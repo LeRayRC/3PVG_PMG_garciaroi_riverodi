@@ -110,7 +110,7 @@ int main(int argc, char* argv[]) {
 		size_t entity = ecs_manager.createEntity();
 		ecs_manager.addComponent<TransformComponent>(entity);
 		ecs_manager.addComponent<RenderComponent>(entity);
-		ecs_manager.addComponent<UpdateComponent>(entity);
+		//ecs_manager.addComponent<UpdateComponent>(entity);
 
 		auto transform_component = ecs_manager.getComponent<TransformComponent>(entity);
 		if (transform_component) {
@@ -125,16 +125,16 @@ int main(int argc, char* argv[]) {
 			render.mesh_ = mesh_;
 		}
 
-		auto update_component = ecs_manager.getComponent<UpdateComponent>(entity);
-		if (update_component) {
-			auto& update = update_component->value();
+		//auto update_component = ecs_manager.getComponent<UpdateComponent>(entity);
+		//if (update_component) {
+		//	auto& update = update_component->value();
 
-			update.id = entity;
-			update.ecs_manager = &ecs_manager;
-			update.update_ = [](size_t id, LavaECSManager* ecs_manager, LavaEngine& engine) {
-				GenericUpdateWithInput(id, ecs_manager, engine);
-				};
-		}
+		//	update.id = entity;
+		//	update.ecs_manager = &ecs_manager;
+		//	update.update_ = [](size_t id, LavaECSManager* ecs_manager, LavaEngine& engine) {
+		//		GenericUpdateWithInput(id, ecs_manager, engine);
+		//		};
+		//}
 	}
 	{
 		size_t entity = ecs_manager.createEntity();
@@ -234,21 +234,37 @@ int main(int argc, char* argv[]) {
 	
 	//Create Camera entity
 	size_t camera_entity = ecs_manager.createEntity();
-	ecs_manager.addComponent<TransformComponent>(camera_entity);
-	ecs_manager.addComponent<CameraComponent>(camera_entity);
+	{
 
-	auto& camera_tr = ecs_manager.getComponent<TransformComponent>(camera_entity)->value();
-	camera_tr.rot_ = glm::vec3(0.0f, 0.0f, 0.0f);
-	camera_tr.pos_ = glm::vec3(0.0f, 0.0f, 0.0f);
-	auto& camera_component = ecs_manager.getComponent<CameraComponent>(camera_entity)->value();
+		ecs_manager.addComponent<TransformComponent>(camera_entity);
+		ecs_manager.addComponent<CameraComponent>(camera_entity);
+		ecs_manager.addComponent<UpdateComponent>(camera_entity);
+
+		auto& camera_tr = ecs_manager.getComponent<TransformComponent>(camera_entity)->value();
+		camera_tr.rot_ = glm::vec3(0.0f, 0.0f, 0.0f);
+		camera_tr.pos_ = glm::vec3(0.0f, 0.0f, 0.0f);
+		auto& camera_component = ecs_manager.getComponent<CameraComponent>(camera_entity)->value();
+
+		auto update_component = ecs_manager.getComponent<UpdateComponent>(camera_entity);
+		if (update_component) {
+			auto& update = update_component->value();
+		
+			update.id = camera_entity;
+			update.ecs_manager = &ecs_manager;
+			update.update_ = [](size_t id, LavaECSManager* ecs_manager, LavaEngine& engine) {
+				//GenericUpdateWithInput(id, ecs_manager, engine);
+					UpdateCameraWithInput(id, ecs_manager, engine);
+				};
+		}
+
+		engine.setMainCamera(&camera_component, &camera_tr);
+	}
 	
 	engine.global_scene_data_.ambientColor = glm::vec3(0.2f, 0.2f, 0.2f);
 
 	while (!engine.shouldClose()) {
 
-		engine.updateMainCamera(&camera_component, &camera_tr);
 		update_system.update(ecs_manager.getComponentList<UpdateComponent>());
-
 
 		engine.beginFrame();
 		engine.clearWindow();
@@ -256,6 +272,7 @@ int main(int argc, char* argv[]) {
 
 		pbr_render_system.renderWithShadows(ecs_manager.getComponentList<TransformComponent>(),
 			ecs_manager.getComponentList<RenderComponent>(), ecs_manager.getComponentList<LightComponent>());
+
 
 		ecs_render_imgui(ecs_manager, camera_entity);
 		ecs_light_imgui(ecs_manager.getComponentList<TransformComponent>(), 

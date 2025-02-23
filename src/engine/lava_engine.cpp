@@ -217,26 +217,10 @@ void LavaEngine::initGlobalData() {
 	global_pbr_descriptor_set_layout_ = builder.build(device_->get_device(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
 }
 
-void LavaEngine::updateMainCamera(struct CameraComponent* camera_component,
-	struct TransformComponent* camera_tr) {
-
-	//Detect input
-
-
-	camera_component->view_ = GenerateViewMatrix(camera_tr->pos_, camera_tr->rot_);
-	global_scene_data_.cameraPos = camera_tr->pos_;
-	global_scene_data_.view = camera_component->view_;
-	global_scene_data_.proj = glm::perspective(glm::radians(camera_component->fov_),
-		(float)window_extent_.width / (float)window_extent_.height, camera_component->near_, camera_component->far_);
-	global_scene_data_.proj[1][1] *= -1;
-	global_scene_data_.viewproj = global_scene_data_.proj * global_scene_data_.view;
-
-	global_data_buffer_->updateBufferData(&global_scene_data_, sizeof(GlobalSceneData));
-}
-
 void LavaEngine::beginFrame() {
 	chrono_now_ = std::chrono::steady_clock::now();
 
+	updateMainCamera();
 
 	glfwPollEvents();
 
@@ -475,6 +459,29 @@ void LavaEngine::setDynamicViewportAndScissor(const VkExtent2D& extend) {
 	scissor.extent.width = (uint32_t)extend.width;//swap_chain_.get_draw_extent().width;
 	scissor.extent.height = (uint32_t)extend.height;//swap_chain_.get_draw_extent().height;
 	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+}
+
+void LavaEngine::setMainCamera(struct CameraComponent* camera_component,
+	struct TransformComponent* camera_tr) {
+	main_camera_camera_ = camera_component;
+	main_camera_transform_ = camera_tr;
+}
+
+void LavaEngine::updateMainCamera() {
+
+	//Detect input
+	assert(main_camera_camera_ != nullptr);
+	assert(main_camera_transform_ != nullptr);
+
+	main_camera_camera_->view_ = GenerateViewMatrix(main_camera_transform_->pos_, main_camera_transform_->rot_);
+	global_scene_data_.cameraPos = main_camera_transform_->pos_;
+	global_scene_data_.view = main_camera_camera_->view_;
+	global_scene_data_.proj = glm::perspective(glm::radians(main_camera_camera_->fov_),
+		(float)window_extent_.width / (float)window_extent_.height, main_camera_camera_->near_, main_camera_camera_->far_);
+	global_scene_data_.proj[1][1] *= -1;
+	global_scene_data_.viewproj = global_scene_data_.proj * global_scene_data_.view;
+
+	global_data_buffer_->updateBufferData(&global_scene_data_, sizeof(GlobalSceneData));
 }
 
 

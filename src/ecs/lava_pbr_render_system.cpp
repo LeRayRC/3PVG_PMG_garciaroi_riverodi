@@ -8,6 +8,7 @@
 #include "engine/lava_allocator.hpp"
 #include "engine/lava_frame_data.hpp"
 #include "engine/lava_pipeline.hpp"
+#include "lava/common/lava_global_helpers.hpp"
 
 LavaPBRRenderSystem::LavaPBRRenderSystem(LavaEngine &engine) :
   engine_{engine},

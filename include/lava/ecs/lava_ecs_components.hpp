@@ -4,7 +4,7 @@
 #include "lava/common/lava_types.hpp"
 #include <glm/gtx/euler_angles.hpp>
 #include "lava/scripting/lava_lua_script.hpp"
-#include "lava/common/lava_global_helpers.hpp"
+//#include "lava/common/lava_global_helpers.hpp"
 #include "lava/engine/lava_buffer.hpp"
 #include "lava/ecs/lava_ecs.hpp"
 
