@@ -9,7 +9,12 @@
 class LavaImage
 {
 public:
-	LavaImage(class LavaEngine* engine,void* data, VkExtent3D size, VkFormat format, VkImageUsageFlags usage, bool mipmapped=false);
+	LavaImage(class LavaEngine* engine,
+		void* data,
+		VkExtent3D size,
+		VkFormat format = VK_FORMAT_R8G8B8A8_UNORM,
+		VkImageUsageFlags usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+		bool mipmapped = false);
 	~LavaImage();
 
 	AllocatedImage get_allocated_image() {

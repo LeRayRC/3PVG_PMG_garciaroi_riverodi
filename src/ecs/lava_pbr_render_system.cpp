@@ -510,8 +510,6 @@ void LavaPBRRenderSystem::allocate_lights(std::vector<std::optional<struct Light
 		engine_.global_descriptor_allocator_->updateSet(light_component.descriptor_set_);
 		engine_.global_descriptor_allocator_->clear();
 
-
-
 		light_component.allocated_ = true;
 	}
 }

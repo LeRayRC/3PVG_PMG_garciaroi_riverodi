@@ -1,11 +1,11 @@
-#include "examples/hellotriangle.hpp"
 
-#include "lava_types.hpp"
-#include "lava_engine.hpp"
-#include "lava_window_system.hpp"
-#include "engine/lava_pipeline.hpp"
-#include "ecs/lava_ecs.hpp"
-#include "ecs/lava_normal_render_system.hpp"
+#include "lava/engine/lava_engine.hpp"
+#include "lava/window/lava_window_system.hpp"
+#include "lava/window/lava_window.hpp"
+#include "lava/engine/lava_mesh.hpp"
+#include "lava/ecs/lava_ecs.hpp"
+#include "lava/engine/lava_pbr_material.hpp"
+#include "lava/ecs/lava_normal_render_system.hpp"
 
 int main(int argc, char* argv[]) {
 	std::shared_ptr<LavaWindowSystem>  lava_system = LavaWindowSystem::Get();
@@ -13,13 +13,7 @@ int main(int argc, char* argv[]) {
 	LavaECSManager ecs_manager;
 	LavaNormalRenderSystem normal_render_system{engine};
 	
-	MaterialProperties mat_properties = {};
-	mat_properties.name = "Basic Material";
-	mat_properties.vertex_shader_path = "../src/shaders/normal.vert.spv";
-	mat_properties.fragment_shader_path = "../src/shaders/normal.frag.spv";
-	mat_properties.pipeline_flags = PipelineFlags::PIPELINE_USE_PUSHCONSTANTS | PipelineFlags::PIPELINE_USE_DESCRIPTOR_SET;
-
-	LavaMaterial basic_material(engine, mat_properties);
+	LavaPBRMaterial basic_material(engine, MaterialPBRProperties());
 
 	std::vector<Vertex> triangle_vertices(3);
 
@@ -68,6 +62,22 @@ int main(int argc, char* argv[]) {
 		auto& render = render_component->value();
 		render.mesh_ = mesh_triangle;
 	}
+
+
+	size_t camera_entity = ecs_manager.createEntity();
+	{
+
+		ecs_manager.addComponent<TransformComponent>(camera_entity);
+		ecs_manager.addComponent<CameraComponent>(camera_entity);
+
+		auto& camera_tr = ecs_manager.getComponent<TransformComponent>(camera_entity)->value();
+		camera_tr.rot_ = glm::vec3(0.0f, 0.0f, 0.0f);
+		camera_tr.pos_ = glm::vec3(0.0f, 0.0f, 0.0f);
+		auto& camera_component = ecs_manager.getComponent<CameraComponent>(camera_entity)->value();
+		engine.setMainCamera(&camera_component, &camera_tr);
+	}
+	engine.global_scene_data_.ambientColor = glm::vec3(0.2f, 0.2f, 0.2f);
+
 
 	while (!engine.shouldClose()) {
 

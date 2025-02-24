@@ -119,7 +119,13 @@ workspace "Motor"
         conan_config_exec("Release")
         conan_config_exec("RelWithDebInfo")
         debugargs { _MAIN_SCRIPT_DIR .. "/examples/data" }
+        pchheader "stdafx.hpp"
+        pchsource "src/stdafx.cpp"
+        forceincludes { "stdafx.hpp" }
+        debugargs { _MAIN_SCRIPT_DIR .. "/examples/data" }
         files "examples/window_demostrator.cpp"
+        files "src/stdafx.cpp"
+        common_settings()
     project"HelloTriangle"
         kind "ConsoleApp" -- This was WindowedApp
         language "C++"
@@ -130,10 +136,14 @@ workspace "Motor"
         conan_config_exec("Release")
         conan_config_exec("RelWithDebInfo")
         debugargs { _MAIN_SCRIPT_DIR .. "/examples/data" }
+        pchheader "stdafx.hpp"
+        pchsource "src/stdafx.cpp"
+        forceincludes { "stdafx.hpp" }
+        debugargs { _MAIN_SCRIPT_DIR .. "/examples/data" }
+        files "src/stdafx.cpp"
+        files "examples/assets/*"
         files "examples/hellotriangle.cpp"
-        files "include/examples/hellotriangle.hpp"
-        files "include/custom_vulkan_helpers.hpp"
-        files "src/shaders/*"
+        common_settings()
     project"HelloTriangleWithInput"
         kind "ConsoleApp" -- This was WindowedApp
         language "C++"

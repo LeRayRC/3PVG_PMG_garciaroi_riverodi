@@ -87,7 +87,7 @@ void ecs_light_imgui(std::vector<std::optional<TransformComponent>>& transform_v
 
 }
 
-
+ 
 
 int main(int argc, char* argv[]) {
 	std::shared_ptr<LavaWindowSystem>  lava_system = LavaWindowSystem::Get();
@@ -265,7 +265,6 @@ int main(int argc, char* argv[]) {
 			update.id = camera_entity;
 			update.ecs_manager = &ecs_manager;
 			update.update_ = [](size_t id, LavaECSManager* ecs_manager, LavaEngine& engine) {
-				//GenericUpdateWithInput(id, ecs_manager, engine);
 					UpdateCameraWithInput(id, ecs_manager, engine);
 				};
 		}
