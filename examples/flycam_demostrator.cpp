@@ -124,17 +124,6 @@ int main(int argc, char* argv[]) {
 			auto& render = render_component->value();
 			render.mesh_ = mesh_;
 		}
-
-		//auto update_component = ecs_manager.getComponent<UpdateComponent>(entity);
-		//if (update_component) {
-		//	auto& update = update_component->value();
-
-		//	update.id = entity;
-		//	update.ecs_manager = &ecs_manager;
-		//	update.update_ = [](size_t id, LavaECSManager* ecs_manager, LavaEngine& engine) {
-		//		GenericUpdateWithInput(id, ecs_manager, engine);
-		//		};
-		//}
 	}
 	{
 		size_t entity = ecs_manager.createEntity();
@@ -189,6 +178,30 @@ int main(int argc, char* argv[]) {
 			render.mesh_ = mesh_;
 		}
 	}
+
+	for (int i = 0; i < 20; i++) {
+		size_t entity = ecs_manager.createEntity();
+		ecs_manager.addComponent<TransformComponent>(entity);
+		ecs_manager.addComponent<RenderComponent>(entity);
+
+		auto transform_component = ecs_manager.getComponent<TransformComponent>(entity);
+		if (transform_component) {
+			auto& transform = transform_component->value();
+			transform.pos_ = glm::vec3(1.0f + (0.5f * (rand() % 10)), -1.5f + (0.5f * (rand() % 10)),-2.0f + (0.5f * (rand()%10)));
+			transform.scale_ = glm::vec3(10.0f, 10.0f, 10.0f);
+		}
+
+		auto render_component = ecs_manager.getComponent<RenderComponent>(entity);
+		if (render_component) {
+			auto& render = render_component->value();
+			render.mesh_ = mesh_;
+		}
+	}
+
+
+
+
+
 	{
 		size_t light_entity = ecs_manager.createEntity();
 		ecs_manager.addComponent<TransformComponent>(light_entity);
