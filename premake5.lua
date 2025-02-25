@@ -21,7 +21,6 @@ for i = 1, 3 do
     cfg["imgui_bindings_path"] = conan_rootpath_imgui .. "/res/bindings/"
 end
 
-
 function conan_config_exec()
     configs = { 'Debug', 'Release', 'RelWithDebInfo' }
     for i = 1, 3 do
@@ -57,7 +56,7 @@ function conan_config_lib()
     end
 end
 
-workspace "Motor"
+workspace "Lava"
     configurations { "Debug", "Release", "RelWithDebInfo" }
     architecture "x64"
     location "build"
@@ -90,6 +89,11 @@ workspace "Motor"
         runtime "Release"
         symbols "On"
     filter {}
+
+    if _OPTIONS["build-engine"] then 
+      include "build_engine.lua"
+    else
+      
     project "Motor"
         kind "StaticLib"
         targetdir "build/%{cfg.buildcfg}"
