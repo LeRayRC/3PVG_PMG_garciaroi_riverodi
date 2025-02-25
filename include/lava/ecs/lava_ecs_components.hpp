@@ -141,9 +141,9 @@ struct LightShaderStruct {
     glm::mat4 rotationMatrix = glm::mat4(1.0f);
 
     // Aplicar rotaciones en el orden Z, Y, X (o el orden que prefieras)
-    rotationMatrix = glm::rotate(rotationMatrix, tr.rot_.z, glm::vec3(0.0f, 0.0f, 1.0f)); // Rotación en Z
-    rotationMatrix = glm::rotate(rotationMatrix, tr.rot_.y, glm::vec3(0.0f, 1.0f, 0.0f)); // Rotación en Y
-    rotationMatrix = glm::rotate(rotationMatrix, tr.rot_.x, glm::vec3(1.0f, 0.0f, 0.0f)); // Rotación en X
+    rotationMatrix = glm::rotate(rotationMatrix, tr.rot_.z, glm::vec3(0.0f, 0.0f, 1.0f)); // Rotaciï¿½n en Z
+    rotationMatrix = glm::rotate(rotationMatrix, tr.rot_.y, glm::vec3(0.0f, 1.0f, 0.0f)); // Rotaciï¿½n en Y
+    rotationMatrix = glm::rotate(rotationMatrix, tr.rot_.x, glm::vec3(1.0f, 0.0f, 0.0f)); // Rotaciï¿½n en X
 
     // Obtener el vector forward (tercera columna de la matriz, invertido si Z negativo es forward)
     glm::vec3 forwardVector = glm::vec3(rotationMatrix[2]);
@@ -173,10 +173,17 @@ struct LightShaderStruct {
   }
 };
 
+/**
+ * @brief Update component useful for gameplay purpouses
+ * 
+ */
 struct UpdateComponent {
-  class LavaECSManager* ecs_manager;
-  size_t id;
-  std::function<void(size_t id, LavaECSManager* ecs_manager, class LavaEngine& engine)> update_;
+  /** Ecs manager to retrieve other components */
+  class LavaECSManager* ecs_manager; 
+  /** entity id that holds the component */
+  size_t id; 
+  /** function that will be called every frame by the LavaUpdateSystem */
+  std::function<void(size_t id, LavaECSManager* ecs_manager, class LavaEngine& engine)> update_; 
 };
 
 

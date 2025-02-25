@@ -198,10 +198,6 @@ int main(int argc, char* argv[]) {
 		}
 	}
 
-
-
-
-
 	{
 		size_t light_entity = ecs_manager.createEntity();
 		ecs_manager.addComponent<TransformComponent>(light_entity);

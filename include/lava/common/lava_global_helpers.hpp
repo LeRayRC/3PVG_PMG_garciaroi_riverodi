@@ -1,3 +1,13 @@
+/**
+ * @file lava_global_helpers.hpp
+ * @author Carlos Garcia Roig (garciaroi@esat-alumni.com)
+ * @author Daniel Rivero Diaz (riverodi@esat-alumni.com)
+ * @brief Lava Global Helpers header's file
+ *
+ * @copyright Academic Project ESAT 2024/2025
+ *
+ */
+
 #ifndef __LAVA_GLOBAL_HELPERS_H__
 #define __LAVA_GLOBAL_HELPERS_H__ 1
 
@@ -84,6 +94,13 @@ static inline void GenericUpdateWithInput(size_t id, LavaECSManager* ecs_manager
   }
 }
 
+/**
+ * @brief Generic Flycam implementation function for a camera entity.
+ * 
+ * @param id entity id of the camera
+ * @param ecs_manager reference to the ecs manager to retrieve other components
+ * @param engine reference to the engine to get delta time and other things
+ */
 static inline void UpdateCameraWithInput(size_t id, LavaECSManager* ecs_manager, LavaEngine& engine) {
   //Get input from the engine current window
   LavaInput* input = engine.window_.get_input();
