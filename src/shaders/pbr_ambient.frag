@@ -136,14 +136,16 @@ float PointShadowCalculation(vec3 fragPos)
     // use the light to fragment vector to sample from the depth map    
     float closestDepth = texture(depthMap, normalize(fragToLight)).r;
 
+    closestDepth = 1.0 - closestDepth;
+
     // it is currently in linear range between [0,1]. Re-transform back to original value
-    //closestDepth *= 25.0; //Need to be Recive: Far Plane
+    closestDepth *= 25.0; //Need to be Recive: Far Plane
 
     // now get current linear depth as the length between the fragment and light position
-    float currentDepth = length(fragToLight) / 25.0f;
+    float currentDepth = length(fragToLight);
     // now test for shadows
     float bias = 0.05; 
-    float shadow = currentDepth < closestDepth ? 1.0 : 0.0;
+    float shadow = currentDepth-bias > closestDepth ? 1.0 : 0.0;
 
     return shadow;
 }  
@@ -165,7 +167,7 @@ void main()
         break;
        }
        case 1: {
-        float shadow_fr = PointShadowCalculation(fragPosLightSpace.xyz);
+        float shadow_fr = PointShadowCalculation(inPos.xyz);
         outFragColor = vec4(PointLight() * (1.0 - shadow_fr),1.0); 
         break;
        }
