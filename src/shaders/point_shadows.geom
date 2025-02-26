@@ -2,9 +2,9 @@
 layout (triangles) in;
 layout (triangle_strip, max_vertices=18) out;
 
-layout (set = 0, binding = 0) uniform ShadowMatrices {
-    mat4 shadowMatrices[6];
-};
+layout(set = 2, binding = 1) uniform  LightViewProj{   
+	mat4 viewproj[6];
+} light_viewproj;
 
 layout (location = 0) out vec4 FragPos; // FragPos from GS (output per emitvertex)
 
@@ -16,7 +16,7 @@ void main()
         for(int i = 0; i < 3; ++i) // for each triangle vertex
         {
             FragPos = gl_in[i].gl_Position;
-            gl_Position = shadowMatrices[face] * FragPos;
+            gl_Position = light_viewproj.viewproj[face] * FragPos;
             EmitVertex();
         }    
         EndPrimitive();

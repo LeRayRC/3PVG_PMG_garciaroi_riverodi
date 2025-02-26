@@ -39,7 +39,8 @@ layout(set = 2, binding = 0) uniform LightProperties{
 layout(set = 2, binding = 1) uniform LightViewProj{
   mat4 viewproj;
 }light_viewproj;
-layout(set = 2, binding = 2) uniform sampler2D  shadowMap;
+//layout(set = 2, binding = 2) uniform sampler2D  shadowMap;
+layout(set = 2, binding = 2) uniform samplerCube depthMap;
 
 
 //shader input
@@ -117,32 +118,54 @@ vec3 SpotLight() {
     return result;
 }
 
-float ShadowCalculation(vec4 fragPosLightSpace)
+float SpotShadowCalculation(vec4 fragPosLightSpace)
 {
-	vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
-  float currentDepth = projCoords.z;
-  projCoords = projCoords * 0.5 + 0.5;
-  float closestDepth = texture(shadowMap, projCoords.xy).r; 
-  float shadow = currentDepth + 0.005 < closestDepth  ? 1.0 : 0.0;
-  return shadow;
+//	vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+//  float currentDepth = projCoords.z;
+//  projCoords = projCoords * 0.5 + 0.5;
+//  float closestDepth = texture(shadowMap, projCoords.xy).r; 
+//  float shadow = currentDepth + 0.005 < closestDepth  ? 1.0 : 0.0;
+//  return shadow;
+return 0.0;
 }
+
+float PointShadowCalculation(vec3 fragPos)
+{
+    // get vector between fragment position and light position
+    vec3 fragToLight = fragPos - light.pos;
+
+    // use the light to fragment vector to sample from the depth map    
+    float closestDepth = texture(depthMap, normalize(fragToLight)).r;
+
+    // it is currently in linear range between [0,1]. Re-transform back to original value
+    closestDepth *= 25.0; //Need to be Recive: Far Plane
+
+    // now get current linear depth as the length between the fragment and light position
+    float currentDepth = length(fragToLight);
+    // now test for shadows
+    float bias = 0.05; 
+    float shadow = currentDepth + 0.05 < closestDepth ? 1.0 : 0.0;
+
+    return 0;
+}  
 
 
 void main() 
 {
 
   if(light.enabled == 1){
-    float shadow_fr = ShadowCalculation(fragPosLightSpace); 
     switch(light.type){
       case 0: {
         outFragColor = vec4(DirectionalLight(),1.0); 
         break;
        }
        case 1: {
-        outFragColor = vec4(PointLight(),1.0); 
+        float shadow_fr = PointShadowCalculation(fragPosLightSpace.xyz);
+        outFragColor = vec4(PointLight() * (1.0 - shadow_fr),1.0); 
         break;
        }
        case 2: {
+        float shadow_fr = SpotShadowCalculation(fragPosLightSpace); 
         vec3 lightColor = SpotLight();
         outFragColor = vec4(lightColor * (1.0 - shadow_fr), 1.0);
         break;

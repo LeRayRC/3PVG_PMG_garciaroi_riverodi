@@ -26,6 +26,8 @@ public:
 
     void SetShaders(VkShaderModule vertex_shader, VkShaderModule fragment_shader);
 
+    void SetShaders(VkShaderModule vertex_shader, VkShaderModule fragment_shader, VkShaderModule geom_shader);
+
     void SetInputTopology(VkPrimitiveTopology topology);
 
     void SetPolygonMode(VkPolygonMode mode);

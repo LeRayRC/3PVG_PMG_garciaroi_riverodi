@@ -45,7 +45,7 @@ VkSubmitInfo2 vkinit::SubmitInfo(VkCommandBufferSubmitInfo* cmd, VkSemaphoreSubm
 }
 
 
-VkImageCreateInfo vkinit::ImageCreateInfo(VkFormat format, VkImageUsageFlags usageFlags, VkExtent3D extent) {
+VkImageCreateInfo vkinit::ImageCreateInfo(VkFormat format, VkImageUsageFlags usageFlags, VkExtent3D extent, int layers) {
 
   VkImageCreateInfo info{};
   info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -57,7 +57,8 @@ VkImageCreateInfo vkinit::ImageCreateInfo(VkFormat format, VkImageUsageFlags usa
   info.extent = extent;
 
   info.mipLevels = 1;
-  info.arrayLayers = 1;
+  info.arrayLayers = layers;
+  if(layers == 6)info.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT; //Maybe should not always be a cube when there are 6 layers
 
   //Util para MSAA (Antialiasing)
   info.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -70,18 +71,18 @@ VkImageCreateInfo vkinit::ImageCreateInfo(VkFormat format, VkImageUsageFlags usa
   return info;
 }
 
-VkImageViewCreateInfo vkinit::ImageViewCreateInfo(VkFormat format, VkImage image, VkImageAspectFlags aspectFlags){
+VkImageViewCreateInfo vkinit::ImageViewCreateInfo(VkFormat format, VkImage image, VkImageAspectFlags aspectFlags, int layers){
   VkImageViewCreateInfo info = {};
   info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
   info.pNext = nullptr;
 
-  info.viewType = VK_IMAGE_VIEW_TYPE_2D;
   info.image = image;
   info.format = format;
   info.subresourceRange.baseMipLevel = 0;
   info.subresourceRange.levelCount = 1;
   info.subresourceRange.baseArrayLayer = 0;
-  info.subresourceRange.layerCount = 1;
+  info.subresourceRange.layerCount = layers;
+  info.viewType = (layers == 6) ? VK_IMAGE_VIEW_TYPE_CUBE : VK_IMAGE_VIEW_TYPE_2D;
   info.subresourceRange.aspectMask = aspectFlags;
 
   return info;
@@ -121,14 +122,14 @@ VkRenderingAttachmentInfo vkinit::AttachmentInfo(
 
 
 VkRenderingInfo vkinit::RenderingInfo(VkExtent2D render_extent, VkRenderingAttachmentInfo* color_attachment,
-  VkRenderingAttachmentInfo* depth_attachment)
+  VkRenderingAttachmentInfo* depth_attachment, int layers)
 {
   VkRenderingInfo render_info{};
   render_info.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
   render_info.pNext = nullptr;
 
   render_info.renderArea = VkRect2D{ VkOffset2D { 0, 0 }, render_extent };
-  render_info.layerCount = 1;
+  render_info.layerCount = layers;
   if (color_attachment) {
     render_info.colorAttachmentCount = 1;
     render_info.pColorAttachments = color_attachment;

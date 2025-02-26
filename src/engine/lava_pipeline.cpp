@@ -12,14 +12,22 @@ LavaPipeline::LavaPipeline(PipelineConfig config){
 
 	VkShaderModule vertex_shader;
 	if (!LoadShader(config.vertex_shader_path, device_, &vertex_shader)) {
-		printf("Fragment shader loader failed\n");
+		printf("Vertex shader loader failed\n");
 		exit(-1);
 	}
 
 	VkShaderModule fragment_shader;
 	if (!LoadShader(config.fragment_shader_path, device_, &fragment_shader)) {
-		printf("Vertex shader loader failed\n");
+		printf("Fragment shader loader failed\n");
 		exit(-1);
+	}
+
+	VkShaderModule geom_shader;
+	if (config.geometry_shader_path) {
+		if (!LoadShader(config.geometry_shader_path, device_, &geom_shader)) {
+			printf("Geometry shader loader failed\n");
+			exit(-1);
+		}
 	}
 
 	VkPushConstantRange buffer_range{};
@@ -60,7 +68,8 @@ LavaPipeline::LavaPipeline(PipelineConfig config){
 	//use the triangle layout we created
 	pipeline_builder._pipeline_layout = layout_;
 	//connecting the vertex and pixel shaders to the pipeline
-	pipeline_builder.SetShaders(vertex_shader, fragment_shader);
+	if (config.geometry_shader_path)pipeline_builder.SetShaders(vertex_shader, fragment_shader, geom_shader);
+	else pipeline_builder.SetShaders(vertex_shader, fragment_shader);
 	//it will draw triangles
 	pipeline_builder.SetInputTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
 	//filled triangles

@@ -12,15 +12,15 @@ namespace vkinit {
   VkSubmitInfo2 SubmitInfo(VkCommandBufferSubmitInfo* cmd, VkSemaphoreSubmitInfo* signalSemaphoreInfo,
     VkSemaphoreSubmitInfo* waitSemaphoreInfo);
 
-  VkImageCreateInfo ImageCreateInfo(VkFormat format, VkImageUsageFlags usageFlags, VkExtent3D extent);
-  VkImageViewCreateInfo ImageViewCreateInfo(VkFormat format, VkImage image, VkImageAspectFlags aspectFlags);
+  VkImageCreateInfo ImageCreateInfo(VkFormat format, VkImageUsageFlags usageFlags, VkExtent3D extent, int layers = 1);
+  VkImageViewCreateInfo ImageViewCreateInfo(VkFormat format, VkImage image, VkImageAspectFlags aspectFlags, int layers = 1);
 
   VkCommandBufferBeginInfo CommandBufferBeginInfo(VkCommandBufferUsageFlags flags = 0);
   VkRenderingAttachmentInfo AttachmentInfo(
     VkImageView view, VkClearValue* clear, VkImageLayout layout);
 
   VkRenderingInfo RenderingInfo(VkExtent2D render_extent, VkRenderingAttachmentInfo* color_attachment,
-    VkRenderingAttachmentInfo* depth_attachment);
+    VkRenderingAttachmentInfo* depth_attachment, int layers = 1);
 
   VkRenderingAttachmentInfo DepthAttachmentInfo(
     VkImageView view, VkImageLayout layout , VkAttachmentLoadOp loadOp);

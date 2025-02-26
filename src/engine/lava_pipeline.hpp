@@ -37,6 +37,7 @@ public:
 	VkDescriptorSetLayout global_lights_descriptor_set_layout;
 	int pipeline_flags;
 	PipelineBlendMode blend_mode;
+	const char* geometry_shader_path = nullptr;
 };
 
 class LavaPipeline

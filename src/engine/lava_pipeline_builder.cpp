@@ -111,6 +111,41 @@ void PipelineBuilder::SetShaders(VkShaderModule vertex_shader, VkShaderModule fr
         fragment_info);
 }
 
+void PipelineBuilder::SetShaders(VkShaderModule vertex_shader, VkShaderModule fragment_shader, VkShaderModule geom_shader)
+{
+    _shader_stages.clear();
+
+    VkPipelineShaderStageCreateInfo vertex_info{};
+    vertex_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    vertex_info.pNext = nullptr;
+    vertex_info.stage = VK_SHADER_STAGE_VERTEX_BIT;
+    vertex_info.module = vertex_shader;
+    vertex_info.pName = "main";
+
+    VkPipelineShaderStageCreateInfo geom_info{};
+    geom_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    geom_info.pNext = nullptr;
+    geom_info.stage = VK_SHADER_STAGE_GEOMETRY_BIT;
+    geom_info.module = geom_shader;
+    geom_info.pName = "main";
+
+    VkPipelineShaderStageCreateInfo fragment_info{};
+    fragment_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    fragment_info.pNext = nullptr;
+    fragment_info.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+    fragment_info.module = fragment_shader;
+    fragment_info.pName = "main";
+
+    _shader_stages.push_back(
+        vertex_info);
+
+    _shader_stages.push_back(
+        geom_info);
+
+    _shader_stages.push_back(
+        fragment_info);
+}
+
 void PipelineBuilder::SetInputTopology(VkPrimitiveTopology topology)
 {
     _input_assembly.topology = topology;

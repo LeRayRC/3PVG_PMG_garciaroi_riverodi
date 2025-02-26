@@ -24,12 +24,12 @@ private:
 	class LavaEngine& engine_;
 	std::unique_ptr<class LavaPipeline> pipeline_;
 	std::unique_ptr<class LavaPipeline> pipeline_first_light_;
-	std::unique_ptr<class LavaPipeline> pipeline_shadows_;
+	std::unique_ptr<class LavaPipeline> pipeline_shadows_[3];
 
 	//std::unique_ptr<class LavaImage> shadowmap_image_;
 	//Shadow Maps Images
-	AllocatedImage shadowmap_image_;
-	VkSampler shadowmap_sampler_;
+	AllocatedImage shadowmap_image_[3];
+	VkSampler shadowmap_sampler_[3];
 
 	void allocate_lights(std::vector<std::optional<struct LightComponent>>& light_component_vector);
 	void update_lights(std::vector<std::optional<struct LightComponent>>& light_component_vector,
