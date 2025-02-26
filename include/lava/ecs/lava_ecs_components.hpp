@@ -4,8 +4,9 @@
 #include "lava/common/lava_types.hpp"
 #include <glm/gtx/euler_angles.hpp>
 #include "lava/scripting/lava_lua_script.hpp"
-#include "lava/common/lava_global_helpers.hpp"
+//#include "lava/common/lava_global_helpers.hpp"
 #include "lava/engine/lava_buffer.hpp"
+#include "lava/ecs/lava_ecs.hpp"
 
 
 struct RenderComponent {
@@ -140,20 +141,15 @@ struct LightShaderStruct {
     glm::mat4 rotationMatrix = glm::mat4(1.0f);
 
     // Aplicar rotaciones en el orden Z, Y, X (o el orden que prefieras)
-    rotationMatrix = glm::rotate(rotationMatrix, tr.rot_.z, glm::vec3(0.0f, 0.0f, 1.0f)); // Rotación en Z
-    rotationMatrix = glm::rotate(rotationMatrix, tr.rot_.y, glm::vec3(0.0f, 1.0f, 0.0f)); // Rotación en Y
-    rotationMatrix = glm::rotate(rotationMatrix, tr.rot_.x, glm::vec3(1.0f, 0.0f, 0.0f)); // Rotación en X
+    rotationMatrix = glm::rotate(rotationMatrix, tr.rot_.z, glm::vec3(0.0f, 0.0f, 1.0f)); // Rotaciï¿½n en Z
+    rotationMatrix = glm::rotate(rotationMatrix, tr.rot_.y, glm::vec3(0.0f, 1.0f, 0.0f)); // Rotaciï¿½n en Y
+    rotationMatrix = glm::rotate(rotationMatrix, tr.rot_.x, glm::vec3(1.0f, 0.0f, 0.0f)); // Rotaciï¿½n en X
 
     // Obtener el vector forward (tercera columna de la matriz, invertido si Z negativo es forward)
     glm::vec3 forwardVector = glm::vec3(rotationMatrix[2]);
     forwardVector = glm::normalize(forwardVector);
 
-
-    //float pitch = glm::radians(tr.rot_.x); // Rotación en el eje X
-    //float yaw = glm::radians(tr.rot_.y);   // Rotación en el eje Y
-    //float roll = glm::radians(tr.rot_.z);
-    //glm::mat4 rotation_matrix = glm::yawPitchRoll(yaw, pitch, roll);
-    dir[0] = forwardVector.x; //glm::vec3(rotation_matrix * glm::vec4(0.0f, 0.0f, 1.0f, 0.0f));
+    dir[0] = forwardVector.x;
     dir[1] = forwardVector.y;
     dir[2] = forwardVector.z;
 
@@ -177,8 +173,19 @@ struct LightShaderStruct {
   }
 };
 
+/**
+ * @brief Update component useful for gameplay purpouses
+ * 
+ */
+struct UpdateComponent {
+  /** Ecs manager to retrieve other components */
+  class LavaECSManager* ecs_manager; 
+  /** entity id that holds the component */
+  size_t id; 
+  /** function that will be called every frame by the LavaUpdateSystem */
+  std::function<void(size_t id, LavaECSManager* ecs_manager, class LavaEngine& engine)> update_; 
+};
 
-//This structure will be loaded on the pbr shader
 
 
 #endif // !__LAVA_ECS_COMPONENTS_H__

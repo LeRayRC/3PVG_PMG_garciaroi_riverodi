@@ -1,8 +1,6 @@
-#include "lava_engine.hpp"
-#include "lava_window_system.hpp"
-#include "lava_window.hpp"
-#include <iostream>
-//#include <windows.h>
+#include "lava/engine/lava_engine.hpp"
+#include "lava/window/lava_window_system.hpp"
+#include "lava/window/lava_window.hpp"
 
 int main(int argc, char* argv[]) {
 	std::shared_ptr<LavaWindowSystem> window_system = LavaWindowSystem::Get();

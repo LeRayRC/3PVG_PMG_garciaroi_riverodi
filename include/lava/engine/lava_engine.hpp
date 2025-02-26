@@ -12,7 +12,7 @@
 #define  __LAVA_ENGINE_ 1
 
 #include "lava/common/lava_types.hpp"
-#include "lava/common/lava_global_helpers.hpp"
+//#include "lava/common/lava_global_helpers.hpp"
 #include "lava/window/lava_window.hpp"
 #include "lava/engine/lava_descriptors.hpp"
 
@@ -92,8 +92,11 @@ public:
 	std::chrono::steady_clock::time_point chrono_now_;
 	std::chrono::steady_clock::time_point chrono_last_update_;
 
-	void updateMainCamera(struct CameraComponent* camera_component,
-		struct TransformComponent* camera_tr);
+	struct CameraComponent* main_camera_camera_;
+	struct TransformComponent* main_camera_transform_;
+
+
+	
 
 	double dt_;
 
@@ -114,13 +117,16 @@ public:
 	GLFWwindow* get_window() const;
 	VkSurfaceKHR get_surface() const;
 
-	
+	void setMainCamera(struct CameraComponent* camera_component,
+		struct TransformComponent* camera_tr);
+
 	void setDynamicViewportAndScissor(const VkExtent2D& extend);
 	void initGlobalData();
 	void initImgui();
 	void drawImgui(VkCommandBuffer cmd, VkImageView targetImageView);
 	void immediate_submit(std::function<void(VkCommandBuffer)>&& function);
 private:
+	void updateMainCamera();
 	/**
 	* @brief Copy constructor(never use)
 	*/

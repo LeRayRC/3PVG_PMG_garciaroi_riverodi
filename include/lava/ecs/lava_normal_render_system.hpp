@@ -1,7 +1,6 @@
 #ifndef __LAVA_NORMAL_RENDER_SYSTEM_H__
 #define __LAVA_NORMAL_RENDER_SYSTEM_H__ 1
 
-#include "engine/lava_pipeline.hpp"
 #include "lava/ecs/lava_ecs_components.hpp"
 
 
@@ -17,7 +16,7 @@ public:
 
 private:
 	class LavaEngine& engine_;
-	LavaPipeline pipeline_;
+	std::unique_ptr<class LavaPipeline> pipeline_;
 };
 
 
