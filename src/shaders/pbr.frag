@@ -39,8 +39,8 @@ layout(set = 2, binding = 0) uniform LightProperties{
 layout(set = 2, binding = 1) uniform LightViewProj{
   mat4 viewproj;
 }light_viewproj;
-//layout(set = 2, binding = 2) uniform sampler2D  shadowMap;
-layout(set = 2, binding = 2) uniform samplerCube depthMap;
+layout(set = 2, binding = 2) uniform sampler2D  shadowMap;
+layout(set = 2, binding = 3) uniform samplerCube depthMap;
 
 
 //shader input
@@ -120,13 +120,12 @@ vec3 SpotLight() {
 
 float SpotShadowCalculation(vec4 fragPosLightSpace)
 {
-//	vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
-//  float currentDepth = projCoords.z;
-//  projCoords = projCoords * 0.5 + 0.5;
-//  float closestDepth = texture(shadowMap, projCoords.xy).r; 
-//  float shadow = currentDepth + 0.005 < closestDepth  ? 1.0 : 0.0;
-//  return shadow;
-return 0.0;
+	vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+  float currentDepth = projCoords.z;
+  projCoords = projCoords * 0.5 + 0.5;
+  float closestDepth = texture(shadowMap, projCoords.xy).r; 
+  float shadow = currentDepth + 0.005 < closestDepth  ? 1.0 : 0.0;
+  return shadow;
 }
 
 float PointShadowCalculation(vec3 fragPos)

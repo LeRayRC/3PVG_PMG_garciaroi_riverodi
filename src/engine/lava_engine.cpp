@@ -309,7 +309,6 @@ void LavaEngine::endFrame() {
 	VkSubmitInfo2 submit = vkinit::SubmitInfo(&commandSubmitInfo, &signalInfo, &waitInfo);
 
 	//{
-		//std::lock_guard<std::mutex> lock(queue_mutex_);
 		vkQueueSubmit2(device_->get_graphics_queue(), 1, &submit, frame_data_->getCurrentFrame().render_fence);
 
 		//Se crea la estructura de presentacion para enviarla a la ventana de GLFW

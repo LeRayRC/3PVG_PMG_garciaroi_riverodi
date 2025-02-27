@@ -39,8 +39,8 @@ layout(set = 2, binding = 0) uniform LightProperties{
 layout(set = 2, binding = 1) uniform LightViewProj{
   mat4 viewproj;
 }light_viewproj;
-//layout(set = 2, binding = 2) uniform sampler2D  shadowMap;
-layout(set = 2, binding = 2) uniform samplerCube depthMap;
+layout(set = 2, binding = 2) uniform sampler2D  shadowMap;
+layout(set = 2, binding = 3) uniform samplerCube depthMap;
 
 
 //shader input
@@ -118,35 +118,34 @@ vec3 SpotLight() {
 }
 
 float ShadowCalculation(vec4 fragPosLightSpace)
-{
-//	vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
-//  float currentDepth = projCoords.z;
-//  projCoords = projCoords * 0.5 + 0.5;
-//  float closestDepth = texture(shadowMap, projCoords.xy).r;
-//  float shadow = currentDepth + 0.005 < closestDepth  ? 1.0 : 0.0;
-//  return shadow;
-return 0;
+{ 
+  vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+  float currentDepth = projCoords.z;
+  projCoords = projCoords * 0.5 + 0.5;
+  float closestDepth = texture(shadowMap, projCoords.xy).r;
+  float shadow = currentDepth + 0.005 < closestDepth  ? 1.0 : 0.0;
+  return shadow;
 }
 
 float PointShadowCalculation(vec3 fragPos)
 {
     // get vector between fragment position and light position
     vec3 fragToLight = fragPos - light.pos;
-
+    
     // use the light to fragment vector to sample from the depth map    
     float closestDepth = texture(depthMap, normalize(fragToLight)).r;
-
+    
     closestDepth = 1.0 - closestDepth;
-
+    
     // it is currently in linear range between [0,1]. Re-transform back to original value
     closestDepth *= 25.0; //Need to be Recive: Far Plane
-
+    
     // now get current linear depth as the length between the fragment and light position
     float currentDepth = length(fragToLight);
     // now test for shadows
     float bias = 0.05; 
     float shadow = currentDepth-bias > closestDepth ? 1.0 : 0.0;
-
+    
     return shadow;
 }  
 

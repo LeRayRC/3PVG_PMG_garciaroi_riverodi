@@ -135,6 +135,7 @@ LavaPBRRenderSystem::LavaPBRRenderSystem(LavaEngine &engine) :
 
 
 		vkCreateSampler(engine.device_->get_device(), &sampler_info, nullptr, &shadowmap_sampler_[i]);
+		
 	}
 
 }
@@ -397,10 +398,18 @@ void LavaPBRRenderSystem::renderWithShadows(
 		TransitionImage(engine_.commandBuffer, engine_.swap_chain_->get_draw_image().image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 		TransitionImage(engine_.commandBuffer, engine_.swap_chain_->get_depth_image().image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
 		//TransitionImage(engine_.commandBuffer, engine_.swap_chain_.get_shadowmap_image().image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-		TransitionImage(engine_.commandBuffer,
-			current_shadowmap,
-			VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
-			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, true);
+		//TransitionImage(engine_.commandBuffer,
+		//	current_shadowmap,
+		//	VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
+		//	VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, true);
+
+		for (int i = 0; i < 3; i++) {
+			TransitionImage(engine_.commandBuffer,
+				shadowmap_image_[i].image,
+				VK_IMAGE_LAYOUT_UNDEFINED,
+				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, true);
+		}
+		
 
 
 		{
@@ -539,10 +548,14 @@ void LavaPBRRenderSystem::allocate_lights(std::vector<std::optional<struct Light
 		light_component.descriptor_set_ = engine_.global_descriptor_allocator_->allocate(engine_.global_lights_descriptor_set_layout_);
 		engine_.global_descriptor_allocator_->writeBuffer(0, light_component.light_data_buffer_->get_buffer().buffer, sizeof(LightShaderStruct), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
 		engine_.global_descriptor_allocator_->writeBuffer(1, light_component.light_viewproj_buffer_->get_buffer().buffer, viewproj_size, 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-		
-		int light_index = (int)light_it->value().type_;
-		engine_.global_descriptor_allocator_->writeImage(2, shadowmap_image_[light_index].image_view,
-			shadowmap_sampler_[light_index],
+
+		engine_.global_descriptor_allocator_->writeImage(2, shadowmap_image_[2].image_view,
+			shadowmap_sampler_[2],
+			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+
+		engine_.global_descriptor_allocator_->writeImage(3, shadowmap_image_[1].image_view,
+			shadowmap_sampler_[1],
 			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 			VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 
