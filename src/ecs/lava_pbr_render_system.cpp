@@ -41,7 +41,7 @@ LavaPBRRenderSystem::LavaPBRRenderSystem(LavaEngine &engine) :
 	pipeline_shadows_{ std::make_unique<LavaPipeline>(PipelineConfig( //TO DO: DIRECTIONAL LIGHT
 													PIPELINE_TYPE_SHADOW,
 													"../src/shaders/point_shadow_mapping.vert.spv",
-													"../src/shaders/point_shadow_mapping.frag.spv",
+													"../src/shaders/shadow_mapping.frag.spv",
 													engine_.device_.get(),
 													engine_.swap_chain_.get(),
 													engine_.global_descriptor_allocator_.get(),
@@ -50,7 +50,7 @@ LavaPBRRenderSystem::LavaPBRRenderSystem(LavaEngine &engine) :
 													engine_.global_lights_descriptor_set_layout_,
 													PipelineFlags::PIPELINE_USE_PUSHCONSTANTS | PipelineFlags::PIPELINE_USE_DESCRIPTOR_SET | PipelineFlags::PIPELINE_DONT_USE_COLOR_ATTACHMENT,
 													PipelineBlendMode::PIPELINE_BLEND_ONE_ZERO,
-													"../src/shaders/point_shadows.geom.spv")), 
+													"../src/shaders/directional_shadows.geom.spv")), 
 
 					   std::make_unique<LavaPipeline>(PipelineConfig(
 													PIPELINE_TYPE_SHADOW,
@@ -99,7 +99,7 @@ LavaPBRRenderSystem::LavaPBRRenderSystem(LavaEngine &engine) :
 		shadowmap_image_usages |= VK_IMAGE_USAGE_SAMPLED_BIT;
 
 		int layers = 1;
-		if (i == 0) layers = 1;
+		if (i == 0) layers = 3;
 		else if(i == 1)layers = 6;
 
 		VkImageCreateInfo shadowmap_img_info = vkinit::ImageCreateInfo(shadowmap_image_[i].image_format,
@@ -325,7 +325,7 @@ void LavaPBRRenderSystem::renderWithShadows(
 			VkRenderingAttachmentInfo color_attachment = vkinit::AttachmentInfo(engine_.swap_chain_->get_draw_image().image_view, NULL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 			VkRenderingAttachmentInfo depth_attachment = vkinit::DepthAttachmentInfo(current_shadowmap_image_view, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
 			int layers = 1;
-			if (light_index == 0) layers = 1;
+			if (light_index == 0) layers = 3;
 			else if (light_index == 1)layers = 6;
 			VkRenderingInfo renderInfo = vkinit::RenderingInfo(current_extent,nullptr, &depth_attachment, layers);
 			vkCmdBeginRendering(engine_.commandBuffer, &renderInfo);
@@ -539,7 +539,7 @@ void LavaPBRRenderSystem::allocate_lights(std::vector<std::optional<struct Light
 		light_component.light_data_buffer_ = std::make_unique<LavaBuffer>(*engine_.allocator_, sizeof(LightShaderStruct), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
 		light_component.light_data_buffer_->setMappedData();
 		int viewproj_size = sizeof(glm::mat4);
-		if (light_component.type_ == LIGHT_TYPE_DIRECTIONAL) viewproj_size *= 1; //Three layers in directional
+		if (light_component.type_ == LIGHT_TYPE_DIRECTIONAL) viewproj_size *= 3; //Three layers in directional
 		else if (light_component.type_ == LIGHT_TYPE_POINT) viewproj_size *= 6; //Six layers in point
 
 		light_component.light_viewproj_buffer_ = std::make_unique<LavaBuffer>(*engine_.allocator_, viewproj_size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
@@ -556,6 +556,11 @@ void LavaPBRRenderSystem::allocate_lights(std::vector<std::optional<struct Light
 
 		engine_.global_descriptor_allocator_->writeImage(3, shadowmap_image_[1].image_view,
 			shadowmap_sampler_[1],
+			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+
+		engine_.global_descriptor_allocator_->writeImage(4, shadowmap_image_[0].image_view,
+			shadowmap_sampler_[0],
 			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 			VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 
@@ -588,12 +593,14 @@ void LavaPBRRenderSystem::update_lights(std::vector<std::optional<struct LightCo
 
 
 		//glm::vec3 forward = CalculateForwardVector(light_transform_it->value().rot_);
-		glm::mat4 view = GenerateViewMatrix(
-			light_transform_it->value().pos_,
-			light_transform_it->value().rot_
-		);
+
 
 		if (light_component.type_ == LIGHT_TYPE_DIRECTIONAL) {
+			glm::mat4 view = GenerateViewMatrix(
+				light_transform_it->value().pos_,  // NEED FIX
+				light_transform_it->value().rot_
+			);
+
 			float size = 1.0f; // Tamaño del área visible
 			float left = -size;
 			float right = size;
@@ -601,9 +608,23 @@ void LavaPBRRenderSystem::update_lights(std::vector<std::optional<struct LightCo
 			float top = size;
 			glm::mat4 proj = glm::ortho(left, right, bottom, top, 5.0f, 0.1f);
 			proj[1][1] *= -1;
-			light_component.viewproj_ = proj * view;
+			light_component.viewproj_ = proj * view; // THE VIEW IS WRONG IN THIS TYPE OF LIGHT
+			std::vector<glm::mat4> shadowTransforms;
+			shadowTransforms.push_back(light_component.viewproj_);
+			proj = glm::ortho(left * 2.0f, right * 2.0f, bottom * 2.0f, top * 2.0f, 5.0f, 0.1f);
+			proj[1][1] *= -1;
+			shadowTransforms.push_back(proj * view);
+			proj = glm::ortho(left * 3.0f, right * 3.0f, bottom * 3.0f, top * 3.0f, 5.0f, 0.1f);
+			proj[1][1] *= -1;
+			shadowTransforms.push_back(proj * view);
+			light_component.light_viewproj_buffer_->updateBufferData(shadowTransforms.data(), sizeof(glm::mat4) * 3);
 		}
 		else if (light_component.type_ == LIGHT_TYPE_SPOT) {
+			glm::mat4 view = GenerateViewMatrix(
+				light_transform_it->value().pos_,
+				light_transform_it->value().rot_
+			);
+
 			float fov = 2.0f * light_component.cutoff_;
 
 			float near = 10000.0f; // Plano cercano
@@ -615,6 +636,11 @@ void LavaPBRRenderSystem::update_lights(std::vector<std::optional<struct LightCo
 			light_component.light_viewproj_buffer_->updateBufferData(&light_component.viewproj_, sizeof(glm::mat4));
 		}
 		else {
+			glm::mat4 view = GenerateViewMatrix(
+				light_transform_it->value().pos_,
+				light_transform_it->value().rot_
+			);
+
 			float aspect = (float)shadowmap_image_[0].image_extent.width / (float)shadowmap_image_[0].image_extent.height;
 			float near = 25.0f;//0.1f; // Deberian ser propiedades talvez?
 			float far = 0.1f; //

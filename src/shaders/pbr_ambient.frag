@@ -36,11 +36,12 @@ layout(set = 2, binding = 0) uniform LightProperties{
     float cutoff;
     float outer_cutoff;
 } light;
-layout(set = 2, binding = 1) uniform LightViewProj{
-  mat4 viewproj;
-}light_viewproj;
+layout(set = 2, binding = 1) uniform  LightViewProj{   
+	mat4 viewproj[6];
+} light_viewproj;
 layout(set = 2, binding = 2) uniform sampler2D  shadowMap;
 layout(set = 2, binding = 3) uniform samplerCube depthMap;
+layout(set = 2, binding = 4) uniform sampler2DArray directionalShadowMaps;
 
 
 //shader input
@@ -149,6 +150,23 @@ float PointShadowCalculation(vec3 fragPos)
     return shadow;
 }  
 
+float DirectionalShadowCalculation(vec3 fragPos){
+
+  for(int i = 0; i < 3; i++){
+    vec4 fragPosLight = light_viewproj.viewproj[i] * vec4(fragPos, 1.0);
+    vec3 projCoords = fragPosLight.xyz / fragPosLight.w;
+    float currentDepth = projCoords.z;
+    projCoords = projCoords * 0.5 + 0.5;  
+
+    if(projCoords.x > 0.0 && projCoords.x < 1.0 
+      && projCoords.y > 0.0 && projCoords.y < 1.0){
+          return currentDepth + 0.005 < texture(directionalShadowMaps, vec3(projCoords.xy, i)).r  ? 1.0 : 0.0;
+    }
+  }
+
+  return 0.0;
+}
+
 
 void main() 
 {
@@ -162,7 +180,8 @@ void main()
 
     switch(light.type){
       case 0: {
-        outFragColor = vec4(DirectionalLight(),1.0); 
+        float shadow_fr = DirectionalShadowCalculation(inPos.xyz);
+        outFragColor = vec4(DirectionalLight() * (1.0 - shadow_fr),1.0); 
         break;
        }
        case 1: {

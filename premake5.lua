@@ -133,7 +133,7 @@ workspace "Lava"
             language "C++"
             targetdir "build/%{prj.name}/%{cfg.buildcfg}"
             includedirs "include"
-            links "Motor"
+            links "LavaEngine"
             conan_config_exec("Debug")
             conan_config_exec("Release")
             conan_config_exec("RelWithDebInfo")
@@ -150,7 +150,7 @@ workspace "Lava"
             language "C++"
             targetdir "build/%{prj.name}/%{cfg.buildcfg}"
             includedirs "include"
-            links "Motor"
+            links "LavaEngine"
             conan_config_exec("Debug")
             conan_config_exec("Release")
             conan_config_exec("RelWithDebInfo")
@@ -168,7 +168,7 @@ workspace "Lava"
             language "C++"
             targetdir "build/%{prj.name}/%{cfg.buildcfg}"
             includedirs "include"
-            links "Motor"
+            links "LavaEngine"
             conan_config_exec("Debug")
             conan_config_exec("Release")
             conan_config_exec("RelWithDebInfo")
@@ -181,7 +181,7 @@ workspace "Lava"
             language "C++"
             targetdir "build/%{prj.name}/%{cfg.buildcfg}"
             includedirs "include"
-            links "Motor"
+            links "LavaEngine"
             conan_config_exec("Debug")
             conan_config_exec("Release")
             conan_config_exec("RelWithDebInfo")
@@ -195,7 +195,7 @@ workspace "Lava"
             language "C++"
             targetdir "build/%{prj.name}/%{cfg.buildcfg}"
             includedirs "include"
-            links "Motor"
+            links "LavaEngine"
             conan_config_exec("Debug")
             conan_config_exec("Release")
             conan_config_exec("RelWithDebInfo")
@@ -210,7 +210,7 @@ workspace "Lava"
             language "C++"
             targetdir "build/%{prj.name}/%{cfg.buildcfg}"
             includedirs "include"
-            links "Motor"
+            links "LavaEngine"
             conan_config_exec("Debug")
             conan_config_exec("Release")
             conan_config_exec("RelWithDebInfo")
@@ -223,7 +223,7 @@ workspace "Lava"
             language "C++"
             targetdir "build/%{prj.name}/%{cfg.buildcfg}"
             includedirs "include"
-            links "Motor"
+            links "LavaEngine"
             conan_config_exec("Debug")
             conan_config_exec("Release")
             conan_config_exec("RelWithDebInfo")
@@ -237,7 +237,7 @@ workspace "Lava"
             language "C++"
             targetdir "build/%{prj.name}/%{cfg.buildcfg}"
             includedirs "include"
-            links "Motor"
+            links "LavaEngine"
             conan_config_exec("Debug")
             conan_config_exec("Release")
             conan_config_exec("RelWithDebInfo")
@@ -251,7 +251,7 @@ workspace "Lava"
             language "C++"
             targetdir "build/%{prj.name}/%{cfg.buildcfg}"
             includedirs "include"
-            links "Motor"
+            links "LavaEngine"
             conan_config_exec("Debug")
             conan_config_exec("Release")
             conan_config_exec("RelWithDebInfo")

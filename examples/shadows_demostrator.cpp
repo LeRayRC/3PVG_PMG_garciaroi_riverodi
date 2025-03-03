@@ -184,7 +184,7 @@ int main(int argc, char* argv[]) {
 		if (light_component) {
 			auto& light = light_component->value();
 			light.enabled_ = true;
-			light.type_ = LIGHT_TYPE_SPOT;
+			light.type_ = LIGHT_TYPE_DIRECTIONAL;
 			light.base_color_ = glm::vec3(1.0f, 1.0f, 1.0f);
 			light.spec_color_ = glm::vec3(0.0f, 0.0f, 0.0f);
 		}
@@ -215,7 +215,7 @@ int main(int argc, char* argv[]) {
 			tr.rot_ = glm::vec3(0.0f, 0.0f, 0.0f);
 			tr.pos_ = glm::vec3(0.0f, 0.0f, 0.0f);
 		}
-
+	
 	}
 	
 	//Create Camera entity

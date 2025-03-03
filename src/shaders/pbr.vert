@@ -35,7 +35,7 @@ layout(set = 1, binding = 4) uniform LavaPBRMaterialProperties {
 }properties;
 
 layout(set = 2, binding = 1) uniform  LightViewProj{   
-	mat4 viewproj;
+	mat4 viewproj[];
 } light_viewproj;
 
 
@@ -72,7 +72,7 @@ void main()
 	outNormal = normalize(PushConstants.render_matrix * vec4(v.normal,0.0)).xyz;
 
 	//Light pos space 
-	fragPosLightSpace = light_viewproj.viewproj * pos;
+	fragPosLightSpace = light_viewproj.viewproj[0] * pos;
 
 	//Normal Mapping Calculations
     vec3 T = normalize(vec3(PushConstants.render_matrix * vec4(v.tangent,   0.0)));

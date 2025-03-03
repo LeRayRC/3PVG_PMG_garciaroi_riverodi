@@ -82,7 +82,9 @@ VkImageViewCreateInfo vkinit::ImageViewCreateInfo(VkFormat format, VkImage image
   info.subresourceRange.levelCount = 1;
   info.subresourceRange.baseArrayLayer = 0;
   info.subresourceRange.layerCount = layers;
-  info.viewType = (layers == 6) ? VK_IMAGE_VIEW_TYPE_CUBE : VK_IMAGE_VIEW_TYPE_2D;
+  info.viewType = VK_IMAGE_VIEW_TYPE_2D;
+  if (layers == 6) info.viewType = VK_IMAGE_VIEW_TYPE_CUBE;
+  else if (layers != 1) info.viewType = VK_IMAGE_VIEW_TYPE_2D_ARRAY;
   info.subresourceRange.aspectMask = aspectFlags;
 
   return info;
