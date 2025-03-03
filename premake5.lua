@@ -2,6 +2,11 @@ newoption {
     trigger = "build-engine",
     description = "Builds the engine instead of using a prebuilt one"
 }
+
+newoption {
+    trigger = "include-examples",
+    description = "Includes all examples"
+}
 conan = {}
 configs = { 'Debug', 'Release', 'RelWithDebInfo' }
 
