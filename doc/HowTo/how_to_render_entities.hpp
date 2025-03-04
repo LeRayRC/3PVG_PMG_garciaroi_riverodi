@@ -8,6 +8,15 @@
  * 
  * First of all @link how_to_load_mesh load a mesh @endlink following its corresponding tutorial
  *
+ * @code {.hpp}
+ * #include "lava/engine/lava_engine.hpp"
+ * #include "lava/engine/lava_mesh.hpp"
+ * #include "lava/ecs/lava_ecs.hpp"
+ * #include "lava/engine/lava_pbr_material.hpp"
+ * #include "lava/ecs/lava_normal_render_system.hpp"
+ * @endcode
+ * 
+ * 
  * @code {.cpp}
  *       LavaECSManager ecs_manager;
  * 
