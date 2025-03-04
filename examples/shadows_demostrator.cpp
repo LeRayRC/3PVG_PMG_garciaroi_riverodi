@@ -207,7 +207,7 @@ int main(int argc, char* argv[]) {
 		if (light_component) {
 			auto& light = light_component->value();
 			light.enabled_ = true;
-			light.type_ = LIGHT_TYPE_POINT;
+			light.type_ = LIGHT_TYPE_DIRECTIONAL;
 			light.base_color_ = glm::vec3(1.0f, 1.0f, 1.0f);
 			light.spec_color_ = glm::vec3(0.0f, 0.0f, 0.0f);
 		}

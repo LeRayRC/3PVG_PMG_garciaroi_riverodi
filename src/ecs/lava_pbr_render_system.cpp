@@ -604,25 +604,28 @@ void LavaPBRRenderSystem::update_lights(std::vector<std::optional<struct LightCo
 
 
 		if (light_component.type_ == LIGHT_TYPE_DIRECTIONAL) {
+			glm::vec3 opp_light_dir = CalculateForwardVector(light_transform_it->value().rot_) * -1.0f;
+			glm::vec3 pos = engine_.main_camera_transform_->pos_ + (opp_light_dir * 100.0f);
+
 			glm::mat4 view = GenerateViewMatrix(
-				light_transform_it->value().pos_,  // NEED FIX
+				pos, 
 				light_transform_it->value().rot_
 			);
 
-			float size = 1.0f; // Tamaño del área visible
+			float size = 2.0f; // Tamaño del área visible
 			float left = -size;
 			float right = size;
 			float bottom = -size;
 			float top = size;
-			glm::mat4 proj = glm::ortho(left, right, bottom, top, 5.0f, 0.1f);
+			glm::mat4 proj = glm::ortho(left, right, bottom, top, 10000.0f, 0.1f);
 			proj[1][1] *= -1;
 			light_component.viewproj_ = proj * view; // THE VIEW IS WRONG IN THIS TYPE OF LIGHT
 			std::vector<glm::mat4> shadowTransforms;
 			shadowTransforms.push_back(light_component.viewproj_);
-			proj = glm::ortho(left * 2.0f, right * 2.0f, bottom * 2.0f, top * 2.0f, 5.0f, 0.1f);
+			proj = glm::ortho(left * 2.0f, right * 2.0f, bottom * 2.0f, top * 2.0f, 10000.0f, 0.1f);
 			proj[1][1] *= -1;
 			shadowTransforms.push_back(proj * view);
-			proj = glm::ortho(left * 3.0f, right * 3.0f, bottom * 3.0f, top * 3.0f, 5.0f, 0.1f);
+			proj = glm::ortho(left * 3.0f, right * 3.0f, bottom * 3.0f, top * 3.0f, 10000.0f, 0.1f);
 			proj[1][1] *= -1;
 			shadowTransforms.push_back(proj * view);
 			light_component.light_viewproj_buffer_->updateBufferData(shadowTransforms.data(), sizeof(glm::mat4) * 3);
