@@ -95,9 +95,6 @@ public:
 	struct CameraComponent* main_camera_camera_;
 	struct TransformComponent* main_camera_transform_;
 
-
-	
-
 	double dt_;
 
 	DescriptorAllocator imgui_descriptor_alloc;

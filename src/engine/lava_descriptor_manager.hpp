@@ -26,6 +26,7 @@ public:
 	void destroyPools();
 
 	VkDescriptorSet allocate(VkDescriptorSetLayout layout, void* pNext = nullptr);
+	void freeDescriptorSet(VkDescriptorSet descriptor_set_to_free);
 	void writeImage(int binding, VkImageView image, VkSampler sampler, VkImageLayout layout, VkDescriptorType type);
 	void writeBuffer(int binding, VkBuffer buffer, size_t size, size_t offset, VkDescriptorType type);
 
@@ -45,6 +46,7 @@ private:
 	std::vector<VkDescriptorPool> readyPools_;
 	uint32_t setsPerPool_;
 	VkDevice device_;
+	std::map<VkDescriptorSet, VkDescriptorPool> descriptor_set_map_;
 
 	std::deque<VkDescriptorImageInfo> imageInfos_;
 	std::deque<VkDescriptorBufferInfo> bufferInfos_;

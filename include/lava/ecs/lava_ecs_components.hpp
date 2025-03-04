@@ -41,10 +41,17 @@ struct LuaScriptComponent {
   }
 };
 
+enum CameraType {
+  CameraType_Perspective,
+  CameraType_Orthographic
+};
+
 struct CameraComponent {
+  CameraType type_ = CameraType_Perspective;
   float fov_ = 90.0f;
   float near_ = 10000.0f;
   float far_ = 0.1f;
+  float size_ = 5;
   glm::mat4 view_ = glm::mat4(1.0f);
 };
 
@@ -62,6 +69,7 @@ enum LightType {
 struct  LightComponent {
   bool enabled_;
   LightType type_ = LIGHT_TYPE_DIRECTIONAL;
+  LightType allocated_type_ = LIGHT_TYPE_DIRECTIONAL;
   glm::vec3 dir_ = glm::vec3(0.0f, 0.0f, 0.0f);
   glm::vec3 base_color_ = glm::vec3(1.0f, 1.0f, 1.0f);
   glm::vec3 spec_color_ = glm::vec3(1.0f, 0.0f, 0.0f);

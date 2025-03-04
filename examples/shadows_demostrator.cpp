@@ -1,8 +1,10 @@
 #include "lava/engine/lava_engine.hpp"
 #include "lava/window/lava_window_system.hpp"
 #include "lava/ecs/lava_ecs.hpp"
+#include "lava/ecs/lava_update_system.hpp"
 #include "lava/ecs/lava_pbr_render_system.hpp"
 #include "lava/engine/lava_pbr_material.hpp"
+#include "lava/common/lava_global_helpers.hpp"
 #include "lava/engine/lava_mesh.hpp"
 #include "imgui.h"
 
@@ -87,12 +89,12 @@ void ecs_light_imgui(std::vector<std::optional<TransformComponent>>& transform_v
 }
 
 
-
 int main(int argc, char* argv[]) {
 	std::shared_ptr<LavaWindowSystem>  lava_system = LavaWindowSystem::Get();
 	LavaEngine engine;
 	LavaECSManager ecs_manager;
 	LavaPBRRenderSystem pbr_render_system{ engine };
+	LavaUpdateSystem update_system{engine};
 
 	LavaPBRMaterial basic_material(engine, MaterialPBRProperties());
 	MeshProperties mesh_properties = {};
@@ -222,21 +224,35 @@ int main(int argc, char* argv[]) {
 	size_t camera_entity = ecs_manager.createEntity();
 	ecs_manager.addComponent<TransformComponent>(camera_entity);
 	ecs_manager.addComponent<CameraComponent>(camera_entity);
+	ecs_manager.addComponent<UpdateComponent>(camera_entity);
 
 	auto& camera_tr = ecs_manager.getComponent<TransformComponent>(camera_entity)->value();
 	camera_tr.rot_ = glm::vec3(0.0f, 0.0f, 0.0f);
 	camera_tr.pos_ = glm::vec3(0.0f, 0.0f, 0.0f);
 	auto& camera_component = ecs_manager.getComponent<CameraComponent>(camera_entity)->value();
 	
-	engine.global_scene_data_.ambientColor = glm::vec3(0.2f, 0.2f, 0.2f);
+	auto update_component = ecs_manager.getComponent<UpdateComponent>(camera_entity);
+	if (update_component) {
+		auto& update = update_component->value();
+
+		update.id = camera_entity;
+		update.ecs_manager = &ecs_manager;
+		update.update_ = [](size_t id, LavaECSManager* ecs_manager, LavaEngine& engine) {
+			UpdateCameraWithInput(id, ecs_manager, engine);
+			};
+	}
+
 	engine.setMainCamera(&camera_component, &camera_tr);
-	LavaInput* input = engine.window_.get_input();
+
+	engine.global_scene_data_.ambientColor = glm::vec3(0.2f, 0.2f, 0.2f);
 	{
 		while (!engine.shouldClose()) {
 
+
+			update_system.update(ecs_manager.getComponentList<UpdateComponent>());
+
 			engine.beginFrame();
 			engine.clearWindow();
-
 
 
 

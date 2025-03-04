@@ -11,17 +11,26 @@
 void ecs_render_imgui(LavaECSManager& ecs_manager, size_t camera_entity) {
 	auto& camera_tr = ecs_manager.getComponent<TransformComponent>(camera_entity)->value();
 	auto& camera_camera = ecs_manager.getComponent<CameraComponent>(camera_entity)->value();
+	static bool camera_type = (bool)camera_camera.type_;
 
 	ImGui::Begin("ECS Camera Manager Window");
 
 	if (ImGui::DragFloat3("Camera position", &camera_tr.pos_.x, 0.1f, -100.0f, 100.0f)) {
 
 	}
+	if (camera_camera.type_ == CameraType_Perspective) {
+		ImGui::DragFloat("Fov", &camera_camera.fov_, 0.1f, 0.0f, 180.0f);
+	}
+	else {
+		ImGui::DragFloat("Size", &camera_camera.size_, 0.01f, 0.0f, 10.0f);
 
-	ImGui::DragFloat("Fov", &camera_camera.fov_, 0.1f, 0.0f, 180.0f);
+	}
 	ImGui::DragFloat("Camera Rot X", &camera_tr.rot_.x, 0.5f, -360.0f, 360.0f);
 	ImGui::DragFloat("Camera Rot Y", &camera_tr.rot_.y, 0.5f, -360.0f, 360.0f);
 
+	ImGui::Checkbox("CameraType", &camera_type); {
+		camera_camera.type_ = (CameraType)camera_type;
+	}
 
 	ImGui::End();
 	
@@ -280,7 +289,6 @@ int main(int argc, char* argv[]) {
 
 		pbr_render_system.renderWithShadows(ecs_manager.getComponentList<TransformComponent>(),
 			ecs_manager.getComponentList<RenderComponent>(), ecs_manager.getComponentList<LightComponent>());
-
 
 		ecs_render_imgui(ecs_manager, camera_entity);
 		ecs_light_imgui(ecs_manager.getComponentList<TransformComponent>(), 

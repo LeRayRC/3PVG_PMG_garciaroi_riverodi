@@ -64,7 +64,7 @@ xcopy /E /I /Y %EXAMPLES_DIR%\assets %STAGE_DIR%\%EXAMPLES_DIR%\assets
 xcopy  /I /Y %EXAMPLES_DIR%\flycam_demostrator.cpp %STAGE_DIR%\%EXAMPLES_DIR%\
 
 
-powershell -Command "Compress-Archive -Path %STAGE_DIR% -DestinationPath %DEST_ZIP% -Force"
+powershell -Command "Compress-Archive -Path %STAGE_DIR%\* -DestinationPath %DEST_ZIP% -Force"
 rmdir /s /q %STAGE_DIR%
 
 

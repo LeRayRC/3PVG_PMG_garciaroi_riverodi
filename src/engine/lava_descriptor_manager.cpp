@@ -145,7 +145,23 @@ VkDescriptorSet LavaDescriptorManager::allocate(VkDescriptorSetLayout layout, vo
   }
 
   readyPools_.push_back(pool_to_use);
+  descriptor_set_map_.emplace(ds, pool_to_use);
   return ds;
+}
+
+
+void LavaDescriptorManager::freeDescriptorSet(VkDescriptorSet descriptor_set_to_free) {
+  auto it = descriptor_set_map_.find(descriptor_set_to_free);
+  if (it != descriptor_set_map_.end()) {
+    VkDescriptorPool descriptor_pool = it->second;
+
+    vkFreeDescriptorSets(device_, descriptor_pool, 1, &descriptor_set_to_free);
+
+    descriptor_set_map_.erase(it);
+  }
+  else {
+    throw std::runtime_error("Descriptor set no found");
+  }
 }
 
 

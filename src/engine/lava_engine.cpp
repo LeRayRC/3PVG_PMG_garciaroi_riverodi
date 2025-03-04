@@ -223,6 +223,8 @@ void LavaEngine::beginFrame() {
 	chrono_now_ = std::chrono::steady_clock::now();
 
 	updateMainCamera();
+	//Check every light component to allocate or free again
+
 
 	glfwPollEvents();
 
@@ -477,8 +479,19 @@ void LavaEngine::updateMainCamera() {
 	main_camera_camera_->view_ = GenerateViewMatrix(main_camera_transform_->pos_, main_camera_transform_->rot_);
 	global_scene_data_.cameraPos = main_camera_transform_->pos_;
 	global_scene_data_.view = main_camera_camera_->view_;
-	global_scene_data_.proj = glm::perspective(glm::radians(main_camera_camera_->fov_),
+
+	if (main_camera_camera_->type_ == CameraType_Perspective) {
+		global_scene_data_.proj = glm::perspective(glm::radians(main_camera_camera_->fov_),
 		(float)window_extent_.width / (float)window_extent_.height, main_camera_camera_->near_, main_camera_camera_->far_);
+	}
+	else {
+		float left = -main_camera_camera_->size_;
+		float right = main_camera_camera_->size_;
+		float bottom = -main_camera_camera_->size_;
+		float top = main_camera_camera_->size_;
+		global_scene_data_.proj = glm::ortho(left, right, bottom, top, main_camera_camera_->near_, main_camera_camera_->far_);
+	}
+
 	global_scene_data_.proj[1][1] *= -1;
 	global_scene_data_.viewproj = global_scene_data_.proj * global_scene_data_.view;
 

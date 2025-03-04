@@ -532,9 +532,16 @@ void LavaPBRRenderSystem::allocate_lights(std::vector<std::optional<struct Light
 	{
 		if (!light_it->has_value()) continue;
 
-		if (light_it->value().allocated_) continue;
-
 		LightComponent& light_component = light_it->value();
+		if (light_component.allocated_) {
+			if (light_component.type_ == light_component.allocated_type_) {
+				continue;
+			}
+			else {
+				engine_.global_descriptor_allocator_->freeDescriptorSet(light_component.descriptor_set_);
+			}
+		}
+
 		engine_.global_descriptor_allocator_->clear();
 		light_component.light_data_buffer_ = std::make_unique<LavaBuffer>(*engine_.allocator_, sizeof(LightShaderStruct), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
 		light_component.light_data_buffer_->setMappedData();
@@ -544,8 +551,8 @@ void LavaPBRRenderSystem::allocate_lights(std::vector<std::optional<struct Light
 
 		light_component.light_viewproj_buffer_ = std::make_unique<LavaBuffer>(*engine_.allocator_, viewproj_size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
 		light_component.light_viewproj_buffer_->setMappedData();
-
 		light_component.descriptor_set_ = engine_.global_descriptor_allocator_->allocate(engine_.global_lights_descriptor_set_layout_);
+
 		engine_.global_descriptor_allocator_->writeBuffer(0, light_component.light_data_buffer_->get_buffer().buffer, sizeof(LightShaderStruct), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
 		engine_.global_descriptor_allocator_->writeBuffer(1, light_component.light_viewproj_buffer_->get_buffer().buffer, viewproj_size, 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
 
@@ -568,6 +575,7 @@ void LavaPBRRenderSystem::allocate_lights(std::vector<std::optional<struct Light
 		engine_.global_descriptor_allocator_->clear();
 
 		light_component.allocated_ = true;
+		light_component.allocated_type_ = light_component.type_;
 	}
 }
 
