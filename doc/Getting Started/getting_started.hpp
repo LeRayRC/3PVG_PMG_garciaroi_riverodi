@@ -19,6 +19,9 @@
  *  .\tools\premake5.exe vs2022
  * @endcode
  * 
- * 3 - Open solution from .\build\Lava.sln
+ * 3 - Open solution from 
  * 
+ *@code {.bat}
+ *  .\build\Lava.sln
+ * @endcode
  */

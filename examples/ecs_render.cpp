@@ -1,44 +1,14 @@
-#include "lava_types.hpp"
-#include "lava_engine.hpp"
+#include "lava/common/lava_types.hpp"
+#include "lava/engine/lava_engine.hpp"
 #include "lava_window_system.hpp"
 #include "engine/lava_pipeline.hpp"
 #include "engine/lava_image.hpp"
-#include "engine/lava_material.hpp"
 #include "lava_world.hpp"
-#include "ecs/lava_ecs.hpp"
-#include "ecs/lava_normal_render_system.hpp"
-#include "ecs/lava_rotate_system.hpp"
+#include "lava/ecs/lava_ecs.hpp"
+#include "lava/ecs/lava_normal_render_system.hpp"
 #include "imgui.h"
 #include <glm/gtc/random.hpp>
 
-
-void ecs_render_imgui(LavaECSManager& ecs_manager, size_t camera_entity) {
-	auto& camera_tr = ecs_manager.getComponent<TransformComponent>(camera_entity)->value();
-	auto& camera_camera = ecs_manager.getComponent<CameraComponent>(camera_entity)->value();
-	
-	ImGui::Begin("ECS Camera Manager Window");
-
-	if (ImGui::DragFloat3("Camera position", &camera_tr.pos_.x, 0.1f, -100.0f, 100.0f)) {
-		
-	}
-
-	ImGui::DragFloat("Fov", &camera_camera.fov_, 0.1f, 0.0f, 180.0f);
-	ImGui::DragFloat("Camera Rot X", &camera_tr.rot_.x, 0.5f, 88.0f, 268.0f);
-	ImGui::DragFloat("Camera Rot Y", &camera_tr.rot_.y, 0.5f, -360.0f, 360.0f);
-	
-	ImGui::End();
-
-	camera_camera.LookAt(camera_tr.pos_, camera_tr.rot_);
-}
-
-void engine_imgui_window(LavaEngine& engine) {
-	ImGui::Begin("Engine Window Manager");
-
-	ImGui::Text("Frame time: %f", engine.dt_);
-	ImGui::Text("FPS: %f", 1 / engine.dt_);
-
-	ImGui::End();
-}
 
 
 int main(int argc, char* argv[]) {

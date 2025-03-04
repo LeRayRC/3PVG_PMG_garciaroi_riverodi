@@ -28,7 +28,7 @@
  * @section section_main_loop_render_system Render System
  * 
  * The engine provides multiple render systems to perform draw operations over the ecs manager.
- * One of the is the LavaNormalRenderSystem that renders the normals of every entity with a TransformComponent and RenderComponent.
+ * One of the is them LavaNormalRenderSystem that renders the normals of every entity with a TransformComponent and RenderComponent.
  * 
  * @code {.cpp}
  * #include "lava/ecs/lava_normal_render_system.hpp"
