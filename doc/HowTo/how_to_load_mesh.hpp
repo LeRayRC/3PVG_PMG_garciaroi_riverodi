@@ -9,8 +9,6 @@
  * It is possible to find multiple samples files from the official kronos @link https://github.com/KhronosGroup/glTF-Sample-Models  repository @endlink. 
  * 
  * 
- * 
- * 
  * @section section_load_mesh_code Showcase
  * 
  * Include the necessary headers 
