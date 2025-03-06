@@ -7,7 +7,9 @@
 #include "lava/ecs/lava_pbr_render_system.hpp"
 #include "lava/ecs/lava_update_system.hpp"
 #include "lava/ecs/lava_normal_render_system.hpp"
+#include "lava/ecs/lava_diffuse_render_system.hpp"
 #include "lava/common/lava_shapes.hpp"
+#include "lava/engine/lava_image.hpp"
 #include "imgui.h"
 
 void ecs_render_imgui(LavaECSManager& ecs_manager, size_t camera_entity) {
@@ -98,14 +100,14 @@ void ecs_light_imgui(std::vector<std::optional<TransformComponent>>& transform_v
 
 }
 
- 
 
 int main(int argc, char* argv[]) {
 	std::shared_ptr<LavaWindowSystem>  lava_system = LavaWindowSystem::Get();
-	LavaEngine engine;
+	LavaEngine engine(1920,1080);
 	LavaECSManager ecs_manager;
 	LavaPBRRenderSystem pbr_render_system{ engine };
 	LavaNormalRenderSystem normal_render_system{ engine };
+	LavaDiffuseRenderSystem diffuse_render_system{ engine };
 	LavaUpdateSystem update_system{ engine };
 
 	LavaPBRMaterial basic_material(engine, MaterialPBRProperties());
@@ -115,6 +117,7 @@ int main(int argc, char* argv[]) {
 
 	std::shared_ptr<LavaMesh> mesh_ = std::make_shared<LavaMesh>(engine, mesh_properties);
 
+	std::shared_ptr<LavaImage> forest_texture = std::make_shared<LavaImage>(&engine, "../examples/assets/textures/forest.png");
 
 	LavaPBRMaterial cube_material(engine, MaterialPBRProperties());
 	std::shared_ptr<LavaMesh> cube_mesh = CreateCube24v(engine, &cube_material);
@@ -124,8 +127,10 @@ int main(int argc, char* argv[]) {
 	std::shared_ptr<LavaMesh> sphere_mesh = CreateSphere(engine, &sphere_material);
 
 	LavaPBRMaterial terrain_material(engine, MaterialPBRProperties());
+	terrain_material.UpdateBaseColorImage(forest_texture);
+
 	std::shared_ptr<LavaMesh> terrain_mesh = CreateTerrain(engine, &terrain_material, 
-		32,32,8.0f,1.0f, 0.15f);
+		32,32,8.0f,1.0f, 0.15f, {20,20});
 
 	//Needs to be call every time an image or property is updated and before rendering begins
 	basic_material.UpdateDescriptorSet();
@@ -170,23 +175,23 @@ int main(int argc, char* argv[]) {
 		}
 	}
 
-	//{
-	//	size_t entity = ecs_manager.createEntity();
-	//	ecs_manager.addComponent<TransformComponent>(entity);
-	//	ecs_manager.addComponent<RenderComponent>(entity);
-	//	auto transform_component = ecs_manager.getComponent<TransformComponent>(entity);
-	//	if (transform_component) {
-	//		auto& transform = transform_component->value();
-	//		transform.pos_ = glm::vec3(-0.5f, -0.5f, -1.0f);
-	//		transform.scale_ = glm::vec3(10.0f, 10.0f, 10.0f);
-	//	}
+	{
+		size_t entity = ecs_manager.createEntity();
+		ecs_manager.addComponent<TransformComponent>(entity);
+		ecs_manager.addComponent<RenderComponent>(entity);
+		auto transform_component = ecs_manager.getComponent<TransformComponent>(entity);
+		if (transform_component) {
+			auto& transform = transform_component->value();
+			transform.pos_ = glm::vec3(-0.5f, 5.0f, -1.0f);
+			transform.scale_ = glm::vec3(20.0f, 20.0f, 20.0f);
+		}
 
-	//	auto render_component = ecs_manager.getComponent<RenderComponent>(entity);
-	//	if (render_component) {
-	//		auto& render = render_component->value();
-	//		render.mesh_ = mesh_;
-	//	}
-	//}
+		auto render_component = ecs_manager.getComponent<RenderComponent>(entity);
+		if (render_component) {
+			auto& render = render_component->value();
+			render.mesh_ = sphere_mesh;
+		}
+	}
 	//{
 	//	size_t entity = ecs_manager.createEntity();
 	//	ecs_manager.addComponent<TransformComponent>(entity);
@@ -307,7 +312,7 @@ int main(int argc, char* argv[]) {
 
 		//pbr_render_system.renderWithShadows(ecs_manager.getComponentList<TransformComponent>(),
 		//	ecs_manager.getComponentList<RenderComponent>(), ecs_manager.getComponentList<LightComponent>());
-		normal_render_system.render(ecs_manager.getComponentList<TransformComponent>(),
+		diffuse_render_system.render(ecs_manager.getComponentList<TransformComponent>(),
 			ecs_manager.getComponentList<RenderComponent>());
 
 		ecs_render_imgui(ecs_manager, camera_entity);

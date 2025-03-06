@@ -13,10 +13,10 @@
 
 #include "lava/engine/lava_pbr_material.hpp"
 #include "engine/lava_allocator.hpp"
-#include "engine/lava_image.hpp"
+#include "lava/engine/lava_image.hpp"
 
-#define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
+
 
 
 LavaMesh::LavaMesh(LavaEngine& engine, MeshProperties prop){
