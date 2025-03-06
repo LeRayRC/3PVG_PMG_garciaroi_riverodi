@@ -117,6 +117,7 @@ int main(int argc, char* argv[]) {
 
 	std::shared_ptr<LavaMesh> mesh_ = std::make_shared<LavaMesh>(engine, mesh_properties);
 
+	std::shared_ptr<LavaImage> sun_texture = std::make_shared<LavaImage>(&engine, "../examples/assets/textures/sun.jpg");
 	std::shared_ptr<LavaImage> forest_texture = std::make_shared<LavaImage>(&engine, "../examples/assets/textures/forest.png");
 
 	LavaPBRMaterial cube_material(engine, MaterialPBRProperties());
@@ -124,6 +125,7 @@ int main(int argc, char* argv[]) {
 
 
 	LavaPBRMaterial sphere_material(engine, MaterialPBRProperties());
+	sphere_material.UpdateBaseColorImage(sun_texture);
 	std::shared_ptr<LavaMesh> sphere_mesh = CreateSphere(engine, &sphere_material);
 
 	LavaPBRMaterial terrain_material(engine, MaterialPBRProperties());
