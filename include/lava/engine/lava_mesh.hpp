@@ -49,7 +49,7 @@ struct MeshProperties {
 	MeshType type = MESH_GLTF;
 	std::filesystem::path mesh_path;
 	class LavaPBRMaterial* material;
-	std::vector<Vertex> vertex;
+	std::vector<VertexWithTangents> vertex;
 	std::vector<uint32_t> index;
 };
 

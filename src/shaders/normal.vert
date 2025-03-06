@@ -14,6 +14,11 @@ struct Vertex {
 	vec3 normal;
 	float uv_y;
 	vec4 color;
+
+	vec3 tangent;
+	float padding1;
+	vec3 bitangent;
+	float padding2;
 }; 
 
 layout(buffer_reference, std430) readonly buffer VertexBuffer{ 

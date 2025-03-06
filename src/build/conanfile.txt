@@ -8,6 +8,7 @@ vulkan-memory-allocator/cci.20231120
 fastgltf/0.7.0
 stb/cci.20240531
 lua/5.4.7
+perlinnoise/3.0.0
 
 [generators]
 premake

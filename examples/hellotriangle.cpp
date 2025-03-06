@@ -54,7 +54,7 @@ int main(int argc, char* argv[]) {
 	if (transform_component) {
 		auto& transform = transform_component->value();
 		transform.pos_ = glm::vec3(0.0f, 0.0f, -15.0f);
-		transform.scale_ = glm::vec3(1.0f, 1.0f, 1.0f);
+		transform.scale_ = glm::vec3(10.0f, 10.0f, 10.0f);
 
 	}
 	auto render_component = ecs_manager.getComponent<RenderComponent>(entity);

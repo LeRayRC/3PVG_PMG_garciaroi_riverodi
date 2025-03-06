@@ -390,7 +390,7 @@ bool LavaMesh::loadCustomMesh(MeshProperties prop) {
   MeshAsset newmesh;
   GeoSurface surface = { 0,static_cast<uint32_t>(prop.index.size()) };
   
-  newmesh.meshBuffers = upload<Vertex>(prop.index, prop.vertex);
+  newmesh.meshBuffers = upload<VertexWithTangents>(prop.index, prop.vertex);
   //newmesh.surfaces[0] = surface;
   newmesh.count_surfaces = 1;
   newmesh.index_count = surface.count;

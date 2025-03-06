@@ -89,7 +89,7 @@ static inline void GenericUpdateWithInput(size_t id, LavaECSManager* ecs_manager
     auto transform_optional = ecs_manager->getComponent<TransformComponent>(id);
     if (transform_optional) {
       auto& transform_comp = transform_optional->value();
-      transform_comp.pos_ += input_vector;
+      transform_comp.pos_ += (input_vector);
     }
   }
 }
@@ -104,8 +104,8 @@ static inline void GenericUpdateWithInput(size_t id, LavaECSManager* ecs_manager
 static inline void UpdateCameraWithInput(size_t id, LavaECSManager* ecs_manager, LavaEngine& engine) {
   //Get input from the engine current window
   LavaInput* input = engine.window_.get_input();
-  //glm::vec3 input_vector = glm::vec3(0.0f);
 
+  float camera_speed = 7.0f;
   float alpha = 0.0f;
   float omega = 0.0f;
   glm::vec2 mouse_position;
@@ -114,7 +114,6 @@ static inline void UpdateCameraWithInput(size_t id, LavaECSManager* ecs_manager,
   if (input->isInputDown(MOUSE_BUTTON_2)) {
     mouse_position = input->getMousePosition();
 
-    printf("%f, %f \n", mouse_position.x , mouse_position.y);
 
     omega = (mouse_position.y / engine.window_extent_.height) * 3.14f;
     alpha = (mouse_position.x / engine.window_extent_.width) * 6.28;
@@ -132,20 +131,21 @@ static inline void UpdateCameraWithInput(size_t id, LavaECSManager* ecs_manager,
       );
 
       forward_vector = CalculateForwardVector(transform_comp.rot_);
+      
 
       if (input->isInputDown(KEY_W)) {
-        transform_comp.pos_ += ((float)engine.dt_ * forward_vector);
+        transform_comp.pos_ += ((float)engine.dt_ * camera_speed * forward_vector);
       }
       else if (input->isInputDown(KEY_S)) {
-        transform_comp.pos_ -= ((float)engine.dt_ * forward_vector);
+        transform_comp.pos_ -= ((float)engine.dt_ * camera_speed *  forward_vector);
       }
       if (input->isInputDown(KEY_D)) {
         glm::vec3 right = glm::cross(forward_vector, glm::vec3(0.0f, 1.0f, 0.0f));
-        transform_comp.pos_ += ((float)engine.dt_ * glm::normalize(right));
+        transform_comp.pos_ += ((float)engine.dt_ * camera_speed * glm::normalize(right));
       }
       else if (input->isInputDown(KEY_A)) {
         glm::vec3 right = glm::cross(forward_vector, glm::vec3(0.0f, 1.0f, 0.0f));
-        transform_comp.pos_ -= ((float)engine.dt_ * glm::normalize(right));
+        transform_comp.pos_ -= ((float)engine.dt_ * camera_speed * glm::normalize(right));
       }
     }
   }
