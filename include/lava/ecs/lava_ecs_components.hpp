@@ -9,8 +9,14 @@
 #include "lava/ecs/lava_ecs.hpp"
 
 
+enum RenderType {
+  RenderType_LIT,
+  RenderType_UNLIT,
+};
+
 struct RenderComponent {
   bool active_ = true;
+  RenderType render_type_ = RenderType_LIT;
   std::shared_ptr<class LavaMesh> mesh_;
 };
 
@@ -149,9 +155,9 @@ struct LightShaderStruct {
     glm::mat4 rotationMatrix = glm::mat4(1.0f);
 
     // Aplicar rotaciones en el orden Z, Y, X (o el orden que prefieras)
-    rotationMatrix = glm::rotate(rotationMatrix, tr.rot_.z, glm::vec3(0.0f, 0.0f, 1.0f)); // Rotaci�n en Z
-    rotationMatrix = glm::rotate(rotationMatrix, tr.rot_.y, glm::vec3(0.0f, 1.0f, 0.0f)); // Rotaci�n en Y
-    rotationMatrix = glm::rotate(rotationMatrix, tr.rot_.x, glm::vec3(1.0f, 0.0f, 0.0f)); // Rotaci�n en X
+    rotationMatrix = glm::rotate(rotationMatrix, glm::radians(tr.rot_.z), glm::vec3(0.0f, 0.0f, 1.0f)); // Rotaci�n en Z
+    rotationMatrix = glm::rotate(rotationMatrix, glm::radians(tr.rot_.y), glm::vec3(0.0f, -1.0f, 0.0f)); // Rotaci�n en Y
+    rotationMatrix = glm::rotate(rotationMatrix, glm::radians(tr.rot_.x), glm::vec3(1.0f, 0.0f, 0.0f)); // Rotaci�n en X
 
     // Obtener el vector forward (tercera columna de la matriz, invertido si Z negativo es forward)
     glm::vec3 forwardVector = glm::vec3(rotationMatrix[2]);

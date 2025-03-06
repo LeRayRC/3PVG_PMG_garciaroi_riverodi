@@ -32,6 +32,7 @@ LavaMesh::LavaMesh(LavaEngine& engine, MeshProperties prop){
 	case MESH_GLTF:
         //NEED FIX: SHOULD ALSO BE POSIBLE TO CALL WITHOUT TANGENTS (ONLY VERTEX)
     loadAsGLTF<VertexWithTangents>(prop.mesh_path);
+    material_->UpdateDescriptorSet();
 		break;
 	case MESH_OBJ:
 		break;

@@ -161,7 +161,7 @@ float DirectionalShadowCalculation(vec3 fragPos){
 
     if(projCoords.x > 0.0 && projCoords.x < 1.0 
       && projCoords.y > 0.0 && projCoords.y < 1.0){
-          return currentDepth + 0.000005 < texture(directionalShadowMaps, vec3(projCoords.xy, i)).r  ? 1.0 : 0.0;
+          return currentDepth + 0.0005 < texture(directionalShadowMaps, vec3(projCoords.xy, i)).r  ? 1.0 : 0.0;
     }
   }
 
