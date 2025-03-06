@@ -81,8 +81,8 @@ LavaPBRRenderSystem::LavaPBRRenderSystem(LavaEngine &engine) :
 
 {
 	VkExtent3D draw_image_extent = {
-		1024,
-		1024,
+		4096,
+		4096,
 		1
 	};
 
@@ -352,6 +352,8 @@ void LavaPBRRenderSystem::renderWithShadows(
 			if (!transform_it->has_value()) continue;
 			if (!render_it->has_value()) continue;
 
+			if (render_it->value().render_type_ != RenderType_LIT) continue;
+
 			//Clean Descriptor sets for current frame
 			frame_data.descriptor_manager.clear();
 
@@ -605,27 +607,27 @@ void LavaPBRRenderSystem::update_lights(std::vector<std::optional<struct LightCo
 
 		if (light_component.type_ == LIGHT_TYPE_DIRECTIONAL) {
 			glm::vec3 opp_light_dir = CalculateForwardVector(light_transform_it->value().rot_) * -1.0f;
-			glm::vec3 pos = engine_.main_camera_transform_->pos_ + (opp_light_dir * 100.0f);
+			glm::vec3 pos = engine_.main_camera_transform_->pos_ + (opp_light_dir * 20.0f);
 
 			glm::mat4 view = GenerateViewMatrix(
 				pos, 
 				light_transform_it->value().rot_
 			);
 
-			float size = 2.0f; // Tamaño del área visible
+			float size = 5.0f; // Tamaño del área visible
 			float left = -size;
 			float right = size;
 			float bottom = -size;
 			float top = size;
-			glm::mat4 proj = glm::ortho(left, right, bottom, top, 10000.0f, 0.1f);
+			glm::mat4 proj = glm::ortho(left, right, bottom, top, 50.0f, 0.1f);
 			proj[1][1] *= -1;
 			light_component.viewproj_ = proj * view; // THE VIEW IS WRONG IN THIS TYPE OF LIGHT
 			std::vector<glm::mat4> shadowTransforms;
 			shadowTransforms.push_back(light_component.viewproj_);
-			proj = glm::ortho(left * 2.0f, right * 2.0f, bottom * 2.0f, top * 2.0f, 10000.0f, 0.1f);
+			proj = glm::ortho(left * 2.0f, right * 2.0f, bottom * 2.0f, top * 2.0f, 50.0f, 0.1f);
 			proj[1][1] *= -1;
 			shadowTransforms.push_back(proj * view);
-			proj = glm::ortho(left * 3.0f, right * 3.0f, bottom * 3.0f, top * 3.0f, 10000.0f, 0.1f);
+			proj = glm::ortho(left * 3.0f, right * 3.0f, bottom * 3.0f, top * 3.0f, 50.0f, 0.1f);
 			proj[1][1] *= -1;
 			shadowTransforms.push_back(proj * view);
 			light_component.light_viewproj_buffer_->updateBufferData(shadowTransforms.data(), sizeof(glm::mat4) * 3);

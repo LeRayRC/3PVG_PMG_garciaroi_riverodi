@@ -20,7 +20,7 @@ LavaDiffuseRenderSystem::LavaDiffuseRenderSystem(LavaEngine &engine) :
 							engine_.global_pbr_descriptor_set_layout_,
 							engine_.global_lights_descriptor_set_layout_,
               PipelineFlags::PIPELINE_USE_PUSHCONSTANTS | PipelineFlags::PIPELINE_USE_DESCRIPTOR_SET,
-							PipelineBlendMode::PIPELINE_BLEND_DISABLE))}
+							PipelineBlendMode::PIPELINE_BLEND_ONE_ZERO))}
 {
 
 }
@@ -33,7 +33,7 @@ void LavaDiffuseRenderSystem::render(
 	
 
 
-  TransitionImage(engine_.commandBuffer, engine_.swap_chain_->get_draw_image().image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+  TransitionImage(engine_.commandBuffer, engine_.swap_chain_->get_draw_image().image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
   TransitionImage(engine_.commandBuffer, engine_.swap_chain_->get_depth_image().image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
 
 	//begin a render pass  connected to our draw image
@@ -61,6 +61,8 @@ void LavaDiffuseRenderSystem::render(
   for (; transform_it != transform_end || render_it != render_end; transform_it++, render_it++) {
     if(!transform_it->has_value()) continue;
     if (!render_it->has_value()) continue;
+
+		if (render_it->value().active_ != RenderType_UNLIT) continue;
 
 		//Clean Descriptor sets for current frame
 		frame_data.descriptor_manager.clear();

@@ -3,29 +3,40 @@
 #include "lava/ecs/lava_ecs.hpp"
 #include "lava/ecs/lava_update_system.hpp"
 #include "lava/ecs/lava_pbr_render_system.hpp"
+#include "lava/ecs/lava_diffuse_render_system.hpp"
 #include "lava/engine/lava_pbr_material.hpp"
 #include "lava/common/lava_global_helpers.hpp"
 #include "lava/engine/lava_mesh.hpp"
+#include "lava/engine/lava_image.hpp"
+#include "lava/common/lava_shapes.hpp"
 #include "imgui.h"
 
 void ecs_render_imgui(LavaECSManager& ecs_manager, size_t camera_entity) {
 	auto& camera_tr = ecs_manager.getComponent<TransformComponent>(camera_entity)->value();
 	auto& camera_camera = ecs_manager.getComponent<CameraComponent>(camera_entity)->value();
+	static bool camera_type = (bool)camera_camera.type_;
 
 	ImGui::Begin("ECS Camera Manager Window");
 
 	if (ImGui::DragFloat3("Camera position", &camera_tr.pos_.x, 0.1f, -100.0f, 100.0f)) {
 
 	}
+	if (camera_camera.type_ == CameraType_Perspective) {
+		ImGui::DragFloat("Fov", &camera_camera.fov_, 0.1f, 0.0f, 180.0f);
+	}
+	else {
+		ImGui::DragFloat("Size", &camera_camera.size_, 0.01f, 0.0f, 10.0f);
 
-	ImGui::DragFloat("Fov", &camera_camera.fov_, 0.1f, 0.0f, 180.0f);
+	}
 	ImGui::DragFloat("Camera Rot X", &camera_tr.rot_.x, 0.5f, -360.0f, 360.0f);
 	ImGui::DragFloat("Camera Rot Y", &camera_tr.rot_.y, 0.5f, -360.0f, 360.0f);
 
+	ImGui::Checkbox("CameraType", &camera_type); {
+		camera_camera.type_ = (CameraType)camera_type;
+	}
 
 	ImGui::End();
 
-	
 }
 
 void ecs_light_imgui(std::vector<std::optional<TransformComponent>>& transform_vector,
@@ -91,10 +102,15 @@ void ecs_light_imgui(std::vector<std::optional<TransformComponent>>& transform_v
 
 int main(int argc, char* argv[]) {
 	std::shared_ptr<LavaWindowSystem>  lava_system = LavaWindowSystem::Get();
-	LavaEngine engine;
+	LavaEngine engine(1920,1080);
 	LavaECSManager ecs_manager;
 	LavaPBRRenderSystem pbr_render_system{ engine };
+	LavaDiffuseRenderSystem diffuse_render_system{ engine };
 	LavaUpdateSystem update_system{engine};
+
+	std::shared_ptr<LavaImage> forest_texture = std::make_shared<LavaImage>(&engine, "../examples/assets/textures/forest.png");
+	std::shared_ptr<LavaImage> sun_texture = std::make_shared<LavaImage>(&engine, "../examples/assets/textures/sun.jpg");
+
 
 	LavaPBRMaterial basic_material(engine, MaterialPBRProperties());
 	MeshProperties mesh_properties = {};
@@ -103,8 +119,57 @@ int main(int argc, char* argv[]) {
 
 	std::shared_ptr<LavaMesh> mesh_ = std::make_shared<LavaMesh>(engine, mesh_properties);
 
-	//Needs to be call every time an image or property is updated and before rendering begins
-	basic_material.UpdateDescriptorSet();
+
+
+	LavaPBRMaterial terrain_material(engine, MaterialPBRProperties());
+	terrain_material.UpdateBaseColorImage(forest_texture);
+	std::shared_ptr<LavaMesh> terrain_mesh = CreateTerrain(engine, &terrain_material,
+		32, 32, 8.0f, 1.0f, 0.15f, { 20,20 });
+
+
+	LavaPBRMaterial sphere_material(engine, MaterialPBRProperties());
+	sphere_material.UpdateBaseColorImage(sun_texture);
+	std::shared_ptr<LavaMesh> sphere_mesh = CreateSphere(engine, &sphere_material);
+
+	{
+		size_t entity = ecs_manager.createEntity();
+		ecs_manager.addComponent<TransformComponent>(entity);
+		ecs_manager.addComponent<RenderComponent>(entity);
+		//ecs_manager.addComponent<UpdateComponent>(entity);
+
+		auto transform_component = ecs_manager.getComponent<TransformComponent>(entity);
+		if (transform_component) {
+			auto& transform = transform_component->value();
+			transform.pos_ = glm::vec3(0.0f, 0.0f, -1.0f);
+			transform.scale_ = glm::vec3(1.0f, 1.0f, 1.0f);
+		}
+
+		auto render_component = ecs_manager.getComponent<RenderComponent>(entity);
+		if (render_component) {
+			auto& render = render_component->value();
+			render.mesh_ = terrain_mesh;
+		}
+	}
+
+	{
+		size_t entity = ecs_manager.createEntity();
+		ecs_manager.addComponent<TransformComponent>(entity);
+		ecs_manager.addComponent<RenderComponent>(entity);
+		//ecs_manager.addComponent<UpdateComponent>(entity);
+
+		auto transform_component = ecs_manager.getComponent<TransformComponent>(entity);
+		if (transform_component) {
+			auto& transform = transform_component->value();
+			transform.pos_ = glm::vec3(0.0f, 3.0f, -1.0f);
+			transform.scale_ = glm::vec3(1.0f, 1.0f, 1.0f);
+		}
+
+		auto render_component = ecs_manager.getComponent<RenderComponent>(entity);
+		if (render_component) {
+			auto& render = render_component->value();
+			render.mesh_ = sphere_mesh;
+		}
+	}
 
 	{
 		size_t entity = ecs_manager.createEntity();
@@ -124,6 +189,8 @@ int main(int argc, char* argv[]) {
 			render.mesh_ = mesh_;
 		}
 	}
+
+
 	{
 		size_t entity = ecs_manager.createEntity();
 		ecs_manager.addComponent<TransformComponent>(entity);
@@ -202,20 +269,29 @@ int main(int argc, char* argv[]) {
 		size_t light_entity = ecs_manager.createEntity();
 		ecs_manager.addComponent<TransformComponent>(light_entity);
 		ecs_manager.addComponent<LightComponent>(light_entity);
+		//ecs_manager.addComponent<RenderComponent>(light_entity);
 		
 		auto light_component = ecs_manager.getComponent<LightComponent>(light_entity);
 		if (light_component) {
 			auto& light = light_component->value();
 			light.enabled_ = true;
-			light.type_ = LIGHT_TYPE_DIRECTIONAL;
+			light.type_ = LIGHT_TYPE_POINT;
 			light.base_color_ = glm::vec3(1.0f, 1.0f, 1.0f);
 			light.spec_color_ = glm::vec3(0.0f, 0.0f, 0.0f);
 		}
+
+		/*auto render_component = ecs_manager.getComponent<RenderComponent>(light_entity);
+		if (render_component) {
+			auto& render = render_component->value();
+			render.mesh_ = sphere_mesh;
+		}*/
+
 		auto tr_component = ecs_manager.getComponent<TransformComponent>(light_entity);
 		if (tr_component) {
 			auto& tr = tr_component->value();
 			tr.rot_ = glm::vec3(0.0f, 0.0f, 0.0f);
-			tr.pos_ = glm::vec3(0.0f, 0.0f, 0.0f);
+			tr.pos_ = glm::vec3(0.0f, 3.0f, 0.0f);
+			tr.scale_ = glm::vec3(2.0f, 2.0f, 2.0f);
 		}
 	
 	}
@@ -255,9 +331,12 @@ int main(int argc, char* argv[]) {
 			engine.clearWindow();
 
 
-
+			
 			pbr_render_system.renderWithShadows(ecs_manager.getComponentList<TransformComponent>(),
 				ecs_manager.getComponentList<RenderComponent>(), ecs_manager.getComponentList<LightComponent>());
+
+			/*diffuse_render_system.render(ecs_manager.getComponentList<TransformComponent>(),
+				ecs_manager.getComponentList<RenderComponent>());*/
 
 			ecs_render_imgui(ecs_manager, camera_entity);
 			ecs_light_imgui(ecs_manager.getComponentList<TransformComponent>(),
