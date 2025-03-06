@@ -17,7 +17,7 @@
 #include "lava/engine/lava_descriptors.hpp"
 #include "engine/lava_instance.hpp"
 #include "engine/lava_pipeline_builder.hpp"
-#include "engine/lava_image.hpp"
+#include "lava/engine/lava_image.hpp"
 #include "engine/lava_surface.hpp"
 #include "engine/lava_device.hpp"
 #include "engine/lava_swap_chain.hpp"
@@ -29,6 +29,9 @@
 #include "engine/lava_descriptor_manager.hpp"
 #include <future>
 #include <chrono>
+
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
 
 
 //#define VMA_IMPLEMENTATION
@@ -53,7 +56,7 @@ const std::vector<const char*> validationLayers = {
 LavaEngine* loaded_engine = nullptr;
 std::vector<std::function<void()>> LavaEngine::end_frame_callbacks;
 
-LavaEngine::LavaEngine() :
+LavaEngine::LavaEngine(unsigned int window_width, unsigned int window_height) :
 	global_scene_data_{ glm::mat4(1.0f),
 	glm::mat4(1.0f),
 	glm::mat4(1.0f),
@@ -63,9 +66,9 @@ LavaEngine::LavaEngine() :
 	0 },
 	surface_{ std::make_unique<LavaSurface>(instance_->get_instance(), window_.get_window()) },
 	instance_{std::make_unique<LavaInstance>(validationLayers)},
-	window_{ 1280, 720, "LavaEngine" },
+	window_{ window_width, window_height, "LavaEngine" },
 	device_{ std::make_unique<LavaDevice>(*instance_,*surface_) },
-	window_extent_{ 1280, 720 },
+	window_extent_{ window_width, window_height },
 	allocator_{ std::make_unique<LavaAllocator>(*device_, *instance_)},
 	swap_chain_{ std::make_unique<LavaSwapChain>(*device_, *surface_, window_extent_, allocator_->get_allocator())},
 	frame_data_{ std::make_unique<LavaFrameData>(*device_, *surface_, *allocator_, &global_scene_data_)},
@@ -108,60 +111,6 @@ LavaEngine::LavaEngine() :
 	is_initialized_ = true;
 	swap_chain_image_index = 0;
 }
-
-//LavaEngine::LavaEngine(unsigned int window_width, unsigned int window_height) :
-//	global_scene_data_{ glm::mat4(1.0f),
-//	glm::mat4(1.0f),
-//	glm::mat4(1.0f),
-//	glm::vec3(0.0f),
-//	0,
-//	glm::vec3(0.0f),
-//	0},
-//	window_{window_width, window_height, "LavaEngine"},
-//	instance_{ std::make_unique<LavaInstance>(validationLayers) },
-//	surface_{instance_->get_instance(), window_.get_window()},
-//	device_{ *instance_,surface_ },
-//	window_extent_{window_width, window_height},
-//	allocator_{ device_, *instance_ },
-//	swap_chain_{ device_, surface_, window_extent_, allocator_.get_allocator() },
-//	frame_data_{ device_, surface_, allocator_, &global_scene_data_ },
-//	inmediate_communication{ device_, surface_ },
-//	global_descriptor_allocator_{ device_.get_device(),LavaDescriptorManager::initial_sets,LavaDescriptorManager::pool_ratios },
-//	dt_{ 0.0f }
-//{
-//	//Singleton Functionality
-//	assert(loaded_engine == nullptr);
-//	loaded_engine = this;
-//	is_initialized_ = false;
-//	stop_rendering = false;
-//	//GLOBAL DATA
-//	initGlobalData();
-//
-//	camera_parameters_.fov = 90.0f;
-//	global_scene_data_.proj = glm::perspective(glm::radians(camera_parameters_.fov),
-//		(float)swap_chain_.get_draw_extent().width / (float)swap_chain_.get_draw_extent().height, 10000.f, 0.1f);
-//	global_scene_data_.proj[1][1] *= -1;
-//	global_scene_data_.view = glm::mat4(1.0f);
-//	global_scene_data_.viewproj = global_scene_data_.proj * global_scene_data_.view;
-//	global_data_buffer_->updateBufferData(&global_scene_data_, sizeof(GlobalSceneData));
-//
-//	//Default data
-//	uint32_t pink_color_ = glm::packUnorm4x8(glm::vec4(1, 0, 1, 1));
-//	default_texture_image_pink = std::make_shared<LavaImage>(this, (void*)&pink_color_, VkExtent3D{ 1, 1, 1 }, VK_FORMAT_R8G8B8A8_UNORM,
-//		VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
-//
-//	uint32_t white_color_ = glm::packUnorm4x8(glm::vec4(1, 1, 1, 1));
-//	default_texture_image_white = std::make_shared<LavaImage>(this, (void*)&white_color_, VkExtent3D{ 1, 1, 1 }, VK_FORMAT_R8G8B8A8_UNORM,
-//		VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
-//
-//	uint32_t black_color_ = glm::packUnorm4x8(glm::vec4(0, 0, 0, 1));
-//	default_texture_image_white = std::make_shared<LavaImage>(this, (void*)&black_color_, VkExtent3D{ 1, 1, 1 }, VK_FORMAT_R8G8B8A8_UNORM,
-//		VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
-//
-//	initImgui();
-//	is_initialized_ = true;
-//	swap_chain_image_index = 0;
-//}
 
 LavaEngine::~LavaEngine(){
 	vkDeviceWaitIdle(device_->get_device());

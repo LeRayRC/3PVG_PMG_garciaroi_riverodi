@@ -39,15 +39,7 @@ public:
 	/**
 	* @brief Default constructor
 	*/
-	LavaEngine();
-
-	/**
-	* @brief Default constructor
-	* 
-	* @param window_width Desire width for the new window
-	* @param window_height Desire height for the new window
-	*/
-	LavaEngine(unsigned int window_width, unsigned int window_height);
+	LavaEngine(unsigned int window_width = 1280, unsigned int window_height = 720);
 
 	/**
 	* @brief Default destructor(destroy all resources incluying the window)

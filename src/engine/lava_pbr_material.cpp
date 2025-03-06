@@ -1,5 +1,5 @@
 #include "lava/engine/lava_pbr_material.hpp"
-#include "engine/lava_image.hpp"
+#include "lava/engine/lava_image.hpp"
 #include "lava/engine/lava_engine.hpp"
 #include "engine/lava_descriptor_manager.hpp"
 #include "lava/engine/lava_buffer.hpp"
