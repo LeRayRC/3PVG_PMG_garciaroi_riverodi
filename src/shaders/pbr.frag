@@ -53,6 +53,7 @@ layout (location = 4) in vec3 TangentLightPos;
 layout (location = 5) in vec3 TangentViewPos;
 layout (location = 6) in vec3 TangentFragPos;
 layout (location = 7) in vec4 fragPosLightSpace;
+layout (location = 8) in mat4 cameraView;
 
 
 //output write

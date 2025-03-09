@@ -12,6 +12,7 @@ layout (location = 4) out vec3 tangentLightPos;
 layout (location = 5) out vec3 tangentViewPos;
 layout (location = 6) out vec3 tangentFragPos;
 layout (location = 7) out vec4 fragPosLightSpace;
+layout (location = 8) out mat4 cameraView;
 
 struct Vertex {
 	vec3 position;
@@ -66,6 +67,8 @@ void main()
 
 	gl_Position = globalData.viewproj * pos;
 	outColor = v.color.xyz;
+
+	cameraView = globalData.view;
 
 	outUV.x = v.uv_x;
 	outUV.y = v.uv_y;
