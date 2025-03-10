@@ -304,7 +304,7 @@ std::shared_ptr<LavaMesh> CreateTerrain(
       // Calcular la posición del vértice
       float x = size * j;
       float z = size * i;
-      float y = pn.noise2D(x * smoothness, z * smoothness) * height_mult;
+      float y = (float)pn.noise2D(x * smoothness, z * smoothness) * height_mult;
 
       if (is_centered) {
         x -= (size * num_cols) / 2.0f;

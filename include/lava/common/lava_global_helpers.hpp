@@ -116,9 +116,9 @@ static inline void UpdateCameraWithInput(size_t id, LavaECSManager* ecs_manager,
 
 
     omega = (mouse_position.y / engine.window_extent_.height) * 3.14f;
-    alpha = (mouse_position.x / engine.window_extent_.width) * 6.28;
+    alpha = (mouse_position.x / engine.window_extent_.width) * 6.28f;
 
-    if (alpha > 6.28) alpha = 6.28;
+    if (alpha > 6.28) alpha = 6.28f;
     if (alpha < 0.0f) alpha = 0.0f;
 
     auto transform_optional = ecs_manager->getComponent<TransformComponent>(id);

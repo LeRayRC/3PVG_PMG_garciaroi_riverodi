@@ -303,8 +303,8 @@ int main(int argc, char* argv[]) {
 	ecs_manager.addComponent<UpdateComponent>(camera_entity);
 
 	auto& camera_tr = ecs_manager.getComponent<TransformComponent>(camera_entity)->value();
-	camera_tr.rot_ = glm::vec3(0.0f, 0.0f, 0.0f);
-	camera_tr.pos_ = glm::vec3(0.0f, 0.0f, 0.0f);
+	camera_tr.rot_ = glm::vec3(-60.0f, -30.0f, 0.0f);
+	camera_tr.pos_ = glm::vec3(4.3f, 14.0f, 10.0f);
 	auto& camera_component = ecs_manager.getComponent<CameraComponent>(camera_entity)->value();
 	
 	auto update_component = ecs_manager.getComponent<UpdateComponent>(camera_entity);

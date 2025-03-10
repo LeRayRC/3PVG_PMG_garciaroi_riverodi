@@ -28,6 +28,7 @@ set TOOLS_DIR=tools
 set INCLUDE_DIR=include
 set SRC_DIR=src
 set EXAMPLES_DIR=examples
+set DOC_DIR=doc
 
 :: 1. Crear la carpeta stage
 echo Create folder %STAGE_DIR%...
@@ -51,6 +52,7 @@ del /F /Q %STAGE_DIR%\tools\genstage.bat
 echo Copy .lua files...
 copy /Y *.lua %STAGE_DIR%\
 del /F /Q %STAGE_DIR%\build_engine.lua
+del /F /Q %STAGE_DIR%\all_examples.lua
 
 :: 5. Copy header files
 echo Copy include...
@@ -62,6 +64,7 @@ xcopy /E /I /Y %SRC_DIR%\shaders %STAGE_DIR%\%SRC_DIR%\shaders
 xcopy  /I /Y %SRC_DIR%\stdafx.cpp %STAGE_DIR%\%SRC_DIR%\
 xcopy /E /I /Y %EXAMPLES_DIR%\assets %STAGE_DIR%\%EXAMPLES_DIR%\assets
 xcopy  /I /Y %EXAMPLES_DIR%\flycam_demostrator.cpp %STAGE_DIR%\%EXAMPLES_DIR%\
+xcopy  /I /Y %DOC_DIR%\LavaEngineDocumentation.url %STAGE_DIR%\
 
 
 powershell -Command "Compress-Archive -Path %STAGE_DIR%\* -DestinationPath %DEST_ZIP% -Force"
