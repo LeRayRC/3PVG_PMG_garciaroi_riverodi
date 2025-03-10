@@ -153,8 +153,11 @@ float PointShadowCalculation(vec3 fragPos)
 
 float DirectionalShadowCalculation(vec3 fragPos){
 
-    vec4 fragPosViewSpace = cameraView * vec4(fragPos, 1.0);
-    float depthValue = abs(fragPosViewSpace.z);
+   // vec4 fragPosViewSpace = cameraView * vec4(fragPos, 1.0);
+   // float depthValue = length(fragPosViewSpace.xyz);//abs(fragPosViewSpace.z);
+
+    vec3 fragPosViewSpace = globalData.cameraPos - fragPos;
+    float depthValue = length(fragPosViewSpace);
     
     int layer = -1;
     float planeStep = 50.0 / 3.0;
@@ -198,7 +201,7 @@ float DirectionalShadowCalculation(vec3 fragPos){
     }
     else
     {
-        bias *= 1 / ((planeStep * (float(layer))) * 0.5);
+        bias *= 1 / ((planeStep * (float(layer) + 1.0)) * 0.5);
     }
 
     // PCF
@@ -224,7 +227,8 @@ float DirectionalShadowCalculation(vec3 fragPos){
                         layer)
                         ).r; 
 
-    shadow = ((currentDepth - bias) > pcfDepth) ? 1.0 : 0.0; 
+
+    shadow = ((currentDepth + bias) > pcfDepth) ? 0.0 : 1.0; 
         
     // keep the shadow at 0.0 when outside the far_plane region of the light's frustum.
     if(projCoords.z > 1.0)
@@ -248,8 +252,8 @@ void main()
 
     switch(light.type){
       case 0: {
-        float shadow_fr = DirectionalShadowCalculation(inPos.xyz);
-        outFragColor = vec4(shadow_fr, shadow_fr, shadow_fr, 1.0);//vec4(DirectionalLight() * (shadow_fr),1.0); 
+        float shadow_fr = 1.0 - DirectionalShadowCalculation(inPos.xyz);
+        outFragColor = vec4(shadow_fr, shadow_fr, shadow_fr, 1.0);//vec4(DirectionalLight() * (1.0 - shadow_fr),1.0); 
         break;
        }
        case 1: {

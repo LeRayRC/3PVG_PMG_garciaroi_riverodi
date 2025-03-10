@@ -330,7 +330,7 @@ int main(int argc, char* argv[]) {
 			engine.beginFrame();
 			engine.clearWindow();
 
-			glm::vec3 a = engine.global_scene_data_.view * glm::vec4(0.0f, 0.0f, -25.0f, 1.0f);
+			glm::vec3 a = engine.global_scene_data_.view * glm::vec4(0.0f, 0.0f, -25.0f, 0.0f);
 
 			printf("%f\n", a.z);
 			
