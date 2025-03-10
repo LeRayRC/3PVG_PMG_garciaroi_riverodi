@@ -52,6 +52,7 @@ del /F /Q %STAGE_DIR%\tools\genstage.bat
 echo Copy .lua files...
 copy /Y *.lua %STAGE_DIR%\
 del /F /Q %STAGE_DIR%\build_engine.lua
+del /F /Q %STAGE_DIR%\all_examples.lua
 
 :: 5. Copy header files
 echo Copy include...
