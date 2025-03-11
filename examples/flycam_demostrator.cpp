@@ -134,8 +134,7 @@ int main(int argc, char* argv[]) {
 	std::shared_ptr<LavaMesh> terrain_mesh = CreateTerrain(engine, &terrain_material, 
 		32,32,8.0f,1.0f, 0.15f, {20,20});
 
-	//Needs to be call every time an image or property is updated and before rendering begins
-	basic_material.UpdateDescriptorSet();
+
 
 	{
 		size_t entity = ecs_manager.createEntity();
