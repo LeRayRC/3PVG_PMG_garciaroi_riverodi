@@ -129,6 +129,16 @@ float ShadowCalculation(vec4 fragPosLightSpace)
   return shadow;
 }
 
+float DirectShadowCalculation(vec4 fragPosLightSpace)
+{ 
+  vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+  float currentDepth = projCoords.z;
+  projCoords = projCoords * 0.5 + 0.5;
+  float closestDepth = texture(directionalShadowMaps, vec3(projCoords.xy,0.0)).r;
+  float shadow = currentDepth + 0.005 < closestDepth  ? 1.0 : 0.0;
+  return shadow;
+}
+
 float PointShadowCalculation(vec3 fragPos)
 {
     // get vector between fragment position and light position
@@ -254,7 +264,7 @@ void main()
 
     switch(light.type){
       case 0: {
-        float shadow_fr = ShadowCalculation(fragPosLightSpace); 
+        float shadow_fr = DirectShadowCalculation(fragPosLightSpace); 
         vec3 lightColor = DirectionalLight();
         outFragColor = vec4(lightColor * (1.0 - shadow_fr), 1.0);
 

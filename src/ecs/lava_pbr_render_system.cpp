@@ -650,8 +650,10 @@ void LavaPBRRenderSystem::update_lights(std::vector<std::optional<struct LightCo
 				center /= corners.size();
 				printf("%0.2f,%0.2f,%0.2f\n", center.x, center.y, center.z);
 				
+				glm::vec3 forward = CalculateForwardVector(light_transform_it->value().rot_);
+				glm::vec3 pos = center - 10.0f * forward;
 
-				glm::mat4 light_view = GenerateViewMatrix(center, light_transform_it->value().rot_);
+				glm::mat4 light_view = GenerateViewMatrix(pos, light_transform_it->value().rot_);
 
 			//	//glm::mat4 light_view = glm::lookAt(
 			//	//	center + light_dir,
