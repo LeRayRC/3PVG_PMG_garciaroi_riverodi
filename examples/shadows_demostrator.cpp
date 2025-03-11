@@ -260,7 +260,7 @@ int main(int argc, char* argv[]) {
 		auto tr_component = ecs_manager.getComponent<TransformComponent>(light_entity);
 		if (tr_component) {
 			auto& tr = tr_component->value();
-			tr.rot_ = glm::vec3(0.0f, 0.0f, 0.0f);
+			tr.rot_ = glm::vec3(-45.0f, 0.0f, 0.0f);
 			tr.pos_ = glm::vec3(0.0f, 0.0f, 0.0f);
 		}
 

@@ -419,7 +419,7 @@ void LavaPBRRenderSystem::renderWithShadows(
 			VkRenderingAttachmentInfo depth_attachment;
 			if (lights_rendered < 1) {
 				VkClearValue clear_value;
-				clear_value.color = { 1.0f,1.0f,1.0f,1.0f };
+				clear_value.color = { 0.0f,0.0f,0.0f,0.0f };
 				color_attachment = vkinit::AttachmentInfo(engine_.swap_chain_->get_draw_image().image_view, &clear_value, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 				depth_attachment = vkinit::DepthAttachmentInfo(engine_.swap_chain_->get_depth_image().image_view, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
 			}

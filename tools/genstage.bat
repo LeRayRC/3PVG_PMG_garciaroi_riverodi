@@ -64,6 +64,7 @@ xcopy /E /I /Y %SRC_DIR%\shaders %STAGE_DIR%\%SRC_DIR%\shaders
 xcopy  /I /Y %SRC_DIR%\stdafx.cpp %STAGE_DIR%\%SRC_DIR%\
 xcopy /E /I /Y %EXAMPLES_DIR%\assets %STAGE_DIR%\%EXAMPLES_DIR%\assets
 xcopy  /I /Y %EXAMPLES_DIR%\flycam_demostrator.cpp %STAGE_DIR%\%EXAMPLES_DIR%\
+xcopy  /I /Y %EXAMPLES_DIR%\shadows_demostrator.cpp %STAGE_DIR%\%EXAMPLES_DIR%\
 xcopy  /I /Y %DOC_DIR%\LavaEngineDocumentation.url %STAGE_DIR%\
 
 
