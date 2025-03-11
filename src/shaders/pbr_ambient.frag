@@ -254,8 +254,12 @@ void main()
 
     switch(light.type){
       case 0: {
-        float shadow_fr = 1.0 - DirectionalShadowCalculation(inPos.xyz);
-        outFragColor = vec4(shadow_fr, shadow_fr, shadow_fr, 1.0);//vec4(DirectionalLight() * (1.0 - shadow_fr),1.0); 
+        float shadow_fr = ShadowCalculation(fragPosLightSpace); 
+        vec3 lightColor = DirectionalLight();
+        outFragColor = vec4(lightColor * (1.0 - shadow_fr), 1.0);
+
+        //float shadow_fr = 1.0 - DirectionalShadowCalculation(inPos.xyz);
+        //outFragColor = vec4(shadow_fr, shadow_fr, shadow_fr, 1.0);//vec4(DirectionalLight() * (1.0 - shadow_fr),1.0); 
         break;
        }
        case 1: {

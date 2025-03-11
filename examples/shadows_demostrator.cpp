@@ -102,7 +102,7 @@ void ecs_light_imgui(std::vector<std::optional<TransformComponent>>& transform_v
 
 int main(int argc, char* argv[]) {
 	std::shared_ptr<LavaWindowSystem>  lava_system = LavaWindowSystem::Get();
-	LavaEngine engine(1920,1080);
+	LavaEngine engine(1280,720);
 	LavaECSManager ecs_manager;
 	LavaPBRRenderSystem pbr_render_system{ engine };
 	LavaDiffuseRenderSystem diffuse_render_system{ engine };
@@ -350,7 +350,7 @@ int main(int argc, char* argv[]) {
 
 			glm::vec3 a = engine.global_scene_data_.view * glm::vec4(0.0f, 0.0f, -25.0f, 0.0f);
 
-			printf("%f\n", a.z);
+			//printf("%f\n", a.z);
 			
 			pbr_render_system.renderWithShadows(ecs_manager.getComponentList<TransformComponent>(),
 				ecs_manager.getComponentList<RenderComponent>(), ecs_manager.getComponentList<LightComponent>());

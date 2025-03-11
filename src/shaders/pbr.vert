@@ -76,6 +76,15 @@ void main()
 
 	//Light pos space 
 	fragPosLightSpace = light_viewproj.viewproj[0] * pos;
+	vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+  float currentDepth = projCoords.z;
+  projCoords = projCoords * 0.5 + 0.5;
+  float closestDepth = texture(shadowMap, projCoords.xy).r;
+  float shadow = currentDepth + 0.005 < closestDepth  ? 1.0 : 0.0;
+	gl_Position.w = shadow;
+	//gl_Position.w = 1.0;
+	gl_Position = globalData.viewproj * pos;
+
 
 	//Normal Mapping Calculations
     vec3 T = normalize(vec3(PushConstants.render_matrix * vec4(v.tangent,   0.0)));
