@@ -153,11 +153,11 @@ float PointShadowCalculation(vec3 fragPos)
 
 float DirectionalShadowCalculation(vec3 fragPos){
 
-   // vec4 fragPosViewSpace = cameraView * vec4(fragPos, 1.0);
-   // float depthValue = length(fragPosViewSpace.xyz);//abs(fragPosViewSpace.z);
+    vec4 fragPosViewSpace = cameraView * vec4(fragPos, 1.0);
+    float depthValue = abs(fragPosViewSpace.z);
 
-    vec3 fragPosViewSpace = globalData.cameraPos - fragPos;
-    float depthValue = length(fragPosViewSpace);
+    //vec3 fragPosViewSpace = globalData.cameraPos - fragPos;
+    //float depthValue = length(fragPosViewSpace);
     
     int layer = -1;
     float planeStep = 50.0 / 3.0;
@@ -174,12 +174,15 @@ float DirectionalShadowCalculation(vec3 fragPos){
     {
         layer = 2;
     }
+
+    layer = 0;
         
     vec4 fragmPosLightSpace = light_viewproj.viewproj[layer] * vec4(fragPos, 1.0);
 
     // perform perspective divide
     vec3 projCoords = fragmPosLightSpace.xyz / fragmPosLightSpace.w;
     // transform to [0,1] range
+    projCoords = (projCoords * 0.5) + 0.5;
         
     // get depth of current fragment from light's perspective
     float currentDepth = projCoords.z;
@@ -188,21 +191,20 @@ float DirectionalShadowCalculation(vec3 fragPos){
         return 0.0;
     }
 
-    projCoords = (projCoords * 0.5) + 0.5;
 
 
 
     // calculate bias (based on depth map resolution and slope)
     vec3 normal = normalize(inNormal);
-    float bias = max(0.05 * (1.0 - dot(normal, light.dir)), 0.005);
-    if (layer == 2)
-    {
-        bias *= 1 / (50.0 * 0.5);
-    }
-    else
-    {
-        bias *= 1 / ((planeStep * (float(layer) + 1.0)) * 0.5);
-    }
+   // float bias = max(0.05 * (1.0 - dot(normal, light.dir)), 0.005);
+   // if (layer == 2)
+   // {
+   //     bias *= 1 / (50.0 * 0.5);
+   // }
+   // else
+   // {
+   //     bias *= 1 / ((planeStep * (float(layer) + 1.0)) * 0.5);
+   // }
 
     // PCF
     float shadow = 0.0;
@@ -228,7 +230,7 @@ float DirectionalShadowCalculation(vec3 fragPos){
                         ).r; 
 
 
-    shadow = ((currentDepth + bias) > pcfDepth) ? 0.0 : 1.0; 
+    shadow = ((currentDepth + 0.005f) > pcfDepth) ? 0.0 : 1.0; 
         
     // keep the shadow at 0.0 when outside the far_plane region of the light's frustum.
     if(projCoords.z > 1.0)

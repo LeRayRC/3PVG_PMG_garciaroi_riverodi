@@ -40,7 +40,7 @@ LavaPBRRenderSystem::LavaPBRRenderSystem(LavaEngine &engine) :
 													PipelineBlendMode::PIPELINE_BLEND_ONE_ZERO))},
 	pipeline_shadows_{ std::make_unique<LavaPipeline>(PipelineConfig( //TO DO: DIRECTIONAL LIGHT
 													PIPELINE_TYPE_SHADOW,
-													"../src/shaders/point_shadow_mapping.vert.spv",
+													"../src/shaders/shadow_mapping.vert.spv",
 													"../src/shaders/shadow_mapping.frag.spv",
 													engine_.device_.get(),
 													engine_.swap_chain_.get(),
@@ -49,8 +49,8 @@ LavaPBRRenderSystem::LavaPBRRenderSystem(LavaEngine &engine) :
 													engine_.global_pbr_descriptor_set_layout_,
 													engine_.global_lights_descriptor_set_layout_,
 													PipelineFlags::PIPELINE_USE_PUSHCONSTANTS | PipelineFlags::PIPELINE_USE_DESCRIPTOR_SET | PipelineFlags::PIPELINE_DONT_USE_COLOR_ATTACHMENT,
-													PipelineBlendMode::PIPELINE_BLEND_ONE_ZERO,
-													"../src/shaders/directional_shadows.geom.spv")), 
+													PipelineBlendMode::PIPELINE_BLEND_ONE_ZERO/*,
+													"../src/shaders/directional_shadows.geom.spv"*/)), 
 
 					   std::make_unique<LavaPipeline>(PipelineConfig(
 													PIPELINE_TYPE_SHADOW,
@@ -638,8 +638,8 @@ void LavaPBRRenderSystem::update_lights(std::vector<std::optional<struct LightCo
 			
 			for (int i = 0; i < 3; i++) {
 				glm::mat4 proj = glm::perspective(glm::radians(engine_.main_camera_camera_->fov_),
-					(float)engine_.window_extent_.width / (float)engine_.window_extent_.height, (((float)i) * planeStep) + 0.1f, ((float)(i + 1)) * planeStep);
-
+					(float)engine_.window_extent_.width / (float)engine_.window_extent_.height,0.1f /*(((float)i) * planeStep) + 0.1f^*/, 50.0f/*((float)(i + 1)) * planeStep*/);
+				proj[1][1] *= -1.0f;
 				std::vector<glm::vec4> corners = getFrustumCornersWorldSpace(proj, engine_.main_camera_camera_->view_);
 
 				glm::vec3 center = glm::vec3(0, 0, 0);
@@ -649,11 +649,13 @@ void LavaPBRRenderSystem::update_lights(std::vector<std::optional<struct LightCo
 				}
 				center /= corners.size();
 
-				glm::mat4 light_view = glm::lookAt(
-					center + light_dir,
-					center,
-					glm::vec3(0.0f, 1.0f, 0.0f)
-				);
+				glm::mat4 light_view = GenerateViewMatrix(center, light_transform_it->value().rot_);
+
+				//glm::mat4 light_view = glm::lookAt(
+				//	center + light_dir,
+				//	center,
+				//	glm::vec3(0.0f, 1.0f, 0.0f)
+				//);
 
 				float min_x = std::numeric_limits<float>::max();
 				float max_x = std::numeric_limits<float>::lowest();
@@ -690,7 +692,8 @@ void LavaPBRRenderSystem::update_lights(std::vector<std::optional<struct LightCo
 					max_z *= z_mult;
 				}
 
-				const glm::mat4 light_projection = glm::ortho(min_x, max_x, min_y, max_y, min_z, max_z);
+				glm::mat4 light_projection = glm::ortho(min_x, max_x, min_y, max_y, min_z, max_z);
+				light_projection[1][1] *= -1.0f;
 
 				shadowTransforms.push_back(light_projection * light_view);
 			}

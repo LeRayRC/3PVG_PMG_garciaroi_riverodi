@@ -27,7 +27,7 @@ layout( push_constant ) uniform constants
 } PushConstants;
 
 layout(set = 2, binding = 1) uniform  LightViewProj{   
-	mat4 viewproj;
+	mat4 viewproj[6];
 } light_viewproj;
 
 void main() 
@@ -38,5 +38,5 @@ void main()
 	//output data
 	vec4 pos = PushConstants.render_matrix *vec4(v.position, 1.0);
 
-	gl_Position = light_viewproj.viewproj * pos;
+	gl_Position = light_viewproj.viewproj[0] * pos;
 }
