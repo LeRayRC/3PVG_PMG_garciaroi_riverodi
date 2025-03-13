@@ -338,6 +338,8 @@ int main(int argc, char* argv[]) {
 			/*diffuse_render_system.render(ecs_manager.getComponentList<TransformComponent>(),
 				ecs_manager.getComponentList<RenderComponent>());*/
 
+			
+
 			ecs_render_imgui(ecs_manager, camera_entity);
 			ecs_light_imgui(ecs_manager.getComponentList<TransformComponent>(),
 				ecs_manager.getComponentList<LightComponent>());

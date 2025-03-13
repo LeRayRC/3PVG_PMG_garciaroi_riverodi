@@ -25,6 +25,12 @@ namespace vkinit {
   VkRenderingAttachmentInfo DepthAttachmentInfo(
     VkImageView view, VkImageLayout layout , VkAttachmentLoadOp loadOp);
 
+  VkRenderingInfo RenderingInfo(VkExtent2D render_extent,
+    VkRenderingAttachmentInfo* color_attachment,
+    uint32_t color_attachment_count,
+    VkRenderingAttachmentInfo* depth_attachment,
+    int layers);
+
 }
 
 #endif // !__CUSTOM_VULKAN_INITSH
