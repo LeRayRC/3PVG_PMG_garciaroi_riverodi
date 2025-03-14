@@ -12,6 +12,7 @@ layout (location = 4) out vec3 tangentLightPos;
 layout (location = 5) out vec3 tangentViewPos;
 layout (location = 6) out vec3 tangentFragPos;
 layout (location = 7) out vec4 fragPosLightSpace;
+layout (location = 8) out mat4 cameraView;
 
 struct Vertex {
 	vec3 position;
@@ -67,12 +68,23 @@ void main()
 	gl_Position = globalData.viewproj * pos;
 	outColor = v.color.xyz;
 
+	cameraView = globalData.view;
+
 	outUV.x = v.uv_x;
 	outUV.y = v.uv_y;
 	outNormal = normalize(PushConstants.render_matrix * vec4(v.normal,0.0)).xyz;
 
 	//Light pos space 
 	fragPosLightSpace = light_viewproj.viewproj[0] * pos;
+	vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+  float currentDepth = projCoords.z;
+  projCoords = projCoords * 0.5 + 0.5;
+  float closestDepth = texture(shadowMap, projCoords.xy).r;
+  float shadow = currentDepth + 0.005 < closestDepth  ? 1.0 : 0.0;
+	gl_Position.w = shadow;
+	//gl_Position.w = 1.0;
+	gl_Position = globalData.viewproj * pos;
+
 
 	//Normal Mapping Calculations
     vec3 T = normalize(vec3(PushConstants.render_matrix * vec4(v.tangent,   0.0)));

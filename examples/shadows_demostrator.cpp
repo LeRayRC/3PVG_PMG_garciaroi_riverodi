@@ -102,7 +102,7 @@ void ecs_light_imgui(std::vector<std::optional<TransformComponent>>& transform_v
 
 int main(int argc, char* argv[]) {
 	std::shared_ptr<LavaWindowSystem>  lava_system = LavaWindowSystem::Get();
-	LavaEngine engine(1920,1080);
+	LavaEngine engine(1280,720);
 	LavaECSManager ecs_manager;
 	LavaPBRRenderSystem pbr_render_system{ engine };
 	LavaDiffuseRenderSystem diffuse_render_system{ engine };
@@ -136,14 +136,14 @@ int main(int argc, char* argv[]) {
 		ecs_manager.addComponent<TransformComponent>(entity);
 		ecs_manager.addComponent<RenderComponent>(entity);
 		//ecs_manager.addComponent<UpdateComponent>(entity);
-
+	
 		auto transform_component = ecs_manager.getComponent<TransformComponent>(entity);
 		if (transform_component) {
 			auto& transform = transform_component->value();
 			transform.pos_ = glm::vec3(0.0f, 0.0f, -1.0f);
 			transform.scale_ = glm::vec3(1.0f, 1.0f, 1.0f);
 		}
-
+	
 		auto render_component = ecs_manager.getComponent<RenderComponent>(entity);
 		if (render_component) {
 			auto& render = render_component->value();
@@ -191,6 +191,24 @@ int main(int argc, char* argv[]) {
 	}
 
 
+	{
+		size_t entity = ecs_manager.createEntity();
+		ecs_manager.addComponent<TransformComponent>(entity);
+		ecs_manager.addComponent<RenderComponent>(entity);
+
+		auto transform_component = ecs_manager.getComponent<TransformComponent>(entity);
+		if (transform_component) {
+			auto& transform = transform_component->value();
+			transform.pos_ = glm::vec3(0.5f, 0.0f, -2.0f);
+			transform.scale_ = glm::vec3(10.0f, 10.0f, 10.0f);
+		}
+
+		auto render_component = ecs_manager.getComponent<RenderComponent>(entity);
+		if (render_component) {
+			auto& render = render_component->value();
+			render.mesh_ = mesh_;
+		}
+	}
 	{
 		size_t entity = ecs_manager.createEntity();
 		ecs_manager.addComponent<TransformComponent>(entity);
@@ -265,36 +283,36 @@ int main(int argc, char* argv[]) {
 		}
 
 	}
-	{
-		size_t light_entity = ecs_manager.createEntity();
-		ecs_manager.addComponent<TransformComponent>(light_entity);
-		ecs_manager.addComponent<LightComponent>(light_entity);
-		//ecs_manager.addComponent<RenderComponent>(light_entity);
-		
-		auto light_component = ecs_manager.getComponent<LightComponent>(light_entity);
-		if (light_component) {
-			auto& light = light_component->value();
-			light.enabled_ = true;
-			light.type_ = LIGHT_TYPE_POINT;
-			light.base_color_ = glm::vec3(1.0f, 1.0f, 1.0f);
-			light.spec_color_ = glm::vec3(0.0f, 0.0f, 0.0f);
-		}
-
-		/*auto render_component = ecs_manager.getComponent<RenderComponent>(light_entity);
-		if (render_component) {
-			auto& render = render_component->value();
-			render.mesh_ = sphere_mesh;
-		}*/
-
-		auto tr_component = ecs_manager.getComponent<TransformComponent>(light_entity);
-		if (tr_component) {
-			auto& tr = tr_component->value();
-			tr.rot_ = glm::vec3(0.0f, 0.0f, 0.0f);
-			tr.pos_ = glm::vec3(0.0f, 3.0f, 0.0f);
-			tr.scale_ = glm::vec3(2.0f, 2.0f, 2.0f);
-		}
-	
-	}
+	//{
+	//	size_t light_entity = ecs_manager.createEntity();
+	//	ecs_manager.addComponent<TransformComponent>(light_entity);
+	//	ecs_manager.addComponent<LightComponent>(light_entity);
+	//	//ecs_manager.addComponent<RenderComponent>(light_entity);
+	//	
+	//	auto light_component = ecs_manager.getComponent<LightComponent>(light_entity);
+	//	if (light_component) {
+	//		auto& light = light_component->value();
+	//		light.enabled_ = true;
+	//		light.type_ = LIGHT_TYPE_POINT;
+	//		light.base_color_ = glm::vec3(1.0f, 1.0f, 1.0f);
+	//		light.spec_color_ = glm::vec3(0.0f, 0.0f, 0.0f);
+	//	}
+	//
+	//	/*auto render_component = ecs_manager.getComponent<RenderComponent>(light_entity);
+	//	if (render_component) {
+	//		auto& render = render_component->value();
+	//		render.mesh_ = sphere_mesh;
+	//	}*/
+	//
+	//	auto tr_component = ecs_manager.getComponent<TransformComponent>(light_entity);
+	//	if (tr_component) {
+	//		auto& tr = tr_component->value();
+	//		tr.rot_ = glm::vec3(0.0f, 0.0f, 0.0f);
+	//		tr.pos_ = glm::vec3(0.0f, 3.0f, 0.0f);
+	//		tr.scale_ = glm::vec3(2.0f, 2.0f, 2.0f);
+	//	}
+	//
+	//}
 	
 	//Create Camera entity
 	size_t camera_entity = ecs_manager.createEntity();
@@ -330,7 +348,9 @@ int main(int argc, char* argv[]) {
 			engine.beginFrame();
 			engine.clearWindow();
 
+			glm::vec3 a = engine.global_scene_data_.view * glm::vec4(0.0f, 0.0f, -25.0f, 0.0f);
 
+			//printf("%f\n", a.z);
 			
 			pbr_render_system.renderWithShadows(ecs_manager.getComponentList<TransformComponent>(),
 				ecs_manager.getComponentList<RenderComponent>(), ecs_manager.getComponentList<LightComponent>());
