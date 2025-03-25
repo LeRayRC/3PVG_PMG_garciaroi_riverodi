@@ -29,7 +29,7 @@ namespace vkinit {
     VkRenderingAttachmentInfo* color_attachment,
     uint32_t color_attachment_count,
     VkRenderingAttachmentInfo* depth_attachment,
-    int layers);
+    int layers = 1);
 
 }
 

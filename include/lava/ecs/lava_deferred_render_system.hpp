@@ -28,7 +28,7 @@ private:
 
 	//std::unique_ptr<class LavaImage> shadowmap_image_;
 	//Shadow Maps Images
-	// 0 -> position 
+	// 0 -> Position 
 	// 1 -> Albedo 
 	// 2 -> Normal
 	AllocatedImage gbuffer_[3];
