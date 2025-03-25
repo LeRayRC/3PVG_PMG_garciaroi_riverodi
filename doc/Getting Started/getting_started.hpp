@@ -7,7 +7,7 @@
  * 
  * Unzip the LavaEngine.zip file provided
  *
- * 1 - Install Vulkan SDK from this @link https://vulkan.lunarg.com/sdk/home#windows link @endlink
+ * 1 - Install Vulkan SDK from this link = https://vulkan.lunarg.com/sdk/home#windows
  * 
  * 2 - Generate dependencies 
  * @code {.bash}
