@@ -263,20 +263,20 @@ void LavaEngine::endFrame() {
 	//{
 		vkQueueSubmit2(device_->get_graphics_queue(), 1, &submit, frame_data_->getCurrentFrame().render_fence);
 
-		//Se crea la estructura de presentacion para enviarla a la ventana de GLFW
-		VkPresentInfoKHR presentInfo = {};
-		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-		presentInfo.pNext = nullptr;
-		VkSwapchainKHR aux_swap = swap_chain_->get_swap_chain();
-		presentInfo.pSwapchains = &aux_swap;
-		presentInfo.swapchainCount = 1;
+			//Se crea la estructura de presentacion para enviarla a la ventana de GLFW
+			VkPresentInfoKHR presentInfo = {};
+			presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+			presentInfo.pNext = nullptr;
+			VkSwapchainKHR aux_swap = swap_chain_->get_swap_chain();
+			presentInfo.pSwapchains = &aux_swap;
+			presentInfo.swapchainCount = 1;
 
-		presentInfo.pWaitSemaphores = &frame_data_->getCurrentFrame().render_semaphore;
-		presentInfo.waitSemaphoreCount = 1;
+			presentInfo.pWaitSemaphores = &frame_data_->getCurrentFrame().render_semaphore;
+			presentInfo.waitSemaphoreCount = 1;
 
-		presentInfo.pImageIndices = &swap_chain_image_index;
+			presentInfo.pImageIndices = &swap_chain_image_index;
 
-		vkQueuePresentKHR(device_->get_present_queue(), &presentInfo);
+			vkQueuePresentKHR(device_->get_present_queue(), &presentInfo);
 	//}
 
 	//increase the number of frames drawn
@@ -289,7 +289,7 @@ void LavaEngine::endFrame() {
 
 	dt_ = std::chrono::duration_cast<std::chrono::microseconds>(chrono_now_ - chrono_last_update_).count() / 1000000.0f;
 	chrono_last_update_ = chrono_now_;
-	vkDeviceWaitIdle(device_->get_device());
+	//vkDeviceWaitIdle(device_->get_device());
 }
 
 void LavaEngine::clearWindow() {

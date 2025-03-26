@@ -104,7 +104,7 @@ void ecs_light_imgui(std::vector<std::optional<TransformComponent>>& transform_v
 
 int main(int argc, char* argv[]) {
 	std::shared_ptr<LavaWindowSystem>  lava_system = LavaWindowSystem::Get();
-	LavaEngine engine(1920,1080);
+	LavaEngine engine(1280,720);
 	LavaECSManager ecs_manager;
 	LavaPBRRenderSystem pbr_render_system{ engine };
 	LavaNormalRenderSystem normal_render_system{ engine };

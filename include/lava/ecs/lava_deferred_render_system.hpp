@@ -31,12 +31,15 @@ private:
 	// 0 -> Position 
 	// 1 -> Albedo 
 	// 2 -> Normal
-	AllocatedImage gbuffer_[3];
-	VkSampler gbuffer_sampler_[3];
+	static const int gbuffer_count = 3;
+	AllocatedImage gbuffer_[gbuffer_count];
+	VkSampler gbuffer_sampler_[gbuffer_count];
 
 
 	AllocatedImage shadowmap_image_[3];
 	VkSampler shadowmap_sampler_[3];
+
+	void transition_gbuffer_images(VkImageLayout old_layout, VkImageLayout new_layout);
 
 	void allocate_lights(std::vector<std::optional<struct LightComponent>>& light_component_vector);
 	void update_lights(std::vector<std::optional<struct LightComponent>>& light_component_vector,
