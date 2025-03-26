@@ -5,14 +5,15 @@
 #include "lava/engine/lava_mesh.hpp"
 #include "engine/lava_frame_data.hpp"
 #include "engine/lava_pipeline.hpp"
+#include "engine/lava_allocator.hpp"
 #include "lava/engine/lava_pbr_material.hpp"
 
 LavaDeferredRenderSystem::LavaDeferredRenderSystem(LavaEngine& engine) :
 	engine_{ engine },
 	pipeline_{ std::make_unique<LavaPipeline>(PipelineConfig(
 							PIPELINE_TYPE_PBR,
-							"../src/shaders/normal.vert.spv",
-							"../src/shaders/diffuse.frag.spv",
+							"../src/shaders/deferred/geometry_pass.vert.spv",
+							"../src/shaders/deferred/geometry_pass.frag.spv",
 							engine_.device_.get(),
 							engine_.swap_chain_.get(),
 							engine_.global_descriptor_allocator_.get(),
@@ -20,9 +21,61 @@ LavaDeferredRenderSystem::LavaDeferredRenderSystem(LavaEngine& engine) :
 							engine_.global_pbr_descriptor_set_layout_,
 							engine_.global_lights_descriptor_set_layout_,
 							PipelineFlags::PIPELINE_USE_PUSHCONSTANTS | PipelineFlags::PIPELINE_USE_DESCRIPTOR_SET,
-							PipelineBlendMode::PIPELINE_BLEND_ONE_ZERO)) }
+							PipelineBlendMode::PIPELINE_BLEND_ONE_ZERO,
+							nullptr,3)
+							) }
 {
+	VmaAllocationCreateInfo rimg_allocinfo = {};
+	rimg_allocinfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+	rimg_allocinfo.requiredFlags = VkMemoryPropertyFlags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
+	VkImageUsageFlags draw_image_usages{};
+	draw_image_usages |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+	draw_image_usages |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+	draw_image_usages |= VK_IMAGE_USAGE_STORAGE_BIT;
+	draw_image_usages |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+
+	for (int i = 0; i < 3; i++) {
+
+		//gbuffer_[i].image_format = VK_FORMAT_R32G32B32A32_SFLOAT;
+		gbuffer_[i].image_format = VK_FORMAT_R16G16B16A16_SFLOAT;
+		gbuffer_[i].image_extent = VkExtent3D(engine.window_extent_.width, engine.window_extent_.height,1);
+
+		VkImageCreateInfo image_create_info = vkinit::ImageCreateInfo(gbuffer_[i].image_format,
+			draw_image_usages, gbuffer_[i].image_extent);
+
+		vmaCreateImage(engine.allocator_->get_allocator(), &image_create_info, &rimg_allocinfo, &gbuffer_[i].image, &gbuffer_[i].allocation, nullptr);
+
+		//build a image-view for the draw image to use for rendering
+		VkImageViewCreateInfo gbuffer_view_info = vkinit::ImageViewCreateInfo(gbuffer_[i].image_format, gbuffer_[i].image, VK_IMAGE_ASPECT_COLOR_BIT);
+
+		if (vkCreateImageView(engine.device_->get_device(), &gbuffer_view_info, nullptr, &gbuffer_[i].image_view) !=
+			VK_SUCCESS) {
+			printf("Error creating shadowmap image view!\n");
+		}
+
+		VkSamplerCreateInfo sampler_info{};
+		sampler_info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+		sampler_info.magFilter = VK_FILTER_LINEAR;
+		sampler_info.minFilter = VK_FILTER_LINEAR;
+		sampler_info.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+		sampler_info.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+		sampler_info.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+		sampler_info.anisotropyEnable = VK_FALSE;
+		sampler_info.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK;
+		sampler_info.unnormalizedCoordinates = VK_FALSE;
+		sampler_info.compareEnable = VK_FALSE; // Sin PCF
+		sampler_info.compareOp = VK_COMPARE_OP_ALWAYS;
+		sampler_info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
+		sampler_info.mipLodBias = 0.0f;
+		sampler_info.minLod = 0.0f;
+		sampler_info.maxLod = 0.0f; // Sin mipmaps
+
+
+		vkCreateSampler(engine.device_->get_device(), &sampler_info, nullptr, &gbuffer_sampler_[i]);
+
+
+	}
 }
 
 
@@ -69,9 +122,6 @@ void LavaDeferredRenderSystem::render(
 	vkCmdBindDescriptorSets(engine_.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
 		pipeline_->get_layout(),
 		0, 1, &engine_.global_descriptor_set_, 0, nullptr);
-
-
-
 
 
 	FrameData& frame_data = engine_.frame_data_->getCurrentFrame();

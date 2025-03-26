@@ -8,6 +8,7 @@
 #include "lava/ecs/lava_update_system.hpp"
 #include "lava/ecs/lava_normal_render_system.hpp"
 #include "lava/ecs/lava_diffuse_render_system.hpp"
+#include "lava/ecs/lava_deferred_render_system.hpp"
 #include "lava/common/lava_shapes.hpp"
 #include "lava/engine/lava_image.hpp"
 #include "imgui.h"
@@ -108,6 +109,7 @@ int main(int argc, char* argv[]) {
 	LavaPBRRenderSystem pbr_render_system{ engine };
 	LavaNormalRenderSystem normal_render_system{ engine };
 	LavaDiffuseRenderSystem diffuse_render_system{ engine };
+	LavaDeferredRenderSystem deferred_render_system{ engine };
 	LavaUpdateSystem update_system{ engine };
 
 	LavaPBRMaterial basic_material(engine, MaterialPBRProperties());
@@ -313,8 +315,11 @@ int main(int argc, char* argv[]) {
 
 		//pbr_render_system.renderWithShadows(ecs_manager.getComponentList<TransformComponent>(),
 		//	ecs_manager.getComponentList<RenderComponent>(), ecs_manager.getComponentList<LightComponent>());
-		diffuse_render_system.render(ecs_manager.getComponentList<TransformComponent>(),
-			ecs_manager.getComponentList<RenderComponent>());
+		//diffuse_render_system.render(ecs_manager.getComponentList<TransformComponent>(),
+		//	ecs_manager.getComponentList<RenderComponent>());
+
+		deferred_render_system.render(ecs_manager.getComponentList<TransformComponent>(),
+			ecs_manager.getComponentList<RenderComponent>(), ecs_manager.getComponentList<LightComponent>());
 
 		ecs_render_imgui(ecs_manager, camera_entity);
 

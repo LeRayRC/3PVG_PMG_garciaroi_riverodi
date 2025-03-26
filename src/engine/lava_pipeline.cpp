@@ -110,12 +110,13 @@ LavaPipeline::LavaPipeline(PipelineConfig config){
 		pipeline_builder.DisableColorAttachment(config.swap_chain->get_draw_image().image_format);
 	}
 	else {
-		pipeline_builder.SetColorAttachmentFormat(config.swap_chain->get_draw_image().image_format);
+
+		pipeline_builder.SetColorAttachmentFormat(config.swap_chain->get_draw_image().image_format, config.color_attachments_count);
 
 	}
 
 	//finally build the pipeline
-	pipeline_ = pipeline_builder.BuildPipeline(device_);
+	pipeline_ = pipeline_builder.BuildPipeline(device_, config.color_attachments_count);
 
 	//clean structures
 	vkDestroyShaderModule(device_, fragment_shader, nullptr);

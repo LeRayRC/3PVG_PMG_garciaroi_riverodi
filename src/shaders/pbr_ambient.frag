@@ -171,9 +171,6 @@ float DirectionalShadowCalculation(vec3 fragPos){
 void main() 
 {
 
- 
-
-
   if(light.enabled == 1){
     
     

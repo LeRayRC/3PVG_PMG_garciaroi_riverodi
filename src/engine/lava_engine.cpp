@@ -183,7 +183,7 @@ void LavaEngine::beginFrame() {
 	ImGui::NewFrame();
 
 	//Esperamos a que el fence comunique que la grafica ya ha terminado de dibujar
-//El timeout esta en nanosegundos 10e-9
+	//El timeout esta en nanosegundos 10e-9
 	if (vkWaitForFences(device_->get_device(), 1, &frame_data_->getCurrentFrame().render_fence, true, 1000000000) != VK_SUCCESS) {
 #ifndef NDEBUG
 		printf("Fence timeout excedeed!");

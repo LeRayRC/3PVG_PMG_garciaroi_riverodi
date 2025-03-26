@@ -32,6 +32,7 @@ private:
 	// 1 -> Albedo 
 	// 2 -> Normal
 	AllocatedImage gbuffer_[3];
+	VkSampler gbuffer_sampler_[3];
 
 
 	AllocatedImage shadowmap_image_[3];
