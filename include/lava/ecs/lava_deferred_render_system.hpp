@@ -22,7 +22,8 @@ public:
 
 private:
 	class LavaEngine& engine_;
-	std::unique_ptr<class LavaPipeline> pipeline_;
+	std::unique_ptr<class LavaPipeline> pipeline_geometry_pass_;
+	std::unique_ptr<class LavaPipeline> pipeline_light_pass_;
 	std::unique_ptr<class LavaPipeline> pipeline_first_light_;
 	std::unique_ptr<class LavaPipeline> pipeline_shadows_[3];
 
@@ -39,11 +40,16 @@ private:
 	AllocatedImage shadowmap_image_[3];
 	VkSampler shadowmap_sampler_[3];
 
-	void transition_gbuffer_images(VkImageLayout old_layout, VkImageLayout new_layout);
 
 	void allocate_lights(std::vector<std::optional<struct LightComponent>>& light_component_vector);
 	void update_lights(std::vector<std::optional<struct LightComponent>>& light_component_vector,
 		std::vector<std::optional<struct TransformComponent>>& transform_vector);
+
+	void setupGBufferBarriers(VkCommandBuffer cmd, VkImageLayout newLayout);
+	void setupShadowMapBarriers(VkCommandBuffer cmd, VkImageLayout newLayout);
+
+	void pipelineBarrierForRenderPassStart(VkCommandBuffer cmd);
+	void pipelineBarrierForRenderPassEnd(VkCommandBuffer cmd);
 };
 
 

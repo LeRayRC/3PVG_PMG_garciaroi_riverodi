@@ -175,19 +175,24 @@ void LavaEngine::beginFrame() {
 	//Check every light component to allocate or free again
 
 
-	glfwPollEvents();
-
-	ImGui_ImplVulkan_NewFrame();
-	ImGui_ImplGlfw_NewFrame();
-
-	ImGui::NewFrame();
+	
 
 	//Esperamos a que el fence comunique que la grafica ya ha terminado de dibujar
 	//El timeout esta en nanosegundos 10e-9
-	if (vkWaitForFences(device_->get_device(), 1, &frame_data_->getCurrentFrame().render_fence, true, 1000000000) != VK_SUCCESS) {
-#ifndef NDEBUG
-		printf("Fence timeout excedeed!");
-#endif // !NDEBUG
+	VkResult fenceStatus = vkWaitForFences(device_->get_device(), 1,
+		&frame_data_->getPreviousFrame().render_fence,
+		true, UINT64_MAX);
+
+
+
+	if (fenceStatus == VK_TIMEOUT) {
+		printf("Error: GPU no responde - timeout excedido!");
+		// Aquí deberías manejar el error adecuadamente
+		exit(-2);
+	}
+	else if (fenceStatus != VK_SUCCESS) {
+		printf("Error inesperado al esperar el fence!");
+		exit(-2);
 	}
 
 	//Reseteamos el fence
@@ -197,9 +202,17 @@ void LavaEngine::beginFrame() {
 #endif // !NDEBUG
 	}
 
+
+	glfwPollEvents();
+
+	ImGui_ImplVulkan_NewFrame();
+	ImGui_ImplGlfw_NewFrame();
+
+	ImGui::NewFrame();
+
 	//Solicitamos una imagen del swap chain
 	//uint32_t swap_chain_image_index;
-	if (vkAcquireNextImageKHR(device_->get_device(), swap_chain_->get_swap_chain(), 1000000000,
+	if (vkAcquireNextImageKHR(device_->get_device(), swap_chain_->get_swap_chain(), UINT64_MAX,
 		frame_data_->getCurrentFrame().swap_chain_semaphore, nullptr, &swap_chain_image_index) != VK_SUCCESS) {
 #ifndef NDEBUG
 		printf("Swapchain image not retrieved!");
@@ -234,16 +247,30 @@ void LavaEngine::beginFrame() {
 
 void LavaEngine::endFrame() {
 	ImGui::Render();
+
+	VkResult result;
+
+	VkImageLayout oldLayout = (frame_data_->frame_number_ == 0) ?
+		VK_IMAGE_LAYOUT_UNDEFINED :
+		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+
+
 	// Cambiamos la imagen del swap chain para poder escribir sobre ella
-	TransitionImage(commandBuffer, swap_chain_->get_swap_chain_images()[swap_chain_image_index],
+	//TransitionImage(commandBuffer, swap_chain_->get_swap_chain_images()[swap_chain_image_index],
+	//	oldLayout, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+	AdvancedTransitionImage(commandBuffer, swap_chain_->get_swap_chain_images()[swap_chain_image_index],
 		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
 	//draw imgui into the swapchain image
 	drawImgui(commandBuffer, swap_chain_->get_swap_chain_image_views()[swap_chain_image_index]);
 
-	//Se cambia la imagen al layout presentable
-	TransitionImage(commandBuffer, swap_chain_->get_swap_chain_images()[swap_chain_image_index],
+	AdvancedTransitionImage(commandBuffer, swap_chain_->get_swap_chain_images()[swap_chain_image_index],
 		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+
+	//Se cambia la imagen al layout presentable
+	//TransitionImage(commandBuffer, swap_chain_->get_swap_chain_images()[swap_chain_image_index],
+	//	VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
 	//Se finalizar el command buffer
 	if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
@@ -260,24 +287,30 @@ void LavaEngine::endFrame() {
 
 	VkSubmitInfo2 submit = vkinit::SubmitInfo(&commandSubmitInfo, &signalInfo, &waitInfo);
 
-	//{
-		vkQueueSubmit2(device_->get_graphics_queue(), 1, &submit, frame_data_->getCurrentFrame().render_fence);
+	result = vkQueueSubmit2(device_->get_graphics_queue(), 1, &submit, frame_data_->getCurrentFrame().render_fence);
+	if (result != VK_SUCCESS) {
+		printf("Error at Queue submit!\n");
+	}
+	
+	
+	//Se crea la estructura de presentacion para enviarla a la ventana de GLFW
+	VkPresentInfoKHR presentInfo = {};
+	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+	presentInfo.pNext = nullptr;
+	VkSwapchainKHR aux_swap = swap_chain_->get_swap_chain();
+	presentInfo.pSwapchains = &aux_swap;
+	presentInfo.swapchainCount = 1;
+	
+	presentInfo.pWaitSemaphores = &frame_data_->getCurrentFrame().render_semaphore;
+	presentInfo.waitSemaphoreCount = 1;
+	
+	presentInfo.pImageIndices = &swap_chain_image_index;
+	
+	result = vkQueuePresentKHR(device_->get_present_queue(), &presentInfo);
+	if (result != VK_SUCCESS) {
+		printf("Error at Queue present!\n");
+	}
 
-			//Se crea la estructura de presentacion para enviarla a la ventana de GLFW
-			VkPresentInfoKHR presentInfo = {};
-			presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-			presentInfo.pNext = nullptr;
-			VkSwapchainKHR aux_swap = swap_chain_->get_swap_chain();
-			presentInfo.pSwapchains = &aux_swap;
-			presentInfo.swapchainCount = 1;
-
-			presentInfo.pWaitSemaphores = &frame_data_->getCurrentFrame().render_semaphore;
-			presentInfo.waitSemaphoreCount = 1;
-
-			presentInfo.pImageIndices = &swap_chain_image_index;
-
-			vkQueuePresentKHR(device_->get_present_queue(), &presentInfo);
-	//}
 
 	//increase the number of frames drawn
 	frame_data_->increaseFrameNumber();

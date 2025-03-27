@@ -42,7 +42,11 @@ VkPipeline PipelineBuilder::BuildPipeline(VkDevice device, int color_attachments
     color_blending.logicOpEnable = VK_FALSE;
     color_blending.logicOp = VK_LOGIC_OP_COPY;
     color_blending.attachmentCount = color_attachments_count;
-    color_blending.pAttachments = &_color_blend_attachment;
+    std::vector<VkPipelineColorBlendAttachmentState> color_blend_attachments;
+    for (int i = 0; i < color_attachments_count; i++) {
+      color_blend_attachments.push_back(_color_blend_attachment);
+    }
+    color_blending.pAttachments = color_blend_attachments.data();
 
     // completely clear VertexInputStateCreateInfo, as we have no need for it
     VkPipelineVertexInputStateCreateInfo _vertex_input_info = { .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO };

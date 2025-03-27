@@ -33,8 +33,6 @@ layout (location = 2) out vec4 outNormal;
 
 
 void main() {
-
-    
     outPos = inPos;
     outNormal = vec4(normalize(inNormal) * 0.5 + 0.5,1.0);
     outAlbedo = texture(baseColorTex,inUV);

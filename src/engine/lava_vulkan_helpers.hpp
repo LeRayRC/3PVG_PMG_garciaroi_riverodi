@@ -83,4 +83,10 @@ std::vector<char> ReadFile(const std::string& filename);
 bool IsDeviceSuitable(VkPhysicalDevice device, VkSurfaceKHR surface, 
 	const std::vector<const char*> required_device_extensions);
 
+void AdvancedTransitionImage(VkCommandBuffer cmd, VkImage image,
+	VkImageLayout oldLayout, VkImageLayout newLayout,
+	VkImageAspectFlags aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+	uint32_t baseMipLevel = 0, uint32_t mipLevelCount = 1,
+	uint32_t baseArrayLayer = 0, uint32_t layerCount = 1);
+
 #endif // !__CUSTOM_VULKAN_HELPERS_H
