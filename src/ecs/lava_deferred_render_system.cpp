@@ -7,6 +7,7 @@
 #include "engine/lava_pipeline.hpp"
 #include "engine/lava_allocator.hpp"
 #include "lava/engine/lava_pbr_material.hpp"
+#include "lava/common/lava_shapes.hpp"
 
 LavaDeferredRenderSystem::LavaDeferredRenderSystem(LavaEngine& engine) :
 	engine_{ engine },
@@ -35,7 +36,8 @@ LavaDeferredRenderSystem::LavaDeferredRenderSystem(LavaEngine& engine) :
 							engine_.global_pbr_descriptor_set_layout_,
 							engine_.global_lights_descriptor_set_layout_,
 							PipelineFlags::PIPELINE_USE_PUSHCONSTANTS | PipelineFlags::PIPELINE_USE_DESCRIPTOR_SET,
-							PipelineBlendMode::PIPELINE_BLEND_ONE_ZERO)) }
+							PipelineBlendMode::PIPELINE_BLEND_ONE_ZERO)) },
+	light_pass_material{ engine_, MaterialPBRProperties()}
 {
 
 	{
@@ -96,6 +98,9 @@ LavaDeferredRenderSystem::LavaDeferredRenderSystem(LavaEngine& engine) :
 
 			vkCreateSampler(engine.device_->get_device(), &sampler_info, nullptr, &shadowmap_sampler_[i]);
 
+
+			//Create quad
+			
 		}
 
 	}
@@ -153,8 +158,11 @@ LavaDeferredRenderSystem::LavaDeferredRenderSystem(LavaEngine& engine) :
 		vkCreateSampler(engine.device_->get_device(), &sampler_info, nullptr, &gbuffer_sampler_[i]);
 
 		
-
+		
 	}
+
+	//Create Quad
+	light_pass_quad_ = CreateQuad(engine_, &light_pass_material);
 }
 
 
@@ -183,18 +191,23 @@ void LavaDeferredRenderSystem::render(
 		color_attachments.push_back(attachmentInfo);
 	}
 
-	VkRenderingAttachmentInfo depth_attachment = vkinit::DepthAttachmentInfo(shadowmap_image_[0].image_view, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
+	{
 
-	VkRenderingInfo renderInfo = vkinit::RenderingInfo(
-		engine_.swap_chain_->get_draw_extent(), 
-		color_attachments.data(), 
-		static_cast<uint32_t>(color_attachments.size()), 
-		&depth_attachment);
+		VkRenderingAttachmentInfo depth_attachment = vkinit::DepthAttachmentInfo(engine_.swap_chain_->get_depth_image().image_view, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
+
+		//VkRenderingAttachmentInfo depth_attachment = vkinit::DepthAttachmentInfo(shadowmap_image_[0].image_view, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
+
+		VkRenderingInfo renderInfo = vkinit::RenderingInfo(
+			engine_.swap_chain_->get_draw_extent(), 
+			color_attachments.data(), 
+			static_cast<uint32_t>(color_attachments.size()), 
+			&depth_attachment);
 
 
-	vkCmdBeginRendering(cmd, &renderInfo);
+		vkCmdBeginRendering(cmd, &renderInfo);
 
-	engine_.setDynamicViewportAndScissor(engine_.swap_chain_->get_draw_extent());
+		engine_.setDynamicViewportAndScissor(engine_.swap_chain_->get_draw_extent());
+	}
 
 	vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_geometry_pass_->get_pipeline());
 	//Bind both descriptor sets on the mesh
@@ -253,6 +266,11 @@ void LavaDeferredRenderSystem::render(
 	}
 
 	vkCmdEndRendering(cmd);
+
+
+	//Light Pass 
+
+
 
 	pipelineBarrierForRenderPassEnd(cmd);
 

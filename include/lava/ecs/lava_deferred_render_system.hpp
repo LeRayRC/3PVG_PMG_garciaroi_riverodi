@@ -2,6 +2,7 @@
 #define __LAVA_DEFERRED_RENDER_SYSTEM_H__ 1
 
 //#include "engine/lava_pipeline.hpp"
+#include "lava/engine/lava_pbr_material.hpp"
 #include "lava/ecs/lava_ecs_components.hpp"
 
 
@@ -26,6 +27,11 @@ private:
 	std::unique_ptr<class LavaPipeline> pipeline_light_pass_;
 	std::unique_ptr<class LavaPipeline> pipeline_first_light_;
 	std::unique_ptr<class LavaPipeline> pipeline_shadows_[3];
+
+
+	LavaPBRMaterial light_pass_material;
+	std::shared_ptr<class LavaMesh> light_pass_quad_;
+
 
 	//std::unique_ptr<class LavaImage> shadowmap_image_;
 	//Shadow Maps Images

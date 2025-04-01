@@ -3,6 +3,51 @@
 #include "lava/engine/lava_pbr_material.hpp"
 #include "PerlinNoise.hpp"
 
+
+std::shared_ptr<LavaMesh> CreateQuad(LavaEngine& engine, LavaPBRMaterial* material, float size) {
+
+  std::vector<VertexWithTangents> quad_vertices(4);
+
+  // Posiciones de los vértices
+  quad_vertices[0].position = { -size, -size, 0.0f };
+  quad_vertices[1].position = { +size, -size, 0.0f };
+  quad_vertices[2].position = { +size, +size, 0.0f };
+  quad_vertices[3].position = { -size, +size, 0.0f };
+
+  glm::vec3 normal = { 0.0f, 0.0f, 1.0f };
+
+  glm::vec2 uv[4] = {
+      {0.0f, 0.0f},
+      {1.0f, 0.0f},
+      {1.0f, 1.0f},
+      {0.0f, 1.0f} 
+  };
+
+  glm::vec4 color = { 1.0f, 1.0f, 1.0f, 1.0f };
+
+  for (int i = 0; i < 4; ++i) {
+    quad_vertices[i].normal = normal;
+    quad_vertices[i].color = color;
+    quad_vertices[i].uv_x = uv[i].x;
+    quad_vertices[i].uv_y = uv[i].y;
+  }
+
+  std::vector<uint32_t> quad_index = {
+      0, 1, 3,  
+      1, 2, 3   
+  };
+
+  MeshProperties mesh_properties = {};
+  mesh_properties.name = "Quad Mesh";
+  mesh_properties.type = MESH_CUSTOM;
+  mesh_properties.material = material;
+  mesh_properties.index = quad_index;
+  mesh_properties.vertex = quad_vertices;
+
+  std::shared_ptr<LavaMesh> quad_mesh = std::make_shared<LavaMesh>(engine, mesh_properties);
+  return quad_mesh;
+}
+
 std::shared_ptr<LavaMesh> CreateCube24v(LavaEngine& engine, LavaPBRMaterial* material, float size) {
 
   

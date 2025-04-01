@@ -114,13 +114,16 @@ int main(int argc, char* argv[]) {
 
 	LavaPBRMaterial basic_material(engine, MaterialPBRProperties());
 	MeshProperties mesh_properties = {};
-	mesh_properties.mesh_path = "../examples/assets/Avocado.glb";
+
+	mesh_properties.mesh_path = "../examples/assets/itfigure/itfigure.gltf";
 	mesh_properties.material = &basic_material;
 
-	std::shared_ptr<LavaMesh> mesh_ = std::make_shared<LavaMesh>(engine, mesh_properties);
 
 	std::shared_ptr<LavaImage> sun_texture = std::make_shared<LavaImage>(&engine, "../examples/assets/textures/sun.jpg");
 	std::shared_ptr<LavaImage> forest_texture = std::make_shared<LavaImage>(&engine, "../examples/assets/textures/forest.png");
+
+
+	std::shared_ptr<LavaMesh> mesh_ = std::make_shared<LavaMesh>(engine, mesh_properties);
 
 	LavaPBRMaterial cube_material(engine, MaterialPBRProperties());
 	std::shared_ptr<LavaMesh> cube_mesh = CreateCube24v(engine, &cube_material);
@@ -168,7 +171,7 @@ int main(int argc, char* argv[]) {
 		if (transform_component) {
 			auto& transform = transform_component->value();
 			transform.pos_ = glm::vec3(0.0f, 0.0f, -2.0f);
-			transform.scale_ = glm::vec3(10.0f, 10.0f, 10.0f);
+			transform.scale_ = glm::vec3(20.0f, 20.0f, 20.0f);
 		}
 
 		auto render_component = ecs_manager.getComponent<RenderComponent>(entity);
@@ -315,11 +318,11 @@ int main(int argc, char* argv[]) {
 
 		//pbr_render_system.renderWithShadows(ecs_manager.getComponentList<TransformComponent>(),
 		//	ecs_manager.getComponentList<RenderComponent>(), ecs_manager.getComponentList<LightComponent>());
-		diffuse_render_system.render(ecs_manager.getComponentList<TransformComponent>(),
-			ecs_manager.getComponentList<RenderComponent>());
+		//diffuse_render_system.render(ecs_manager.getComponentList<TransformComponent>(),
+		//	ecs_manager.getComponentList<RenderComponent>());
 
-		//deferred_render_system.render(ecs_manager.getComponentList<TransformComponent>(),
-		//	ecs_manager.getComponentList<RenderComponent>(), ecs_manager.getComponentList<LightComponent>());
+		deferred_render_system.render(ecs_manager.getComponentList<TransformComponent>(),
+			ecs_manager.getComponentList<RenderComponent>(), ecs_manager.getComponentList<LightComponent>());
 
 		ecs_render_imgui(ecs_manager, camera_entity);
 
