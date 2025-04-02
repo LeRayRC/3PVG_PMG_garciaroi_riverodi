@@ -102,6 +102,33 @@ void ecs_light_imgui(std::vector<std::optional<TransformComponent>>& transform_v
 }
 
 
+void DeferredRenderMode(LavaEngine& engine) {
+	ImGui::Begin("Deferred Render Selector");
+
+	static bool albedo, normal;
+	if(ImGui::Checkbox("Albedo", &albedo)){
+		if (albedo) {
+			engine.global_scene_data_.gbuffer_render_selected = GBUFFER_ALBEDO;
+		}
+		else {
+			engine.global_scene_data_.gbuffer_render_selected = GBUFFER_NORMAL;
+		}
+		normal = !albedo;
+	}
+	if(ImGui::Checkbox("Normal", &normal)){
+		if (normal) {
+			engine.global_scene_data_.gbuffer_render_selected = GBUFFER_NORMAL;
+		}
+		else {
+			engine.global_scene_data_.gbuffer_render_selected = GBUFFER_ALBEDO;
+		}
+		albedo = !normal;
+	}
+
+	ImGui::End();
+}
+
+
 int main(int argc, char* argv[]) {
 	std::shared_ptr<LavaWindowSystem>  lava_system = LavaWindowSystem::Get();
 	LavaEngine engine(1280,720);
@@ -325,6 +352,7 @@ int main(int argc, char* argv[]) {
 			ecs_manager.getComponentList<RenderComponent>(), ecs_manager.getComponentList<LightComponent>());
 
 		ecs_render_imgui(ecs_manager, camera_entity);
+		DeferredRenderMode(engine);
 
 		engine.endFrame();
 	}

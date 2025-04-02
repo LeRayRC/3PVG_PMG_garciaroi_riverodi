@@ -24,6 +24,9 @@ layout (location = 0) out vec4 outPos;
 
 
 void main() {
-    outPos = texture(baseColorTex,inUV);
-
+		if((globalData.gbuffer_render_selected & (1<<2)) == (1<<2)){
+			outPos = texture(baseColorTex,inUV);
+		}else if((globalData.gbuffer_render_selected & (1 << 1)) == (1 << 1)){
+			outPos = texture(normalTex,inUV);
+		}
 }

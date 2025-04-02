@@ -91,7 +91,9 @@ LavaEngine::LavaEngine(unsigned int window_width, unsigned int window_height) :
 	global_scene_data_.proj[1][1] *= -1;
 	global_scene_data_.view = glm::mat4(1.0f);
 	global_scene_data_.viewproj = global_scene_data_.proj * global_scene_data_.view;
+	global_scene_data_.gbuffer_render_selected = GBUFFER_ALBEDO;
 	global_data_buffer_->updateBufferData(&global_scene_data_, sizeof(GlobalSceneData));
+	
 
 
 	//Default data
@@ -141,6 +143,7 @@ void LavaEngine::initGlobalData() {
 	DescriptorLayoutBuilder builder;
 	builder.addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
 	global_descriptor_set_layout_ = builder.build(device_->get_device(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
+
 	global_descriptor_set_ = global_descriptor_allocator_->allocate(global_descriptor_set_layout_);
 	global_data_buffer_ = std::make_unique<LavaBuffer>(*allocator_, sizeof(GlobalSceneData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
 	global_data_buffer_->setMappedData();
@@ -166,6 +169,8 @@ void LavaEngine::initGlobalData() {
 	builder.addBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER); // opacity
 	builder.addBinding(4, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
 	global_pbr_descriptor_set_layout_ = builder.build(device_->get_device(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
+
+
 }
 
 void LavaEngine::beginFrame() {

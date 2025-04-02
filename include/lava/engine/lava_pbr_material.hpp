@@ -5,6 +5,7 @@
 #include "lava/ecs/lava_ecs_components.hpp"
 #include "lava/engine/lava_engine.hpp"
 
+
 struct MaterialPBRProperties {
 	std::string name = "PBR_MATERIAL";
 };
@@ -15,7 +16,7 @@ struct LavaPBRMaterialProperties {
 	float roughness_factor_; //Determines the roughness value of the metallic parts of the texture Default value 0.5f
 	float specular_factor_;
 	float opacity_mask_;
-	float use_normal_; //Determines to use 
+	float use_normal_; //Determines to use
 };
 
 
@@ -50,6 +51,8 @@ public:
 		normal_ = image;
 		UpdateDescriptorSet();
 	}
+
+	
 
 	void UpdateDescriptorSet();
 

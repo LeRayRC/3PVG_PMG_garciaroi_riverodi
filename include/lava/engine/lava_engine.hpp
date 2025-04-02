@@ -28,7 +28,7 @@ struct GlobalSceneData {
 	glm::mat4 proj;
 	glm::mat4 viewproj;
 	glm::vec3 ambientColor;
-	int padding1;
+	int gbuffer_render_selected;
 	glm::vec3 cameraPos;
 	int padding2;
 };

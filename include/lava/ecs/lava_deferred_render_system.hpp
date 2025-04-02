@@ -12,7 +12,7 @@ public:
 	LavaDeferredRenderSystem(class LavaEngine& engine);
 	~LavaDeferredRenderSystem();
 
-
+	
 	void render(std::vector<std::optional<TransformComponent>>&,
 		std::vector<std::optional<RenderComponent>>&,
 		std::vector<std::optional<LightComponent>>& light_component_vector);
@@ -33,20 +33,15 @@ private:
 	std::shared_ptr<class LavaMesh> light_pass_quad_;
 
 
-	//std::unique_ptr<class LavaImage> shadowmap_image_;
-	//Shadow Maps Images
+	//Gbuffer mapping
 	// 0 -> Position 
 	// 1 -> Albedo 
 	// 2 -> Normal
 	static const int gbuffer_count = 3;
 	std::shared_ptr<LavaImage> gbuffers_[gbuffer_count];
-	//AllocatedImage gbuffer_[gbuffer_count];
-	//VkSampler gbuffer_sampler_[gbuffer_count];
-
 
 	AllocatedImage shadowmap_image_[3];
 	VkSampler shadowmap_sampler_[3];
-
 
 	void allocate_lights(std::vector<std::optional<struct LightComponent>>& light_component_vector);
 	void update_lights(std::vector<std::optional<struct LightComponent>>& light_component_vector,
