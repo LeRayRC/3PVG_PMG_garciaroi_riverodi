@@ -89,4 +89,6 @@ void AdvancedTransitionImage(VkCommandBuffer cmd, VkImage image,
 	uint32_t baseMipLevel = 0, uint32_t mipLevelCount = 1,
 	uint32_t baseArrayLayer = 0, uint32_t layerCount = 1);
 
+
+
 #endif // !__CUSTOM_VULKAN_HELPERS_H

@@ -52,6 +52,11 @@ public:
 		UpdateDescriptorSet();
 	}
 
+	void UpdatePositionImage(std::shared_ptr<class LavaImage> image) {
+		position_ = image;
+		UpdateDescriptorSet();
+	}
+
 	
 
 	void UpdateDescriptorSet();
@@ -66,6 +71,8 @@ private:
 	std::shared_ptr<class LavaImage> opacity_; // If null pick the global opacity mask completely white
 	
 	std::shared_ptr<class LavaImage> normal_; // If null pick the global normal texture
+
+	std::shared_ptr<class LavaImage> position_; // If null doesnt matter, only used in deferred rendering
 
 	LavaPBRMaterialProperties uniform_properties;
 	

@@ -24,8 +24,9 @@ public:
 private:
 	class LavaEngine& engine_;
 	std::unique_ptr<class LavaPipeline> pipeline_geometry_pass_;
-	std::unique_ptr<class LavaPipeline> pipeline_light_pass_;
-	std::unique_ptr<class LavaPipeline> pipeline_first_light_;
+	std::unique_ptr<class LavaPipeline> pipeline_light_pass_first_;
+	std::unique_ptr<class LavaPipeline> pipeline_light_pass_additive_;
+	std::unique_ptr<class LavaPipeline> pipeline_light_pass_ambient_;
 	std::unique_ptr<class LavaPipeline> pipeline_shadows_[3];
 
 
@@ -46,6 +47,16 @@ private:
 	void allocate_lights(std::vector<std::optional<struct LightComponent>>& light_component_vector);
 	void update_lights(std::vector<std::optional<struct LightComponent>>& light_component_vector,
 		std::vector<std::optional<struct TransformComponent>>& transform_vector);
+
+	void renderGeometryPass(std::vector<std::optional<TransformComponent>>& transform_vector,
+		std::vector<std::optional<RenderComponent>>& render_vector,
+		std::vector<std::optional<LightComponent>>& light_component_vector);
+
+	void renderLightPass(std::vector<std::optional<TransformComponent>>& transform_vector,
+		std::vector<std::optional<RenderComponent>>& render_vector,
+		std::vector<std::optional<LightComponent>>& light_component_vector);
+
+
 
 	void setupGBufferBarriers(VkCommandBuffer cmd, VkImageLayout newLayout);
 	void setupShadowMapBarriers(VkCommandBuffer cmd, VkImageLayout newLayout);

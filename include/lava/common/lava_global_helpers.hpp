@@ -151,4 +151,8 @@ static inline void UpdateCameraWithInput(size_t id, LavaECSManager* ecs_manager,
   }
 }
 
+void allocate_lights(std::vector<std::optional<struct LightComponent>>& light_component_vector);
+void update_lights(std::vector<std::optional<struct LightComponent>>& light_component_vector,
+  std::vector<std::optional<struct TransformComponent>>& transform_vector);
+
 #endif // !__LAVA_GLOBAL_HELPERS_H__

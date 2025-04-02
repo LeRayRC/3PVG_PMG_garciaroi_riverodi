@@ -566,3 +566,14 @@ void AdvancedTransitionImage(VkCommandBuffer cmd, VkImage image,
 
 	vkCmdPipelineBarrier2(cmd, &dependencyInfo);
 }
+
+
+
+
+
+void update_lights(std::vector<std::optional<struct LightComponent>>& light_component_vector,
+	std::vector<std::optional<struct TransformComponent>>& transform_vector) {
+
+
+
+}
