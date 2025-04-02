@@ -103,6 +103,23 @@ LavaImage::LavaImage(LavaEngine* engine,
 	stbi_image_free(data);
 }
 
+LavaImage::LavaImage(LavaEngine* engine,
+	VkExtent3D imagesize,
+	VkFormat format,
+	VkImageUsageFlags usage,
+	bool mipmapped) {
+
+	engine_ = engine;
+	allocate(imagesize, format, usage, mipmapped);
+
+	VkSamplerCreateInfo sampler_info = {};
+	sampler_info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+	sampler_info.magFilter = VK_FILTER_LINEAR;
+	sampler_info.minFilter = VK_FILTER_LINEAR;
+
+	vkCreateSampler(engine->device_->get_device(), &sampler_info, nullptr, &sampler_);
+}
+
 
 
 

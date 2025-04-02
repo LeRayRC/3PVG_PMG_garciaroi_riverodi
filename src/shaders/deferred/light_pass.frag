@@ -18,22 +18,12 @@ layout(set = 1, binding = 4) uniform LavaPBRMaterialProperties {
 }properties;
 
 
-layout (location = 0) in vec3 inColor;
-layout (location = 1) in vec2 inUV;
-layout (location = 2) in vec3 inNormal;
-layout (location = 3) in vec4 inPos;
-layout (location = 4) in vec3 TangentLightPos;
-layout (location = 5) in vec3 TangentViewPos;
-layout (location = 6) in vec3 TangentFragPos;
-//layout (location = 7) in vec4 fragPosLightSpace;
+layout (location = 0) in vec2 inUV;
 
 layout (location = 0) out vec4 outPos;
-layout (location = 1) out vec4 outAlbedo;
-layout (location = 2) out vec4 outNormal;
 
 
 void main() {
-    outPos = inPos;
-    outNormal = vec4(normalize(inNormal) * 0.5 + 0.5,1.0);
-    outAlbedo = texture(baseColorTex,inUV);
+    outPos = texture(baseColorTex,inUV);
+
 }

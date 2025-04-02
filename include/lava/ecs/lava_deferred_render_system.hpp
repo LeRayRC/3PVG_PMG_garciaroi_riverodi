@@ -39,8 +39,9 @@ private:
 	// 1 -> Albedo 
 	// 2 -> Normal
 	static const int gbuffer_count = 3;
-	AllocatedImage gbuffer_[gbuffer_count];
-	VkSampler gbuffer_sampler_[gbuffer_count];
+	std::shared_ptr<LavaImage> gbuffers_[gbuffer_count];
+	//AllocatedImage gbuffer_[gbuffer_count];
+	//VkSampler gbuffer_sampler_[gbuffer_count];
 
 
 	AllocatedImage shadowmap_image_[3];

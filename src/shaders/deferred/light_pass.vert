@@ -6,7 +6,7 @@
 
 
 
-layout (location = 1) out vec2 outUV;
+layout (location = 0) out vec2 outUV;
 
 struct Vertex {
 	vec3 position;
@@ -39,7 +39,7 @@ void main()
     //load vertex data from device adress
 	Vertex v = PushConstants.vertexBuffer.vertices[gl_VertexIndex];
 
-	gl_Position = vec4(v.position);
+	gl_Position = vec4(v.position,1.0);
 
 	outUV.x = v.uv_x;
 	outUV.y = v.uv_y;
