@@ -12,14 +12,9 @@ public:
 	LavaDeferredRenderSystem(class LavaEngine& engine);
 	~LavaDeferredRenderSystem();
 
-	
 	void render(std::vector<std::optional<TransformComponent>>&,
 		std::vector<std::optional<RenderComponent>>&,
 		std::vector<std::optional<LightComponent>>& light_component_vector);
-
-	//void renderWithShadows(std::vector<std::optional<TransformComponent>>&,
-	//	std::vector<std::optional<RenderComponent>>&,
-	//	std::vector<std::optional<LightComponent>>& light_component_vector);
 
 private:
 	class LavaEngine& engine_;
@@ -33,21 +28,19 @@ private:
 	LavaPBRMaterial light_pass_material;
 	std::shared_ptr<class LavaMesh> light_pass_quad_;
 
-
 	//Gbuffer mapping
 	// 0 -> Position 
 	// 1 -> Albedo 
 	// 2 -> Normal
 	static const int gbuffer_count = 3;
 	std::shared_ptr<LavaImage> gbuffers_[gbuffer_count];
-	//DIRECTIONAL, POINT , SPOT
+	// 0 -> DIRECTIONAL
+	// 1 -> POINT 
+	// 2 -> SPOT
 	std::shared_ptr<LavaImage> shadowmaps_[3];
 
-	//AllocatedImage shadowmap_image_[3];
-	//VkSampler shadowmap_sampler_[3];
-
-	void allocate_lights(std::vector<std::optional<struct LightComponent>>& light_component_vector);
-	void update_lights(std::vector<std::optional<struct LightComponent>>& light_component_vector,
+	void allocateLights(std::vector<std::optional<struct LightComponent>>& light_component_vector);
+	void updateLights(std::vector<std::optional<struct LightComponent>>& light_component_vector,
 		std::vector<std::optional<struct TransformComponent>>& transform_vector);
 
 	void renderGeometryPass(std::vector<std::optional<TransformComponent>>& transform_vector,

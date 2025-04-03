@@ -117,7 +117,6 @@ LavaDeferredRenderSystem::LavaDeferredRenderSystem(LavaEngine& engine) :
 	shadowmap_image_usages |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
 	shadowmap_image_usages |= VK_IMAGE_USAGE_SAMPLED_BIT;
 
-
 	VkSamplerCreateInfo shadowmap_sampler_info{};
 	shadowmap_sampler_info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
 	shadowmap_sampler_info.magFilter = VK_FILTER_LINEAR;
@@ -135,15 +134,8 @@ LavaDeferredRenderSystem::LavaDeferredRenderSystem(LavaEngine& engine) :
 	shadowmap_sampler_info.minLod = 0.0f;
 	shadowmap_sampler_info.maxLod = 0.0f;
 
-		//VmaAllocationCreateInfo rimg_allocinfo = {};
-		//rimg_allocinfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
-		//rimg_allocinfo.requiredFlags = VkMemoryPropertyFlags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
 	for (int i = 0; i < 3; i++) {
-		//Create shadow map on the swapchain
-		//shadowmap_image_[i].image_format = VK_FORMAT_D32_SFLOAT;
-		//shadowmap_image_[i].image_extent = draw_image_extent;
-		
+
 		int layers = 1;
 		if (i == 0) layers = 3;
 		else if (i == 1)layers = 6;
@@ -156,42 +148,8 @@ LavaDeferredRenderSystem::LavaDeferredRenderSystem(LavaEngine& engine) :
 			layers,
 			&shadowmap_sampler_info
 			);
-
-
-		//VkImageCreateInfo shadowmap_img_info = vkinit::ImageCreateInfo(shadowmap_image_[i].image_format,
-		//	shadowmap_image_usages, draw_image_extent, layers);
-
-		////allocate and create the image
-		//vmaCreateImage(engine_.allocator_->get_allocator(), &shadowmap_img_info, &rimg_allocinfo, &shadowmap_image_[i].image, &shadowmap_image_[i].allocation, nullptr);
-
-		////build a image-view for the draw image to use for rendering
-		//VkImageViewCreateInfo shadowmap_view_info = vkinit::ImageViewCreateInfo(shadowmap_image_[i].image_format, shadowmap_image_[i].image, VK_IMAGE_ASPECT_DEPTH_BIT, layers);
-
-		//if (vkCreateImageView(engine.device_->get_device(), &shadowmap_view_info, nullptr, &shadowmap_image_[i].image_view) !=
-		//	VK_SUCCESS) {
-		//	printf("Error creating shadowmap image view!\n");
-		//}
-
-		//VkSamplerCreateInfo sampler_info{};
-		//sampler_info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-		//sampler_info.magFilter = VK_FILTER_LINEAR;
-		//sampler_info.minFilter = VK_FILTER_LINEAR;
-		//sampler_info.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-		//sampler_info.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-		//sampler_info.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-		//sampler_info.anisotropyEnable = VK_FALSE;
-		//sampler_info.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK;
-		//sampler_info.unnormalizedCoordinates = VK_FALSE;
-		//sampler_info.compareEnable = VK_FALSE;
-		//sampler_info.compareOp = VK_COMPARE_OP_ALWAYS;
-		//sampler_info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
-		//sampler_info.mipLodBias = 0.0f;
-		//sampler_info.minLod = 0.0f;
-		//sampler_info.maxLod = 0.0f;
-
-
-		//vkCreateSampler(engine.device_->get_device(), &sampler_info, nullptr, &shadowmap_sampler_[i]);
 	}
+
 
 	VkImageUsageFlags draw_image_usages{};
 	draw_image_usages |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
@@ -231,8 +189,8 @@ void LavaDeferredRenderSystem::render(
 	FrameData& frame_data = engine_.frame_data_->getCurrentFrame();
 
 
-	allocate_lights(light_component_vector);
-	update_lights(light_component_vector, transform_vector);
+	allocateLights(light_component_vector);
+	updateLights(light_component_vector, transform_vector);
 
 	renderGeometryPass(transform_vector, render_vector, light_component_vector);
 	renderShadowMaps(transform_vector, render_vector, light_component_vector);
@@ -250,8 +208,6 @@ void LavaDeferredRenderSystem::render(
 		engine_.swap_chain_->get_swap_chain_images()[engine_.swap_chain_image_index], engine_.swap_chain_->get_draw_extent(), engine_.window_extent_);
 
 }
-
-//Shadowmap generated previously
 
 void LavaDeferredRenderSystem::renderAmbient() {
 	VkCommandBuffer cmd = engine_.commandBuffer;
@@ -511,7 +467,6 @@ void LavaDeferredRenderSystem::renderGeometryPass(
 		VK_IMAGE_LAYOUT_UNDEFINED,
 		VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
 		VK_IMAGE_ASPECT_DEPTH_BIT);
-	//TransitionImage(engine_.commandBuffer, engine_.swap_chain_->get_depth_image().image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
 
 	std::vector<VkRenderingAttachmentInfo> color_attachments;
 	for (auto& gbuffer_image : gbuffers_) {
@@ -525,22 +480,21 @@ void LavaDeferredRenderSystem::renderGeometryPass(
 		color_attachments.push_back(attachmentInfo);
 	}
 
-	{
+	
 
-		VkRenderingAttachmentInfo depth_attachment = vkinit::DepthAttachmentInfo(engine_.swap_chain_->get_depth_image().image_view, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
-		//VkRenderingAttachmentInfo depth_attachment = vkinit::DepthAttachmentInfo(shadowmap_image_[0].image_view, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
+	VkRenderingAttachmentInfo depth_attachment = vkinit::DepthAttachmentInfo(
+		engine_.swap_chain_->get_depth_image().image_view, 
+		VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, 
+		VK_ATTACHMENT_LOAD_OP_CLEAR);
+	VkRenderingInfo renderInfo = vkinit::RenderingInfo(
+		engine_.swap_chain_->get_draw_extent(),
+		color_attachments.data(),
+		static_cast<uint32_t>(color_attachments.size()),
+		&depth_attachment);
 
-		VkRenderingInfo renderInfo = vkinit::RenderingInfo(
-			engine_.swap_chain_->get_draw_extent(),
-			color_attachments.data(),
-			static_cast<uint32_t>(color_attachments.size()),
-			&depth_attachment);
-
-
-		vkCmdBeginRendering(cmd, &renderInfo);
-
-		engine_.setDynamicViewportAndScissor(engine_.swap_chain_->get_draw_extent());
-	}
+	vkCmdBeginRendering(cmd, &renderInfo);
+	engine_.setDynamicViewportAndScissor(engine_.swap_chain_->get_draw_extent());
+	
 
 	vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_geometry_pass_->get_pipeline());
 	//Bind both descriptor sets on the mesh
@@ -599,21 +553,12 @@ void LavaDeferredRenderSystem::renderGeometryPass(
 	}
 
 	vkCmdEndRendering(cmd);
-
-
 	setupGBufferBarriers(cmd, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
 }
 
-
-
 LavaDeferredRenderSystem::~LavaDeferredRenderSystem()
 {
-	//for (int i = 0; i < 3; i++) {
-	//	vkDestroySampler(engine_.device_->get_device(), shadowmap_sampler_[i], nullptr);
-	//	vkDestroyImageView(engine_.device_->get_device(), shadowmap_image_[i].image_view, nullptr);
-	//	vmaDestroyImage(engine_.allocator_->get_allocator(), shadowmap_image_[i].image, shadowmap_image_[i].allocation);
-	//}
 }
 
 
@@ -703,7 +648,7 @@ void LavaDeferredRenderSystem::setupShadowMapBarriers(VkCommandBuffer cmd, VkIma
 	vkCmdPipelineBarrier2(cmd, &dependencyInfo);
 }
 
-void LavaDeferredRenderSystem::allocate_lights(std::vector<std::optional<struct LightComponent>>& light_component_vector)
+void LavaDeferredRenderSystem::allocateLights(std::vector<std::optional<struct LightComponent>>& light_component_vector)
 {
 	auto light_it = light_component_vector.begin();
 	auto light_end = light_component_vector.end();
@@ -759,7 +704,7 @@ void LavaDeferredRenderSystem::allocate_lights(std::vector<std::optional<struct 
 	}
 }
 
-void LavaDeferredRenderSystem::update_lights(std::vector<std::optional<struct LightComponent>>& light_component_vector, std::vector<std::optional<struct TransformComponent>>& transform_vector)
+void LavaDeferredRenderSystem::updateLights(std::vector<std::optional<struct LightComponent>>& light_component_vector, std::vector<std::optional<struct TransformComponent>>& transform_vector)
 {
 	auto light_transform_it = transform_vector.begin();
 	auto light_transform_end = transform_vector.end();
