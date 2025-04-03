@@ -40,9 +40,11 @@ private:
 	// 2 -> Normal
 	static const int gbuffer_count = 3;
 	std::shared_ptr<LavaImage> gbuffers_[gbuffer_count];
+	//DIRECTIONAL, POINT , SPOT
+	std::shared_ptr<LavaImage> shadowmaps_[3];
 
-	AllocatedImage shadowmap_image_[3];
-	VkSampler shadowmap_sampler_[3];
+	//AllocatedImage shadowmap_image_[3];
+	//VkSampler shadowmap_sampler_[3];
 
 	void allocate_lights(std::vector<std::optional<struct LightComponent>>& light_component_vector);
 	void update_lights(std::vector<std::optional<struct LightComponent>>& light_component_vector,
@@ -64,9 +66,6 @@ private:
 
 	void setupGBufferBarriers(VkCommandBuffer cmd, VkImageLayout newLayout);
 	void setupShadowMapBarriers(VkCommandBuffer cmd, VkImageLayout newLayout);
-
-	void pipelineBarrierForRenderPassStart(VkCommandBuffer cmd);
-	void pipelineBarrierForRenderPassEnd(VkCommandBuffer cmd);
 };
 
 

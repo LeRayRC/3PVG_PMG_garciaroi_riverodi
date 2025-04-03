@@ -42,12 +42,12 @@ layout(set = 2, binding = 0) uniform LightProperties{
     float outer_cutoff;
 } light;
 
-//layout(set = 2, binding = 1) uniform LightViewProj{
-//  mat4 viewproj[6];
-//}light_viewproj;
-//layout(set = 2, binding = 2) uniform sampler2D  shadowMap;
-//layout(set = 2, binding = 3) uniform samplerCube depthMap;
-//layout(set = 2, binding = 4) uniform sampler2DArray directionalShadowMaps;
+layout(set = 2, binding = 1) uniform LightViewProj{
+  mat4 viewproj[6];
+}light_viewproj;
+layout(set = 2, binding = 2) uniform sampler2D  spotShadowMap;
+layout(set = 2, binding = 3) uniform samplerCube pointShadowMapCube;
+layout(set = 2, binding = 4) uniform sampler2DArray directionalShadowMaps;
 
 
 layout (location = 0) in vec2 inUV;
@@ -111,6 +111,18 @@ vec3 SpotLight(vec3 position, vec3 normal) {
     return result;
 }
 
+float SpotShadowCalculation(vec3 position)
+{ 
+  vec4 fragPosLightSpace = light_viewproj.viewproj[0] * vec4(position, 1.0);
+
+  vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+  float currentDepth = projCoords.z;
+  projCoords = projCoords * 0.5 + 0.5;
+  float closestDepth = texture(spotShadowMap, projCoords.xy).r;
+  float shadow = currentDepth + 0.005 < closestDepth  ? 1.0 : 0.0;
+  return shadow;
+}
+
 
 
 void main() {
@@ -130,7 +142,9 @@ void main() {
                 lighting += PointLight(position, normal);
                 break;
             case 2: // Spot
-                lighting += SpotLight(position, normal);
+                float shadow = SpotShadowCalculation(position);
+                vec3 lightColor = SpotLight(position, normal);
+                lighting += lightColor * (1.0 - shadow);
                 break;
             default:
                 break;
