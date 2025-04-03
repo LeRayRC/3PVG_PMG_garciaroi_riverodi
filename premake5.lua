@@ -123,6 +123,7 @@ workspace "Lava"
         debugargs { _MAIN_SCRIPT_DIR .. "/examples/data" }
         files "examples/flycam_demostrator.cpp"
         files "src/shaders/*"
+        files "src/shaders/*/*"
         files "src/stdafx.cpp"
         files "examples/assets/*"
         common_settings()
@@ -142,6 +143,7 @@ workspace "Lava"
 		debugargs { _MAIN_SCRIPT_DIR .. "/examples/data" }
 		files "examples/shadows_demostrator.cpp"
 		files "src/shaders/*"
+        files "src/shaders/*/*"
 		files "src/stdafx.cpp"
 		files "examples/assets/*"
 		common_settings()

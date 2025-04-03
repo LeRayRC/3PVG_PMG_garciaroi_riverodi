@@ -44,6 +44,8 @@ layout(set = 2, binding = 3) uniform samplerCube depthMap;
 layout(set = 2, binding = 4) uniform sampler2DArray directionalShadowMaps;
 
 
+
+
 //shader input
 layout (location = 0) in vec3 inColor;
 layout (location = 1) in vec2 inUV;
@@ -254,9 +256,6 @@ float DirectionalShadowCalculation(vec3 fragPos){
 
 void main() 
 {
-
- 
-
 
   if(light.enabled == 1){
     

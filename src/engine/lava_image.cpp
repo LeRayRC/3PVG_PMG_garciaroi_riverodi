@@ -103,6 +103,30 @@ LavaImage::LavaImage(LavaEngine* engine,
 	stbi_image_free(data);
 }
 
+LavaImage::LavaImage(LavaEngine* engine,
+	VkExtent3D imagesize,
+	VkFormat format,
+	VkImageUsageFlags usage,
+	bool mipmapped,
+	int layers,
+	VkSamplerCreateInfo* sampler_info_ptr) {
+
+	engine_ = engine;
+	allocate(imagesize, format, usage, mipmapped,layers);
+
+	VkSamplerCreateInfo sampler_info = {};
+	if (sampler_info_ptr) {
+		sampler_info = *sampler_info_ptr;
+	}
+	else {
+		sampler_info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+		sampler_info.magFilter = VK_FILTER_LINEAR;
+		sampler_info.minFilter = VK_FILTER_LINEAR;
+	}
+
+	vkCreateSampler(engine->device_->get_device(), &sampler_info, nullptr, &sampler_);
+}
+
 
 
 
@@ -115,12 +139,12 @@ LavaImage::~LavaImage(){
 
 
 
-void LavaImage::allocate(VkExtent3D size, VkFormat format, VkImageUsageFlags usage, bool mipmapped)
+void LavaImage::allocate(VkExtent3D size, VkFormat format, VkImageUsageFlags usage, bool mipmapped, int layers)
 {
 	image_.image_format = format;
 	image_.image_extent = size;
 
-	VkImageCreateInfo img_info = vkinit::ImageCreateInfo(format, usage, size);
+	VkImageCreateInfo img_info = vkinit::ImageCreateInfo(format, usage, size, layers);
 	if (mipmapped) {
 		img_info.mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(size.width, size.height)))) + 1;
 	}

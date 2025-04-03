@@ -29,4 +29,11 @@ struct VertexWithTangents {
 	float padding2;
 };
 
+enum GBUFFER {
+	GBUFFER_POSITION = 1,
+	GBUFFER_NORMAL = 1 << 1,
+	GBUFFER_ALBEDO = 1 << 2,
+	GBUFFER_ALL = (GBUFFER_POSITION) | (GBUFFER_NORMAL) | (GBUFFER_ALBEDO),
+};
+
 #endif // ! __LAVA_CUSTOM_TYPES_

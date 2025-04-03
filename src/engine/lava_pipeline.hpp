@@ -38,6 +38,7 @@ public:
 	int pipeline_flags;
 	PipelineBlendMode blend_mode;
 	const char* geometry_shader_path = nullptr;
+	int color_attachments_count = 1;
 };
 
 class LavaPipeline

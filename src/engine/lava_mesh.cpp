@@ -180,22 +180,38 @@ template<typename t>
 bool LavaMesh::loadAsGLTF(std::filesystem::path file_path) {
   std::cout << "Loading GLTF: " << file_path << std::endl;
 
+  const auto root_path = file_path.parent_path();
+
   fastgltf::GltfDataBuffer data;
   data.loadFromFile(file_path);
 
+  auto extension = file_path.extension().string();
+  std::transform(extension.begin(), extension.end(), extension.begin(), ::tolower);
+
   constexpr auto gltfOptions = fastgltf::Options::LoadGLBBuffers
-    | fastgltf::Options::LoadExternalBuffers;
+    | fastgltf::Options::LoadExternalBuffers;// | fastgltf::Options::LoadExternalImages;
 
   fastgltf::Asset gltf;
   fastgltf::Parser parser{};
 
-  auto load = parser.loadGltfBinary(&data, file_path.parent_path(), gltfOptions);
-  if (load) {
-    gltf = std::move(load.get());
+  if (extension == ".glb") {
+    auto result = parser.loadGltfBinary(&data, file_path.parent_path(), gltfOptions);
+    if (result) {
+      gltf = std::move(result.get());
+    }
+  }
+  else if (extension == ".gltf") {
+    auto result = parser.loadGltf(&data, file_path.parent_path(), gltfOptions);
+    if (result) {
+      gltf = std::move(result.get());
+    }
   }
   else {
+    std::cerr << "File format no supported, engine supports gltf or glb: " << extension << std::endl;
     return false;
   }
+
+ 
 
   // Vectores globales para todos los v�rtices e �ndices del archivo
   std::vector<t> combinedVertices;
@@ -305,12 +321,12 @@ bool LavaMesh::loadAsGLTF(std::filesystem::path file_path) {
     }
     if (gltf.materials[0].pbrData.baseColorTexture.has_value()) {
         int base_color_index = (int)gltf.materials[0].pbrData.baseColorTexture.value().textureIndex;
-        material_->base_color_ = loadImage(engine_, gltf, gltf.images[base_color_index]);
+        material_->base_color_ = loadImage(engine_, gltf, gltf.images[base_color_index], root_path);
     }
     
     if (gltf.materials[0].normalTexture.has_value()) {
         int normal_index = (int)gltf.materials[0].normalTexture.value().textureIndex;
-        material_->normal_ = loadImage(engine_, gltf, gltf.images[normal_index]);
+        material_->normal_ = loadImage(engine_, gltf, gltf.images[normal_index], root_path);
         material_->uniform_properties.use_normal_ = 1.0f;
         constexpr bool calc_tangents = sizeof(t) == sizeof(VertexWithTangents);
         if (calc_tangents) {
@@ -366,7 +382,7 @@ bool LavaMesh::loadAsGLTF(std::filesystem::path file_path) {
 
     if (gltf.materials[0].pbrData.metallicRoughnessTexture.has_value()) {
         int mt_rg_index = (int)gltf.materials[0].pbrData.metallicRoughnessTexture.value().textureIndex;
-        material_->metallic_roughness_ = loadImage(engine_, gltf, gltf.images[mt_rg_index]);
+        material_->metallic_roughness_ = loadImage(engine_, gltf, gltf.images[mt_rg_index], root_path);
     }
   }
 
@@ -453,7 +469,7 @@ GPUMeshBuffers LavaMesh::upload(std::span<uint32_t> indices, std::span<t> vertic
 }
 
 
-std::shared_ptr<LavaImage> LavaMesh::loadImage(LavaEngine* engine, fastgltf::Asset& asset, fastgltf::Image& image) {
+std::shared_ptr<LavaImage> LavaMesh::loadImage(LavaEngine* engine, fastgltf::Asset& asset, fastgltf::Image& image, std::filesystem::path root_path) {
   std::shared_ptr<LavaImage> loaded_image;
 
   int width, height, nrChannels;
@@ -468,7 +484,12 @@ std::shared_ptr<LavaImage> LavaMesh::loadImage(LavaEngine* engine, fastgltf::Ass
 
             const std::string path(filePath.uri.path().begin(),
                                    filePath.uri.path().end()); // Thanks C++.
-            unsigned char *data = stbi_load(path.c_str(), &width, &height, &nrChannels, 4);
+
+            std::filesystem::path full_path = root_path / std::filesystem::path(filePath.uri.path().begin(), filePath.uri.path().end());
+
+            std::string path_str = full_path.string();
+            
+            unsigned char *data = stbi_load(path_str.c_str(), &width, &height, &nrChannels, 4);
             if (data) {
               VkExtent3D imagesize;
               imagesize.width = width;

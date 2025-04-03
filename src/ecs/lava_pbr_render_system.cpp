@@ -439,6 +439,7 @@ void LavaPBRRenderSystem::renderWithShadows(
 		else {
 			active_pipeline = pipeline_first_light_.get();
 		}
+
 		vkCmdBindPipeline(engine_.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, active_pipeline->get_pipeline());
 
 		vkCmdBindDescriptorSets(engine_.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,

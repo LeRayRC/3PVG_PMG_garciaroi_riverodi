@@ -43,6 +43,10 @@ public:
 
 
 	FrameData& getCurrentFrame() { return frames_[frame_number_ % FRAME_OVERLAP]; };
+	FrameData& getPreviousFrame() { 
+		int frame_number = frame_number_ > 0 ? frame_number_ - 1 : frame_number_;
+		return frames_[(frame_number) % FRAME_OVERLAP];
+	};
 	int getCurrentFrameIndex() { return frame_number_ % FRAME_OVERLAP; }
 	//void initGlobalDescriptorSet(VkDescriptorSetLayout layout);
 	void increaseFrameNumber() { frame_number_++; };

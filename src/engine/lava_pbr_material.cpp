@@ -23,6 +23,8 @@ LavaPBRMaterial::LavaPBRMaterial(LavaEngine& engine, MaterialPBRProperties prop)
   normal_ = engine.default_texture_image_white;
   uniform_properties.use_normal_ = 0.0f;
 
+	position_ = engine.default_texture_image_white;
+
   pbr_data_buffer_ = std::make_unique<LavaBuffer>(*engine.allocator_, 
     sizeof(LavaPBRMaterialProperties), 
     VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
@@ -62,6 +64,13 @@ void LavaPBRMaterial::UpdateDescriptorSet() {
 		opacity_->get_sampler(),
 		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+	engine_->global_descriptor_allocator_->writeImage(
+		5,
+		position_->get_allocated_image().image_view,
+		position_->get_sampler(),
+		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+
 
 	pbr_data_buffer_->updateBufferData(&uniform_properties, sizeof(LavaPBRMaterialProperties));
 	engine_->global_descriptor_allocator_->writeBuffer(4, pbr_data_buffer_->get_buffer().buffer, sizeof(LavaPBRMaterialProperties), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
