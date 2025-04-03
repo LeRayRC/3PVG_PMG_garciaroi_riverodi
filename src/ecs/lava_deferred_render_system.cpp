@@ -54,6 +54,20 @@ LavaDeferredRenderSystem::LavaDeferredRenderSystem(LavaEngine& engine) :
 							PipelineBlendMode::PIPELINE_BLEND_ONE_ONE,
 							nullptr,1))
 							},
+	pipeline_light_pass_ambient_{ std::make_unique<LavaPipeline>(PipelineConfig(
+							PIPELINE_TYPE_PBR,
+							"../src/shaders/deferred/light_pass.vert.spv",
+							"../src/shaders/deferred/light_pass_ambient.frag.spv",
+							engine_.device_.get(),
+							engine_.swap_chain_.get(),
+							engine_.global_descriptor_allocator_.get(),
+							engine_.global_descriptor_set_layout_,
+							engine_.global_pbr_descriptor_set_layout_,
+							engine_.global_lights_descriptor_set_layout_,
+							PipelineFlags::PIPELINE_USE_PUSHCONSTANTS | PipelineFlags::PIPELINE_USE_DESCRIPTOR_SET,
+							PipelineBlendMode::PIPELINE_BLEND_ONE_ONE,
+							nullptr,1))
+							},
 	light_pass_material{ engine_, MaterialPBRProperties()}
 {
 
@@ -161,6 +175,7 @@ void LavaDeferredRenderSystem::render(
 
 	renderGeometryPass(transform_vector, render_vector, light_component_vector);
 	renderLightPass(transform_vector, render_vector, light_component_vector);
+	renderAmbient();
 
 	//Return image to swapchain
 	AdvancedTransitionImage(cmd, engine_.swap_chain_->get_draw_image().image,
@@ -175,6 +190,53 @@ void LavaDeferredRenderSystem::render(
 }
 
 //Shadowmap generated previously
+
+void LavaDeferredRenderSystem::renderAmbient() {
+	VkCommandBuffer cmd = engine_.commandBuffer;
+	FrameData& frame_data = engine_.frame_data_->getCurrentFrame();
+
+	VkRenderingAttachmentInfo depth_attachment = vkinit::DepthAttachmentInfo(engine_.swap_chain_->get_depth_image().image_view, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
+	VkRenderingAttachmentInfo color_attachment = vkinit::AttachmentInfo(engine_.swap_chain_->get_draw_image().image_view, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+	VkRenderingInfo renderInfo = vkinit::RenderingInfo(
+		engine_.swap_chain_->get_draw_extent(),
+		&color_attachment,
+		&depth_attachment);
+
+	vkCmdBeginRendering(cmd, &renderInfo);
+
+	engine_.setDynamicViewportAndScissor(engine_.swap_chain_->get_draw_extent());
+
+	vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+		pipeline_light_pass_first_->get_layout(),
+		0, 1, &engine_.global_descriptor_set_, 0, nullptr);
+
+	VkDescriptorSet quad_descriptor_set = light_pass_quad_->get_material()->get_descriptor_set();
+	vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+		pipeline_light_pass_first_->get_layout(),
+		1, 1, &quad_descriptor_set, 0, nullptr);
+
+	vkCmdBindPipeline(engine_.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_light_pass_ambient_->get_pipeline());
+
+	GPUDrawPushConstants push_constants;
+	glm::mat4 model = glm::mat4(1.0f);
+
+	// Vincular los Vertex y Index Buffers
+	GPUMeshBuffers& meshBuffers = light_pass_quad_->mesh_->meshBuffers;
+	VkDeviceSize offsets[] = { 0 };
+	vkCmdBindIndexBuffer(cmd, meshBuffers.index_buffer->get_buffer().buffer, 0, VK_INDEX_TYPE_UINT32);
+
+
+	push_constants.world_matrix = model;
+	push_constants.vertex_buffer = meshBuffers.vertex_buffer_address;
+
+	vkCmdPushConstants(cmd, pipeline_light_pass_ambient_->get_layout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &push_constants);
+	vkCmdDrawIndexed(cmd, light_pass_quad_->mesh_->index_count, 1, 0, 0, 0);
+
+	vkCmdEndRendering(cmd);
+}
+
+
 
 void LavaDeferredRenderSystem::renderLightPass(std::vector<std::optional<TransformComponent>>& transform_vector,
 	std::vector<std::optional<RenderComponent>>& render_vector,
@@ -249,7 +311,7 @@ void LavaDeferredRenderSystem::renderLightPass(std::vector<std::optional<Transfo
 		push_constants.world_matrix = model;
 		push_constants.vertex_buffer = meshBuffers.vertex_buffer_address;
 
-		vkCmdPushConstants(cmd, pipeline_geometry_pass_->get_layout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &push_constants);
+		vkCmdPushConstants(cmd, active_pipeline->get_layout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &push_constants);
 		vkCmdDrawIndexed(cmd, light_pass_quad_->mesh_->index_count, 1, 0, 0, 0);
 
 
@@ -257,50 +319,6 @@ void LavaDeferredRenderSystem::renderLightPass(std::vector<std::optional<Transfo
 	}
 
 	vkCmdEndRendering(cmd);
-
-	//VkRenderingAttachmentInfo depth_attachment = vkinit::DepthAttachmentInfo(engine_.swap_chain_->get_depth_image().image_view, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
-	//VkRenderingAttachmentInfo color_attachment = vkinit::AttachmentInfo(engine_.swap_chain_->get_draw_image().image_view, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-
-	//VkRenderingInfo renderInfo = vkinit::RenderingInfo(
-	//	engine_.swap_chain_->get_draw_extent(),
-	//	&color_attachment,
-	//	1,
-	//	&depth_attachment);
-
-	//vkCmdBeginRendering(cmd, &renderInfo);
-
-	//engine_.setDynamicViewportAndScissor(engine_.swap_chain_->get_draw_extent());
-
-
-	//vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_light_pass_first_->get_pipeline());
-	////Bind both descriptor sets on the mesh
-	//vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
-	//	pipeline_light_pass_first_->get_layout(),
-	//	0, 1, &engine_.global_descriptor_set_, 0, nullptr);
-
-	//VkDescriptorSet quad_descriptor_set = light_pass_quad_->get_material()->get_descriptor_set();
-	//vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
-	//	pipeline_light_pass_first_->get_layout(),
-	//	1, 1, &quad_descriptor_set, 0, nullptr);
-
-
-	//GPUDrawPushConstants push_constants;
-	//glm::mat4 model = glm::mat4(1.0f);
-
-	//// Vincular los Vertex y Index Buffers
-	//GPUMeshBuffers& meshBuffers = light_pass_quad_->mesh_->meshBuffers;
-	//VkDeviceSize offsets[] = { 0 };
-	//vkCmdBindIndexBuffer(cmd, meshBuffers.index_buffer->get_buffer().buffer, 0, VK_INDEX_TYPE_UINT32);
-
-
-	//push_constants.world_matrix = model;
-	//push_constants.vertex_buffer = meshBuffers.vertex_buffer_address;
-
-	//vkCmdPushConstants(cmd, pipeline_geometry_pass_->get_layout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &push_constants);
-	//vkCmdDrawIndexed(cmd, light_pass_quad_->mesh_->index_count, 1, 0, 0, 0);
-
-	//vkCmdEndRendering(cmd);
-
 }
 
 

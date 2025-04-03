@@ -56,7 +56,11 @@ private:
 		std::vector<std::optional<RenderComponent>>& render_vector,
 		std::vector<std::optional<LightComponent>>& light_component_vector);
 
+	void renderShadowMaps(std::vector<std::optional<TransformComponent>>& transform_vector,
+		std::vector<std::optional<RenderComponent>>& render_vector,
+		std::vector<std::optional<LightComponent>>& light_component_vector);
 
+	void renderAmbient();
 
 	void setupGBufferBarriers(VkCommandBuffer cmd, VkImageLayout newLayout);
 	void setupShadowMapBarriers(VkCommandBuffer cmd, VkImageLayout newLayout);

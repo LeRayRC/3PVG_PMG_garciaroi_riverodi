@@ -125,6 +125,8 @@ void DeferredRenderMode(LavaEngine& engine) {
 		albedo = !normal;
 	}
 
+	ImGui::ColorEdit3("Ambient color", &engine.global_scene_data_.ambientColor.x);
+
 	ImGui::End();
 }
 
@@ -285,27 +287,27 @@ int main(int argc, char* argv[]) {
 	}
 
 
-	//{
-	//	size_t light_entity = ecs_manager.createEntity();
-	//	ecs_manager.addComponent<TransformComponent>(light_entity);
-	//	ecs_manager.addComponent<LightComponent>(light_entity);
+	{
+		size_t light_entity = ecs_manager.createEntity();
+		ecs_manager.addComponent<TransformComponent>(light_entity);
+		ecs_manager.addComponent<LightComponent>(light_entity);
 
-	//	auto light_component = ecs_manager.getComponent<LightComponent>(light_entity);
-	//	if (light_component) {
-	//		auto& light = light_component->value();
-	//		light.enabled_ = true;
-	//		light.type_ = LIGHT_TYPE_SPOT;
-	//		light.base_color_ = glm::vec3(1.0f, 1.0f, 1.0f);
-	//		light.spec_color_ = glm::vec3(0.0f, 0.0f, 0.0f);
-	//	}
-	//	auto tr_component = ecs_manager.getComponent<TransformComponent>(light_entity);
-	//	if (tr_component) {
-	//		auto& tr = tr_component->value();
-	//		tr.rot_ = glm::vec3(0.0f, 0.0f, 0.0f);
-	//		tr.pos_ = glm::vec3(0.0f, 0.0f, 0.0f);
-	//	}
+		auto light_component = ecs_manager.getComponent<LightComponent>(light_entity);
+		if (light_component) {
+			auto& light = light_component->value();
+			light.enabled_ = true;
+			light.type_ = LIGHT_TYPE_SPOT;
+			light.base_color_ = glm::vec3(1.0f, 1.0f, 1.0f);
+			light.spec_color_ = glm::vec3(0.0f, 0.0f, 0.0f);
+		}
+		auto tr_component = ecs_manager.getComponent<TransformComponent>(light_entity);
+		if (tr_component) {
+			auto& tr = tr_component->value();
+			tr.rot_ = glm::vec3(0.0f, 0.0f, 0.0f);
+			tr.pos_ = glm::vec3(0.0f, 0.0f, 0.0f);
+		}
 
-	//}
+	}
 	
 	//Create Camera entity
 	size_t camera_entity = ecs_manager.createEntity();

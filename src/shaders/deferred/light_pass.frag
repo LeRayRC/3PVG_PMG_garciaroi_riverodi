@@ -119,7 +119,7 @@ void main() {
     vec3 normal = normalize(texture(normalTex, inUV).rgb);
     vec3 position = texture(positionTex, inUV).rgb;
 
-    vec3 lighting = albedo * 0.1;
+    vec3 lighting = vec3(0.0,0.0,0.0);
 
     if(light.enabled == 1) {
         switch(light.type) {
