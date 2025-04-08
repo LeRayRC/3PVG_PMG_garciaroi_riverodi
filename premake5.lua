@@ -170,7 +170,9 @@ workspace "Lava"
 		targetdir "build/%{prj.name}/%{cfg.buildcfg}"
 		includedirs {
             "include",
-            "include/openxr"
+            "include/openxr",
+            "src/openxr_common", 
+            "deps/OpenXR/include"
         }
 		links "LavaEngine"
 		conan_config_exec("Debug")
@@ -185,6 +187,7 @@ workspace "Lava"
         files "src/shaders/*/*"
 		files "src/stdafx.cpp"
 		files "examples/assets/*"
+        files "src/openxr_common/*.*"
 		setup_openxr_for_project()
 		common_settings()
         
