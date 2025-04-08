@@ -43,7 +43,7 @@ IF NOT EXIST deps\OpenXR\lib\RelWithDebInfo mkdir deps\OpenXR\lib\RelWithDebInfo
 REM Copia las cabeceras
 echo.
 echo Copiando cabeceras de OpenXR...
-xcopy /s /y build_openxr\openxr\include\openxr\*.* deps\OpenXR\include\openxr\
+xcopy /s /y build_openxr\_deps\openxr-build\include\openxr\*.h deps\OpenXR\include\openxr\
 
 REM Copia las librerías
 echo.
@@ -51,13 +51,6 @@ echo Copiando librerías de OpenXR...
 copy build_openxr\_deps\openxr-build\src\loader\Debug\*.lib deps\OpenXR\lib\Debug\
 copy build_openxr\_deps\openxr-build\src\loader\Release\*.lib deps\OpenXR\lib\Release\
 copy build_openxr\_deps\openxr-build\src\loader\RelWithDebInfo\*.lib deps\OpenXR\lib\RelWithDebInfo\
-
-build_openxr\_deps\openxr-build\src\loader
-
-REM Copia los DLLs
-copy build_openxr\openxr\loader\Debug\*.dll deps\OpenXR\lib\Debug\
-copy build_openxr\openxr\loader\Release\*.dll deps\OpenXR\lib\Release\
-copy build_openxr\openxr\loader\RelWithDebInfo\*.dll deps\OpenXR\lib\RelWithDebInfo\
 
 echo.
 echo =======================================================

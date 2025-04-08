@@ -1,7 +1,7 @@
     project "LavaEngine"
         kind "StaticLib"
         targetdir "build/%{cfg.buildcfg}"
-        includedirs {"include", "src"}
+        includedirs {"include", "src", "src/openxr_common", "deps/OpenXR/include"}
         conan_config_lib()
         pchheader "stdafx.hpp"
         pchsource "src/stdafx.cpp"
@@ -17,3 +17,4 @@
                 "src/*/*.hpp",
                 "src/*.hpp",
                 }
+        

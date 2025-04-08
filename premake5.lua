@@ -7,6 +7,22 @@ newoption {
     trigger = "include-examples",
     description = "Includes all examples"
 }
+
+newoption {
+    trigger = "openxr-sdk-path",
+    description = "Path to the OpenXR SDK",
+    default = "deps/OpenXR"
+}
+
+newoption {
+    trigger = "xr-runtime-json",
+    description = "Optional location of a specific OpenXR runtime configuration file",
+    default = ""
+}
+
+-- Include the OpenXR configuration
+include "openxr_config.lua"
+
 conan = {}
 configs = { 'Debug', 'Release', 'RelWithDebInfo' }
 
@@ -147,6 +163,31 @@ workspace "Lava"
 		files "src/stdafx.cpp"
 		files "examples/assets/*"
 		common_settings()
+		
+	project"OpenXRDemo"
+		kind "ConsoleApp"
+		language "C++"
+		targetdir "build/%{prj.name}/%{cfg.buildcfg}"
+		includedirs {
+            "include",
+            "include/openxr"
+        }
+		links "LavaEngine"
+		conan_config_exec("Debug")
+		conan_config_exec("Release")
+		conan_config_exec("RelWithDebInfo")
+		pchheader "stdafx.hpp"
+		pchsource "src/stdafx.cpp"
+		forceincludes { "stdafx.hpp" }
+		debugargs { _MAIN_SCRIPT_DIR .. "/examples/data" }
+		files "examples/openxr_demostrator.cpp"
+		files "src/shaders/*"
+        files "src/shaders/*/*"
+		files "src/stdafx.cpp"
+		files "examples/assets/*"
+		setup_openxr_for_project()
+		common_settings()
+        
 
     if _OPTIONS["include-examples"] then 
         if os.isfile("all_examples.lua") then 
