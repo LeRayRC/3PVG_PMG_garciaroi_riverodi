@@ -597,7 +597,7 @@ static std::vector<glm::vec4> getFrustumCornersWorldSpace(const glm::mat4& proj,
 					inv * glm::vec4(
 						2.0f * x - 1.0f,
 						2.0f * y - 1.0f,
-						2.0f * z - 1.0f,
+						z,
 						1.0f);
 				frustumCorners.push_back(pt / pt.w);
 			}
@@ -649,7 +649,7 @@ void LavaPBRRenderSystem::update_lights(std::vector<std::optional<struct LightCo
 					center += glm::vec3(v);
 				}
 				center /= corners.size();
-				printf("%0.2f,%0.2f,%0.2f\n", center.x, center.y, center.z);
+				//printf("%0.2f,%0.2f,%0.2f\n", center.x, center.y, center.z);
 				
 				glm::vec3 forward = CalculateForwardVector(light_transform_it->value().rot_);
 				glm::vec3 pos = center - 10.0f * forward;
