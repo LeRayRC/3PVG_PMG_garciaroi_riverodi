@@ -652,9 +652,9 @@ void LavaPBRRenderSystem::update_lights(std::vector<std::optional<struct LightCo
 				//printf("%0.2f,%0.2f,%0.2f\n", center.x, center.y, center.z);
 				
 				glm::vec3 forward = CalculateForwardVector(light_transform_it->value().rot_);
-				glm::vec3 pos = center - 10.0f * forward;
+				//glm::vec3 pos = center;
 
-				glm::mat4 light_view = GenerateViewMatrix(pos, light_transform_it->value().rot_);
+				glm::mat4 light_view = GenerateViewMatrix(center, light_transform_it->value().rot_);
 
 				//glm::mat4 light_view = glm::lookAt(
 				//	center + light_dir,
@@ -697,7 +697,7 @@ void LavaPBRRenderSystem::update_lights(std::vector<std::optional<struct LightCo
 					max_z *= z_mult;
 				}
 
-				glm::mat4 light_projection = glm::ortho(min_x, max_x, max_y, min_y, min_z, max_z);
+				glm::mat4 light_projection = glm::ortho(min_x, max_x, max_y, min_y, max_z, min_z);
 			//	light_projection[1][1] *= -1.0f;
 
 			//	shadowTransforms.push_back(light_projection * light_view);
