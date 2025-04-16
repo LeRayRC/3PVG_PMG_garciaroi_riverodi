@@ -1,7 +1,7 @@
 
-#include <DebugOutput.h>
+#include "lava/openxr_common/DebugOutput.h"
 #include "GraphicsAPI_Vulkan.h"
-#include <OpenXRDebugUtils.h>
+#include "lava/openxr_common/OpenXRDebugUtils.h"
 
 class OpenXRTutorial {
 
