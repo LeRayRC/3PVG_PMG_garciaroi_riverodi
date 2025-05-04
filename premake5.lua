@@ -159,7 +159,7 @@ workspace "Lava"
 		debugargs { _MAIN_SCRIPT_DIR .. "/examples/data" }
 		files "examples/shadows_demostrator.cpp"
 		files "src/shaders/*"
-        files "src/shaders/*/*"
+    files "src/shaders/*/*"
 		files "src/stdafx.cpp"
 		files "examples/assets/*"
 		common_settings()
@@ -170,7 +170,8 @@ workspace "Lava"
 		targetdir "build/%{prj.name}/%{cfg.buildcfg}"
 		includedirs {
             "include",
-            "include/openxr",
+            "include/lava/openxr",
+            "include/lava/openxr_common",
             "src/openxr_common", 
             "deps/OpenXR/include"
         }
@@ -184,10 +185,9 @@ workspace "Lava"
 		debugargs { _MAIN_SCRIPT_DIR .. "/examples/data" }
 		files "examples/openxr_demostrator.cpp"
 		files "src/shaders/*"
-        files "src/shaders/*/*"
+    files "src/shaders/*/*"
 		files "src/stdafx.cpp"
 		files "examples/assets/*"
-        files "src/openxr_common/*.*"
 		setup_openxr_for_project()
 		common_settings()
         

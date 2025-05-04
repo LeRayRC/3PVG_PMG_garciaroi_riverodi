@@ -34,4 +34,14 @@ inline const char* GetXRErrorString(XrInstance xrInstance, XrResult result) {
             OpenXRDebugBreak();                                                                                                                             \
         }                                                                                                                                                   \
     }
+
+
+#define OPENXR_CHECK_INSTANCE(x, y,z)                                                                                                                                  \
+    {                                                                                                                                                       \
+        XrResult result = (x);                                                                                                                              \
+        if (!XR_SUCCEEDED(result)) {                                                                                                                        \
+            std::cerr << "ERROR: OPENXR: " << int(result) << "(" << (z ? GetXRErrorString(z, result) : "") << ") " << y << std::endl; \
+            OpenXRDebugBreak();                                                                                                                             \
+        }                                                                                                                                                   \
+    }
 // XR_DOCS_TAG_END_Helper_Functions0

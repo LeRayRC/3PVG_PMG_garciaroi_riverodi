@@ -4,8 +4,7 @@
 
 // OpenXR Tutorial for Khronos Group
 
-//#include <GraphicsAPI.h>
-#include "openxr_common/GraphicsAPI.h"
+#include <GraphicsAPI.h>
 
 bool CheckGraphicsAPI_TypeIsValidForPlatform(GraphicsAPI_Type type) {
 #if defined(XR_USE_PLATFORM_WIN32)

@@ -12,28 +12,11 @@
 #define  __LAVA_ENGINE_ 1
 
 #include "lava/common/lava_types.hpp"
-//#include "lava/common/lava_global_helpers.hpp"
+#include "lava/common/lava_engine_base.hpp"
 #include "lava/window/lava_window.hpp"
 #include "lava/engine/lava_descriptors.hpp"
 
-
- // push constants for our mesh object draws
-struct GPUDrawPushConstants {
-	glm::mat4 world_matrix;
-	VkDeviceAddress vertex_buffer;
-};
-
-struct GlobalSceneData {
-	glm::mat4 view;
-	glm::mat4 proj;
-	glm::mat4 viewproj;
-	glm::vec3 ambientColor;
-	int gbuffer_render_selected;
-	glm::vec3 cameraPos;
-	int padding2;
-};
-
-class LavaEngine {
+class LavaEngine : public  LavaEngineBase{
 public:
 
 	/**
@@ -52,20 +35,20 @@ public:
 	//inline static Engine& Get() { return *loaded_engine; }
 
 	//Engine* loaded_engine;
-
-	bool is_initialized_ = false;
 	bool stop_rendering = false;
 
 	//DeletionQueue main_deletion_queue_;
-	GlobalSceneData global_scene_data_;
+	
 	static std::vector<std::function<void()>> end_frame_callbacks;
 
 	LavaWindow window_;
 	std::unique_ptr<class LavaInstance> instance_;
 	std::unique_ptr<class LavaSurface> surface_;
 	std::unique_ptr<class LavaDevice> device_;
-	VkExtent2D window_extent_;
 	std::unique_ptr<class LavaAllocator> allocator_;
+
+	VkExtent2D window_extent_;
+
 	std::unique_ptr<class LavaSwapChain> swap_chain_;
 	std::unique_ptr<class LavaFrameData> frame_data_;
 	std::unique_ptr<class LavaInmediateCommunication> inmediate_communication;
@@ -80,42 +63,30 @@ public:
 	std::shared_ptr<class LavaImage> default_texture_image_pink;
 	std::shared_ptr<class LavaImage> default_texture_image_white;
 	std::shared_ptr<class LavaImage> default_texture_image_black;
-
-	std::chrono::steady_clock::time_point chrono_now_;
-	std::chrono::steady_clock::time_point chrono_last_update_;
-
-	struct CameraComponent* main_camera_camera_;
-	struct TransformComponent* main_camera_transform_;
-
-	double dt_;
-
-	DescriptorAllocator imgui_descriptor_alloc;
 	
 	//draw stuff
 	uint32_t swap_chain_image_index;
 	VkCommandBuffer commandBuffer;
 
-	bool shouldClose() { return glfwWindowShouldClose(get_window()); }
-	void beginFrame();
-	void endFrame();
-	void clearWindow();
-	void pollEvents() { glfwPollEvents(); }
+	bool shouldClose() override { return glfwWindowShouldClose(get_window()); }
+	void beginFrame() override;
+	void endFrame() override;
+	void clearWindow() override;
+	void pollEvents() override { glfwPollEvents(); }
 	virtual void renderImgui();
 
-	VkInstance get_instance() const;
 	GLFWwindow* get_window() const;
 	VkSurfaceKHR get_surface() const;
 
-	void setMainCamera(struct CameraComponent* camera_component,
-		struct TransformComponent* camera_tr);
+	DescriptorAllocator imgui_descriptor_alloc;
 
 	void setDynamicViewportAndScissor(const VkExtent2D& extend);
 	void initGlobalData();
 	void initImgui();
 	void drawImgui(VkCommandBuffer cmd, VkImageView targetImageView);
 	void immediate_submit(std::function<void(VkCommandBuffer)>&& function);
+	void updateMainCamera() override;
 private:
-	void updateMainCamera();
 	/**
 	* @brief Copy constructor(never use)
 	*/

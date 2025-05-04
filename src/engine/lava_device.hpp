@@ -8,7 +8,10 @@ class LavaSurface;
 class LavaDevice
 {
 public:
+	//GLFW Constructor
 	LavaDevice(LavaInstance& instance, LavaSurface& surface);
+	//VR Constructor
+	LavaDevice(LavaInstance& instance, class LavaInstanceVR& instance_vr, class LavaBindingVR& binding);
 	~LavaDevice();
 
 	void operator=(LavaDevice& device);
@@ -33,6 +36,15 @@ public:
 		return transfer_queue_;
 	}
 
+	uint32_t get_queue_family_index() {
+		return queue_family_index_;
+	}
+
+	uint32_t get_queue_index() {
+		return queue_index_;
+	}
+
+
 	const std::vector<const char*> required_device_extensions_ = {
 		VK_KHR_SWAPCHAIN_EXTENSION_NAME,
 		VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
@@ -46,10 +58,18 @@ private:
 	VkQueue present_queue_;
 	VkQueue transfer_queue_;
 
+	//VR Usage
+	uint32_t queue_family_index_ = 0xFFFFFFFF;
+	uint32_t queue_index_ = 0xFFFFFFFF;
+
 
 	void createLogicalDevice(LavaSurface& surface);
-	void pickPhysicalDevice(LavaInstance& instance, LavaSurface& surface);
+	void createLogicalDevice(class LavaInstanceVR& instance_vr, 
+		class LavaBindingVR& binding);
 
+	void pickPhysicalDevice(LavaInstance& instance, LavaSurface& surface);
+	void pickPhysicalDevice(LavaInstance& instance,
+		class LavaInstanceVR& instance_vr, class LavaBindingVR& binding);
 
 };
 

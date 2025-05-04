@@ -128,8 +128,6 @@ LavaImage::LavaImage(LavaEngine* engine,
 }
 
 
-
-
 LavaImage::~LavaImage(){
 	vkDestroySampler(engine_->device_->get_device(), sampler_, nullptr);
 	vkDestroyImageView(engine_->device_->get_device(), image_.image_view, nullptr);

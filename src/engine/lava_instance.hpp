@@ -7,6 +7,9 @@ class LavaInstance
 {
 public:
 	LavaInstance(std::vector<const char*> validation_layers);
+	LavaInstance(std::vector<const char*> validation_layers,
+		class LavaInstanceVR& instance_vr,
+		class LavaBindingVR& binding);
 	~LavaInstance();
 
 	VkInstance get_instance() const;

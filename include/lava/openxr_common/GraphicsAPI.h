@@ -5,7 +5,7 @@
 // OpenXR Tutorial for Khronos Group
 
 #pragma once
-#include "openxr_common/HelperFunctions.h"
+#include "HelperFunctions.h"
 
 // Platform headers
 #if defined(_WIN32)

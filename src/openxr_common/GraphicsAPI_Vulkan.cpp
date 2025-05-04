@@ -7,7 +7,7 @@
 #if defined(_WIN32)
 #define VK_USE_PLATFORM_WIN32_KHR
 #endif
-#include "openxr_common/GraphicsAPI_Vulkan.h"
+#include <GraphicsAPI_Vulkan.h>
 
 #if defined(XR_USE_GRAPHICS_API_VULKAN)
 
