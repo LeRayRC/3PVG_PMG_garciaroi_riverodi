@@ -25,6 +25,10 @@ public:
 		return view_configuration_type_;
 	}
 
+	std::vector<XrViewConfigurationView>& get_view_configuration_views() {
+		return view_configuration_views;
+	}
+
 private:
 	void GetConfigurationViews(XrViewConfigurationType view_configuration_type);
 	

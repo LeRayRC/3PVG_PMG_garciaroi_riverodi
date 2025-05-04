@@ -4,6 +4,7 @@
 #include "engine/lava_instance.hpp"
 #include "engine/lava_device.hpp"
 #include "vr/lava_session_vr.hpp"
+#include "vr/lava_swapchain_vr.hpp"
 #include "lava/openxr_common/DebugOutput.h"
 
 
@@ -25,6 +26,9 @@ LavaEngineVR::LavaEngineVR() {
   session_ = std::make_unique<LavaSessionVR>(*instance_vr_.get(),
     *instance_vulkan_.get(), *device_.get(), XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO);
   
+  swapchain_ = std::make_unique<LavaSwapchainVR>(*instance_vr_.get(),
+    *session_.get(), *device_.get());
+
   application_running_ = true;
 }
 

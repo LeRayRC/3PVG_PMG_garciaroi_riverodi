@@ -9,9 +9,9 @@ int main(int argc, char** argv) {
 #endif
   LavaEngineVR engine;
 
-  while (!engine.shouldClose()) {
-    engine.pollEvents();
-  }
+  //while (!engine.shouldClose()) {
+  //  engine.pollEvents();
+  //}
 
 
   return 0;

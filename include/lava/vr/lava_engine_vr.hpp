@@ -18,6 +18,7 @@ public:
 	std::unique_ptr<class LavaInstance> instance_vulkan_;
 	std::unique_ptr<class LavaDevice> device_;
 	std::unique_ptr<class LavaSessionVR> session_;
+	std::unique_ptr<class LavaSwapchainVR> swapchain_;
 
 	virtual bool shouldClose() override;
 	virtual void beginFrame() override;

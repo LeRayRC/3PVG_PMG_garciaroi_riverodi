@@ -49,3 +49,45 @@ std::vector<std::string> GetDeviceExtensionsForOpenXR(LavaInstanceVR& instance,L
   }
   return extensions;
 }
+
+int64_t SelectDepthSwapchainFormat(const std::vector<int64_t>& formats) {
+  const std::vector<int64_t>& supportSwapchainFormats = GetSupportedDepthSwapchainFormats();
+
+  const std::vector<int64_t>::const_iterator& swapchainFormatIt = std::find_first_of(formats.begin(), formats.end(),
+    std::begin(supportSwapchainFormats), std::end(supportSwapchainFormats));
+  if (swapchainFormatIt == formats.end()) {
+    std::cout << "ERROR: Unable to find supported Depth Swapchain Format" << std::endl;
+    DEBUG_BREAK;
+    return 0;
+  }
+
+  return *swapchainFormatIt;
+}
+
+const std::vector<int64_t> GetSupportedDepthSwapchainFormats() {
+  return {
+      VK_FORMAT_D32_SFLOAT,
+      VK_FORMAT_D16_UNORM };
+}
+
+int64_t SelectColorSwapchainFormat(const std::vector<int64_t>& formats) {
+  const std::vector<int64_t>& supportSwapchainFormats = GetSupportedColorSwapchainFormats();
+
+  const std::vector<int64_t>::const_iterator& swapchainFormatIt = std::find_first_of(formats.begin(), formats.end(),
+    std::begin(supportSwapchainFormats), std::end(supportSwapchainFormats));
+  if (swapchainFormatIt == formats.end()) {
+    std::cout << "ERROR: Unable to find supported Color Swapchain Format" << std::endl;
+    DEBUG_BREAK;
+    return 0;
+  }
+
+  return *swapchainFormatIt;
+}
+
+const std::vector<int64_t> GetSupportedColorSwapchainFormats() {
+  return {
+      VK_FORMAT_B8G8R8A8_SRGB,
+      VK_FORMAT_R8G8B8A8_SRGB,
+      VK_FORMAT_B8G8R8A8_UNORM,
+      VK_FORMAT_R8G8B8A8_UNORM };
+}
