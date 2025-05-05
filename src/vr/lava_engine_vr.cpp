@@ -7,13 +7,14 @@
 #include "vr/lava_swapchain_vr.hpp"
 #include "vr/lava_blend_space_vr.hpp"
 #include "lava/openxr_common/DebugOutput.h"
+#include <openxr/openxr.h>
 
 
 const std::vector<const char*> validationLayers = {
   "VK_LAYER_KHRONOS_validation"
 };
 
-LavaEngineVR::LavaEngineVR() {
+LavaEngineVR::LavaEngineVR(XrPosef reference_pose) {
   instance_vr_ = std::make_unique<LavaInstanceVR>();
 
   binding_ = std::make_unique<LavaBindingVR>(*instance_vr_.get());

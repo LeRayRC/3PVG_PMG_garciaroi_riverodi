@@ -10,7 +10,7 @@
 class LavaEngineVR : public LavaEngineBase
 {
 public:
-	LavaEngineVR(XrPosef reference_pose);
+	LavaEngineVR(struct XrPosef reference_pose);
 	~LavaEngineVR();
 
 	std::unique_ptr<class LavaInstanceVR> instance_vr_;

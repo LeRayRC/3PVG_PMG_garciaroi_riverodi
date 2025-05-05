@@ -13,7 +13,7 @@ LavaBlendSpaceVR::LavaBlendSpaceVR(LavaInstanceVR& instance_vr,
   // Retrieves the available blend modes. The first call gets the count of the array that will be returned. The next call fills out the array.
   uint32_t environment_blend_mode_count = 0;
   OPENXR_CHECK_INSTANCE(
-    xrEnumerateEnvironmentBlendModes(instance_vr_.get_instance(), instance_vr_.get_system_id(), view_configuration_type_, 0, &environment_blend_mode_count, nullptr),
+    xrEnumerateEnvironmentBlendModes(instance_vr_.get_instance(), instance_vr_.get_system_id(), session.get_configuration_view_type(), 0, &environment_blend_mode_count, nullptr),
     "Failed to enumerate EnvironmentBlend Modes.",
     instance_vr_.get_instance());
   environment_blend_modes.resize(environment_blend_mode_count);
@@ -45,4 +45,5 @@ LavaBlendSpaceVR::LavaBlendSpaceVR(LavaInstanceVR& instance_vr,
 
 LavaBlendSpaceVR::~LavaBlendSpaceVR()
 {
+  OPENXR_CHECK_INSTANCE(xrDestroySpace(space_), "Failed to destroy Space.", instance_vr_.get_instance());
 }

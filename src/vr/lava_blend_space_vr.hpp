@@ -12,6 +12,10 @@ public:
     XrPosef reference_pose);
 	~LavaBlendSpaceVR();
 
+  XrEnvironmentBlendMode get_blend_mode() {
+    return environment_blend_mode_;
+  }
+
 private:
   
   XrEnvironmentBlendMode environment_blend_mode_ = XR_ENVIRONMENT_BLEND_MODE_MAX_ENUM;

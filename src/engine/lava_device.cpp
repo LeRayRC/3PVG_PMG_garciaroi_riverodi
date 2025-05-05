@@ -56,9 +56,17 @@ void LavaDevice::pickPhysicalDevice(LavaInstance& instance,
 	// Physical Device
 	uint32_t physicalDeviceCount = 0;
 	std::vector<VkPhysicalDevice> physicalDevices;
+	std::vector<VkPhysicalDeviceProperties> physicalDevicesProperties;
+
 	VULKAN_CHECK(vkEnumeratePhysicalDevices(instance.get_instance(), &physicalDeviceCount, nullptr), "Failed to enumerate PhysicalDevices.");
 	physicalDevices.resize(physicalDeviceCount);
+	physicalDevicesProperties.resize(physicalDeviceCount);
 	VULKAN_CHECK(vkEnumeratePhysicalDevices(instance.get_instance(), &physicalDeviceCount, physicalDevices.data()), "Failed to enumerate PhysicalDevices.");
+
+	for (int i = 0; i < physicalDevices.size(); i++) {
+		vkGetPhysicalDeviceProperties(physicalDevices[i], &physicalDevicesProperties[i]);
+	}
+
 
 	VkPhysicalDevice physicalDeviceFromXR;
 
