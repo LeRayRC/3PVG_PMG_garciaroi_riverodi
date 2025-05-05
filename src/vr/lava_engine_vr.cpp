@@ -5,6 +5,7 @@
 #include "engine/lava_device.hpp"
 #include "vr/lava_session_vr.hpp"
 #include "vr/lava_swapchain_vr.hpp"
+#include "vr/lava_blend_space_vr.hpp"
 #include "lava/openxr_common/DebugOutput.h"
 
 
@@ -29,6 +30,8 @@ LavaEngineVR::LavaEngineVR() {
   swapchain_ = std::make_unique<LavaSwapchainVR>(*instance_vr_.get(),
     *session_.get(), *device_.get());
 
+  blend_space_ = std::make_unique<LavaBlendSpaceVR>(*instance_vr_.get(),
+    *session_.get(), XR_ENVIRONMENT_BLEND_MODE_OPAQUE, reference_pose);
   application_running_ = true;
 }
 

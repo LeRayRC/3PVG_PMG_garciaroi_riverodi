@@ -10,7 +10,7 @@
 class LavaEngineVR : public LavaEngineBase
 {
 public:
-	LavaEngineVR();
+	LavaEngineVR(XrPosef reference_pose);
 	~LavaEngineVR();
 
 	std::unique_ptr<class LavaInstanceVR> instance_vr_;
@@ -19,6 +19,7 @@ public:
 	std::unique_ptr<class LavaDevice> device_;
 	std::unique_ptr<class LavaSessionVR> session_;
 	std::unique_ptr<class LavaSwapchainVR> swapchain_;
+	std::unique_ptr<class LavaBlendSpaceVR> blend_space_;
 
 	virtual bool shouldClose() override;
 	virtual void beginFrame() override;
