@@ -32,6 +32,15 @@ public:
     return image;
   }
 
+  std::vector<SwapchainInfo>& get_color_swapchain_infos() {
+    return color_swapchain_infos;
+  }
+
+  std::vector<SwapchainInfo>& get_depth_swapchain_infos() {
+    return depth_swapchain_infos;
+  }
+
+
 private:
   XrSwapchainImageBaseHeader* allocateSwapchainImageData(XrSwapchain swapchain,SwapchainType type, uint32_t count);
   void freeSwapchainImageData(XrSwapchain swapchain);

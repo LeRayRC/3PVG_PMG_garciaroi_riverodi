@@ -2,6 +2,7 @@
 #include "vr/lava_instance_vr.hpp"
 #include "vr/lava_session_vr.hpp"
 #include "vr/lava_blend_space_vr.hpp"
+#include "lava/vr/lava_data_structures_vr.hpp"
 
 LavaFrameVR::LavaFrameVR(LavaInstanceVR& instance_vr,
 	LavaSessionVR& session,LavaBlendSpaceVR& blend_space) :
@@ -28,14 +29,17 @@ void LavaFrameVR::beginFrame() {
 		instance_vr_.get_instance());
 }
 
-void LavaFrameVR::endFrame() {
+void LavaFrameVR::endFrame(RenderLayerInfo& render_layer_info) {
 	// Tell OpenXR that we are finished with this frame; specifying its display time, environment blending and layers.
 	XrFrameEndInfo frameEndInfo{ XR_TYPE_FRAME_END_INFO };
 	frameEndInfo.displayTime = frame_state_.predictedDisplayTime;
 	frameEndInfo.environmentBlendMode = blend_space_.get_blend_mode();
-	frameEndInfo.layerCount = static_cast<uint32_t>(renderLayerInfo.layers.size());
-	frameEndInfo.layers = renderLayerInfo.layers.data();
-	OPENXR_CHECK(xrEndFrame(m_session, &frameEndInfo), "Failed to end the XR Frame.");
+	frameEndInfo.layerCount = static_cast<uint32_t>(render_layer_info.layers.size());
+	frameEndInfo.layers = render_layer_info.layers.data();
+	OPENXR_CHECK_INSTANCE(
+		xrEndFrame(session_.get_session(), &frameEndInfo),
+		"Failed to end the XR Frame.",
+		instance_vr_.get_instance());
 }
 
 

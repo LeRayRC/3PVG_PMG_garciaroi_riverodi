@@ -6,6 +6,7 @@
 //#endif
 
 #include "lava/common/lava_engine_base.hpp"
+#include "lava/vr/lava_data_structures_vr.hpp"
 
 class LavaEngineVR : public LavaEngineBase
 {
@@ -20,6 +21,7 @@ public:
 	std::unique_ptr<class LavaSessionVR> session_;
 	std::unique_ptr<class LavaSwapchainVR> swapchain_;
 	std::unique_ptr<class LavaBlendSpaceVR> blend_space_;
+	std::unique_ptr<class LavaFrameVR> frame_;
 
 	virtual bool shouldClose() override;
 	virtual void beginFrame() override;
@@ -28,8 +30,13 @@ public:
 	virtual void pollEvents() override;
 	virtual void updateMainCamera() override;
 
+	bool renderLayer();
+
 
 private:
+	bool session_active_;
+	RenderLayerInfo render_layer_info_;
+	XrFrameState frame_state_{ XR_TYPE_FRAME_STATE };
 	bool session_running_ = false;
 	bool application_running_ = false;
 };

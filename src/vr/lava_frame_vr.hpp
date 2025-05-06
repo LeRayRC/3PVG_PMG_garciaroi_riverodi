@@ -9,8 +9,11 @@ public:
 	~LavaFrameVR();
 
 	void beginFrame();
-	void waitFrame();
-	void endFrame();
+	void endFrame(struct RenderLayerInfo& render_layer_info);
+
+	XrFrameState& get_frame_state() {
+		return frame_state_;
+	}
 
 private:
 	class LavaSessionVR& session_;

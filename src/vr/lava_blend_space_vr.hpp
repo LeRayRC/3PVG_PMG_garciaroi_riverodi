@@ -16,6 +16,10 @@ public:
     return environment_blend_mode_;
   }
 
+  XrSpace get_space() {
+    return space_;
+  }
+
 private:
   
   XrEnvironmentBlendMode environment_blend_mode_ = XR_ENVIRONMENT_BLEND_MODE_MAX_ENUM;
