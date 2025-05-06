@@ -13,6 +13,8 @@ int main(int argc, char** argv) {
 
   while (!engine.shouldClose()) {
     engine.pollEvents();
+    engine.beginFrame();
+    engine.endFrame();
   }
 
 

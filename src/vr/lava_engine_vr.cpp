@@ -6,7 +6,6 @@
 #include "vr/lava_session_vr.hpp"
 #include "vr/lava_swapchain_vr.hpp"
 #include "vr/lava_blend_space_vr.hpp"
-#include "vr/lava_frame_vr.hpp"
 #include "lava/openxr_common/DebugOutput.h"
 #include <openxr/openxr.h>
 
@@ -35,9 +34,6 @@ LavaEngineVR::LavaEngineVR(XrPosef reference_pose) {
   blend_space_ = std::make_unique<LavaBlendSpaceVR>(*instance_vr_.get(),
     *session_.get(), XR_ENVIRONMENT_BLEND_MODE_OPAQUE, reference_pose);
   
-  frame_ = std::make_unique<LavaFrameVR>(*instance_vr_.get(), *session_.get(),
-    *blend_space_.get());
-    
   application_running_ = true;
 }
 
@@ -77,6 +73,31 @@ void LavaEngineVR::beginFrame() {
 
 
 void LavaEngineVR::endFrame() {
+  std::vector<LavaSwapchainVR::SwapchainInfo>& color_swapchain_info_vector = swapchain_->get_color_swapchain_infos();
+  std::vector<LavaSwapchainVR::SwapchainInfo>& depth_swapchain_info_vector = swapchain_->get_depth_swapchain_infos();
+  for (uint32_t i = 0; i < view_count_; i++) {
+    LavaSwapchainVR::SwapchainInfo& color_swapchain_info = color_swapchain_info_vector[i];
+    LavaSwapchainVR::SwapchainInfo& depth_swapchain_info = depth_swapchain_info_vector[i];
+
+    // Give the swapchain image back to OpenXR, allowing the compositor to use the image.
+    XrSwapchainImageReleaseInfo release_info{ XR_TYPE_SWAPCHAIN_IMAGE_RELEASE_INFO };
+    OPENXR_CHECK_INSTANCE(
+      xrReleaseSwapchainImage(color_swapchain_info.swapchain, &release_info),
+      "Failed to release Image back to the Color Swapchain",
+      instance_vr_->get_instance());
+    OPENXR_CHECK_INSTANCE(
+      xrReleaseSwapchainImage(depth_swapchain_info.swapchain, &release_info),
+      "Failed to release Image back to the Depth Swapchain",
+      instance_vr_->get_instance());
+  }
+
+  render_layer_info_.layer_projection.layerFlags = XR_COMPOSITION_LAYER_BLEND_TEXTURE_SOURCE_ALPHA_BIT | XR_COMPOSITION_LAYER_CORRECT_CHROMATIC_ABERRATION_BIT;
+  render_layer_info_.layer_projection.space = blend_space_->get_space();
+  render_layer_info_.layer_projection.viewCount = static_cast<uint32_t>(render_layer_info_.layer_projection_views.size());
+  render_layer_info_.layer_projection.views = render_layer_info_.layer_projection_views.data();
+
+
+
   // Tell OpenXR that we are finished with this frame; specifying its display time, environment blending and layers.
   XrFrameEndInfo frame_end_info{ XR_TYPE_FRAME_END_INFO };
   frame_end_info.displayTime = frame_state_.predictedDisplayTime;
@@ -100,35 +121,33 @@ bool LavaEngineVR::renderLayer() {
   view_locate_info.displayTime = render_layer_info_.predicted_display_time;
   view_locate_info.space = blend_space_->get_space();
 
-  uint32_t view_count = 0;
-  XrResult result = xrLocateViews(session_->get_session(), &view_locate_info, &view_state, static_cast<uint32_t>(views.size()), &view_count, views.data());
+  XrResult result = xrLocateViews(session_->get_session(), &view_locate_info, &view_state, static_cast<uint32_t>(views.size()), &view_count_, views.data());
   if (result != XR_SUCCESS) {
     XR_TUT_LOG("Failed to locate Views.");
     return false;
   }
 
   // Resize the layer projection views to match the view count. The layer projection views are used in the layer projection.
-  render_layer_info_.layer_projection_views.resize(view_count, { XR_TYPE_COMPOSITION_LAYER_PROJECTION_VIEW });
+  render_layer_info_.layer_projection_views.resize(view_count_, { XR_TYPE_COMPOSITION_LAYER_PROJECTION_VIEW });
 
   std::vector<LavaSwapchainVR::SwapchainInfo>& color_swapchain_info_vector = swapchain_->get_color_swapchain_infos();
   std::vector<LavaSwapchainVR::SwapchainInfo>& depth_swapchain_info_vector = swapchain_->get_depth_swapchain_infos();
   // Per view in the view configuration:
-  for (uint32_t i = 0; i < view_count; i++) {
+  for (uint32_t i = 0; i < view_count_; i++) {
     LavaSwapchainVR::SwapchainInfo& color_swapchain_info = color_swapchain_info_vector[i];
     LavaSwapchainVR::SwapchainInfo& depth_swapchain_info = depth_swapchain_info_vector[i];
 
     // Acquire and wait for an image from the swapchains.
     // Get the image index of an image in the swapchains.
     // The timeout is infinite.
-    uint32_t color_image_index = 0;
-    uint32_t depth_image_index = 0;
+
     XrSwapchainImageAcquireInfo acquire_info{ XR_TYPE_SWAPCHAIN_IMAGE_ACQUIRE_INFO };
     OPENXR_CHECK_INSTANCE(
-      xrAcquireSwapchainImage(color_swapchain_info.swapchain, &acquire_info, &color_image_index),
+      xrAcquireSwapchainImage(color_swapchain_info.swapchain, &acquire_info, &color_image_index_),
       "Failed to acquire Image from the Color Swapchian",
       instance_vr_->get_instance());
     OPENXR_CHECK_INSTANCE(
-      xrAcquireSwapchainImage(depth_swapchain_info.swapchain, &acquire_info, &depth_image_index),
+      xrAcquireSwapchainImage(depth_swapchain_info.swapchain, &acquire_info, &depth_image_index_),
       "Failed to acquire Image from the Depth Swapchian",
       instance_vr_->get_instance());
 
@@ -169,36 +188,23 @@ bool LavaEngineVR::renderLayer() {
 
     // Rendering code to clear the color and depth image views.
     
-    m_graphicsAPI->BeginRendering();
+    //m_graphicsAPI->BeginRendering();
 
-    if (m_environmentBlendMode == XR_ENVIRONMENT_BLEND_MODE_OPAQUE) {
-      // VR mode use a background color.
-      m_graphicsAPI->ClearColor(colorSwapchainInfo.imageViews[colorImageIndex], 0.17f, 0.17f, 0.17f, 1.00f);
-    }
-    else {
-      // In AR mode make the background color black.
-      m_graphicsAPI->ClearColor(colorSwapchainInfo.imageViews[colorImageIndex], 0.00f, 0.00f, 0.00f, 1.00f);
-    }
-    m_graphicsAPI->ClearDepth(depthSwapchainInfo.imageViews[depthImageIndex], 1.0f);
-    m_graphicsAPI->EndRendering();
+    //if (m_environmentBlendMode == XR_ENVIRONMENT_BLEND_MODE_OPAQUE) {
+    //  // VR mode use a background color.
+    //  m_graphicsAPI->ClearColor(colorSwapchainInfo.imageViews[colorImageIndex], 0.17f, 0.17f, 0.17f, 1.00f);
+    //}
+    //else {
+    //  // In AR mode make the background color black.
+    //  m_graphicsAPI->ClearColor(colorSwapchainInfo.imageViews[colorImageIndex], 0.00f, 0.00f, 0.00f, 1.00f);
+    //}
+    //m_graphicsAPI->ClearDepth(depthSwapchainInfo.imageViews[depthImageIndex], 1.0f);
+    //m_graphicsAPI->EndRendering();
 
-    // Give the swapchain image back to OpenXR, allowing the compositor to use the image.
-    XrSwapchainImageReleaseInfo release_info{ XR_TYPE_SWAPCHAIN_IMAGE_RELEASE_INFO };
-    OPENXR_CHECK_INSTANCE(
-      xrReleaseSwapchainImage(color_swapchain_info.swapchain, &release_info),
-      "Failed to release Image back to the Color Swapchain",
-      instance_vr_->get_instance());
-    OPENXR_CHECK_INSTANCE(
-      xrReleaseSwapchainImage(depthSwapchainInfo.swapchain, &release_info),
-      "Failed to release Image back to the Depth Swapchain",
-      instance_vr_->get_instance());
+
   }
 
   // Fill out the XrCompositionLayerProjection structure for usage with xrEndFrame().
-  render_layer_info_.layer_projection.layerFlags = XR_COMPOSITION_LAYER_BLEND_TEXTURE_SOURCE_ALPHA_BIT | XR_COMPOSITION_LAYER_CORRECT_CHROMATIC_ABERRATION_BIT;
-  render_layer_info_.layer_projection.space = blend_space_->get_space();
-  render_layer_info_.layer_projection.viewCount = static_cast<uint32_t>(renderLayerInfo.layerProjectionViews.size());
-  render_layer_info_.layer_projection.views = renderLayerInfo.layerProjectionViews.data();
 
   return true;
 }

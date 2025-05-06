@@ -25,6 +25,8 @@ private:
   XrEnvironmentBlendMode environment_blend_mode_ = XR_ENVIRONMENT_BLEND_MODE_MAX_ENUM;
   XrSpace space_ = XR_NULL_HANDLE;
 
+
+
   LavaInstanceVR& instance_vr_;
 };
 

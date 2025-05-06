@@ -21,7 +21,6 @@ public:
 	std::unique_ptr<class LavaSessionVR> session_;
 	std::unique_ptr<class LavaSwapchainVR> swapchain_;
 	std::unique_ptr<class LavaBlendSpaceVR> blend_space_;
-	std::unique_ptr<class LavaFrameVR> frame_;
 
 	virtual bool shouldClose() override;
 	virtual void beginFrame() override;
@@ -39,6 +38,10 @@ private:
 	XrFrameState frame_state_{ XR_TYPE_FRAME_STATE };
 	bool session_running_ = false;
 	bool application_running_ = false;
+
+	uint32_t color_image_index_ = 0;
+	uint32_t depth_image_index_ = 0;
+	uint32_t view_count_ = 0;
 };
 
 
