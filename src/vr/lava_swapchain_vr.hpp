@@ -40,6 +40,10 @@ public:
     return depth_swapchain_infos;
   }
 
+  VkImage get_image_from_image_view(void* image_view) {
+    return image_view_resources[(VkImageView)image_view].image;
+  }
+
 
 private:
   XrSwapchainImageBaseHeader* allocateSwapchainImageData(XrSwapchain swapchain,SwapchainType type, uint32_t count);

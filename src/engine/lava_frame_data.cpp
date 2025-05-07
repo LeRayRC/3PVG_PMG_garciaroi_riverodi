@@ -16,16 +16,66 @@
 #include "engine/lava_surface.hpp"
 
 
+LavaFrameData::LavaFrameData(LavaDevice& use_device, LavaAllocator& allocator) {
 
-//void FrameData::initGlobalDescriptorSet(VkDescriptorSetLayout layout) {
-//	global_descriptor_set_ = descriptor_manager.allocate(layout);
-//}
-//
-//void LavaFrameData::initGlobalDescriptorSet(VkDescriptorSetLayout layout) {
-//	for (int i = 0; i < FRAME_OVERLAP; i++) {
-//		frames_[i].initGlobalDescriptorSet(layout);
-//	}
-//}
+	device_ = &use_device;
+	allocator_ = &allocator;
+	frame_number_ = 0;
+
+	VkCommandPoolCreateInfo command_pool_info{};
+	command_pool_info.sType =
+		VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+	command_pool_info.pNext = nullptr;
+	command_pool_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+	command_pool_info.queueFamilyIndex = use_device.get_queue_family_index();
+
+	VkFenceCreateInfo fence_info{};
+	fence_info.sType =
+		VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+	fence_info.pNext = nullptr;
+	fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+	VkSemaphoreCreateInfo semaphore_info{};
+	semaphore_info.sType =
+		VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+	semaphore_info.pNext = nullptr;
+
+	for (int i = 0; i < FRAME_OVERLAP; i++) {
+		frames_[i].descriptor_manager = { use_device.get_device(), LavaDescriptorManager::initial_sets,LavaDescriptorManager::pool_ratios };
+
+		if (vkCreateCommandPool(use_device.get_device(), &command_pool_info, nullptr,
+			&frames_[i].command_pool) != VK_SUCCESS) {
+			exit(-1);
+		}
+		VkCommandBufferAllocateInfo command_alloc_info{};
+		command_alloc_info.sType =
+			VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+		command_alloc_info.pNext = nullptr;
+		command_alloc_info.commandPool = frames_[i].command_pool;
+		command_alloc_info.commandBufferCount = 1;
+		command_alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+
+		//Se reserva los command buffer correspondientes
+		if (vkAllocateCommandBuffers(use_device.get_device(), &command_alloc_info,
+			&frames_[i].main_command_buffer) != VK_SUCCESS) {
+			exit(-1);
+		}
+
+		if (vkCreateFence(use_device.get_device(), &fence_info, nullptr, &frames_[i].render_fence) != VK_SUCCESS) {
+			exit(-1);
+		}
+		if (vkCreateSemaphore(use_device.get_device(), &semaphore_info, nullptr, &frames_[i].render_semaphore) != VK_SUCCESS) {
+			exit(-1);
+		}
+
+		if (vkCreateSemaphore(use_device.get_device(), &semaphore_info, nullptr, &frames_[i].swap_chain_semaphore) != VK_SUCCESS) {
+			exit(-1);
+		}
+
+	}
+}
+
+
 
 LavaFrameData::LavaFrameData(LavaDevice& use_device, LavaSurface& use_surface, LavaAllocator& allocator, GlobalSceneData* scene_data){
 	

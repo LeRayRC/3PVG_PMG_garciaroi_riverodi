@@ -13,8 +13,21 @@ int main(int argc, char** argv) {
 
   while (!engine.shouldClose()) {
     engine.pollEvents();
-    engine.beginFrame();
-    engine.endFrame();
+    if (engine.is_session_running()) {
+      engine.beginFrame();
+      if (engine.is_session_active()) {
+        //It is necessary to render in two views
+        for (uint32_t i = 0; i < engine.get_view_count(); i++) {
+          engine.prepareView(i);
+
+          //RENDER!!!!
+          engine.clearColor(i, 1.0f, 0.0f, 0.0f, 1.0f);
+
+          engine.releaseView(i);
+        }
+      }
+      engine.endFrame();
+    }
   }
 
 

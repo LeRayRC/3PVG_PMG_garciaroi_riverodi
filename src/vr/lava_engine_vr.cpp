@@ -6,7 +6,11 @@
 #include "vr/lava_session_vr.hpp"
 #include "vr/lava_swapchain_vr.hpp"
 #include "vr/lava_blend_space_vr.hpp"
+#include "engine/lava_allocator.hpp"
+#include "engine/lava_frame_data.hpp"
 #include "lava/openxr_common/DebugOutput.h"
+#include "engine/lava_vulkan_helpers.hpp"
+#include "engine/lava_vulkan_inits.hpp"
 #include <openxr/openxr.h>
 
 
@@ -34,6 +38,11 @@ LavaEngineVR::LavaEngineVR(XrPosef reference_pose) {
   blend_space_ = std::make_unique<LavaBlendSpaceVR>(*instance_vr_.get(),
     *session_.get(), XR_ENVIRONMENT_BLEND_MODE_OPAQUE, reference_pose);
   
+  allocator_ = std::make_unique<LavaAllocator>(*device_, *instance_vulkan_);
+  for (int i = 0; i < FRAME_OVERLAP; i++) {
+    frame_data_[i] = std::make_unique<LavaFrameData>(*device_, *allocator_);
+  }
+  
   application_running_ = true;
 }
 
@@ -46,6 +55,10 @@ bool LavaEngineVR::shouldClose() {
 }
 
 void LavaEngineVR::beginFrame() {
+  chrono_now_ = std::chrono::steady_clock::now();
+  rendered_ = false;
+  render_layer_info_ = {};
+
   XrFrameWaitInfo frame_wait_info{ XR_TYPE_FRAME_WAIT_INFO };
   OPENXR_CHECK_INSTANCE(
     xrWaitFrame(session_->get_session(), &frame_wait_info, &frame_state_),
@@ -59,43 +72,42 @@ void LavaEngineVR::beginFrame() {
     "Failed to begin the XR Frame.",
     instance_vr_->get_instance());
 
+  render_layer_info_.predicted_display_time = frame_state_.predictedDisplayTime;
+
 
   //Begin vulkan rendering
   XrSessionState session_state = session_->get_state();
   session_active_ = (session_state == XR_SESSION_STATE_SYNCHRONIZED || session_state == XR_SESSION_STATE_VISIBLE || session_state == XR_SESSION_STATE_FOCUSED);
 
   if (session_active_ && frame_state_.shouldRender) {
-    //Acquire Vulkan Images
+    views_.resize(session_->get_view_configuration_views().size(), { XR_TYPE_VIEW });
+    XrViewState view_state{ XR_TYPE_VIEW_STATE };  // Will contain information on whether the position and/or orientation is valid and/or tracked.
+    XrViewLocateInfo view_locate_info{ XR_TYPE_VIEW_LOCATE_INFO };
+    view_locate_info.viewConfigurationType = session_->get_configuration_view_type();
+    view_locate_info.displayTime = render_layer_info_.predicted_display_time;
+    view_locate_info.space = blend_space_->get_space();
 
+    XrResult result = xrLocateViews(session_->get_session(), &view_locate_info, &view_state, static_cast<uint32_t>(views_.size()), &view_count_, views_.data());
+    if (result != XR_SUCCESS) {
+      XR_TUT_LOG("Failed to locate Views.");
+    }
 
+    rendered_ = true;
   }
 }
 
 
 void LavaEngineVR::endFrame() {
-  std::vector<LavaSwapchainVR::SwapchainInfo>& color_swapchain_info_vector = swapchain_->get_color_swapchain_infos();
-  std::vector<LavaSwapchainVR::SwapchainInfo>& depth_swapchain_info_vector = swapchain_->get_depth_swapchain_infos();
-  for (uint32_t i = 0; i < view_count_; i++) {
-    LavaSwapchainVR::SwapchainInfo& color_swapchain_info = color_swapchain_info_vector[i];
-    LavaSwapchainVR::SwapchainInfo& depth_swapchain_info = depth_swapchain_info_vector[i];
 
-    // Give the swapchain image back to OpenXR, allowing the compositor to use the image.
-    XrSwapchainImageReleaseInfo release_info{ XR_TYPE_SWAPCHAIN_IMAGE_RELEASE_INFO };
-    OPENXR_CHECK_INSTANCE(
-      xrReleaseSwapchainImage(color_swapchain_info.swapchain, &release_info),
-      "Failed to release Image back to the Color Swapchain",
-      instance_vr_->get_instance());
-    OPENXR_CHECK_INSTANCE(
-      xrReleaseSwapchainImage(depth_swapchain_info.swapchain, &release_info),
-      "Failed to release Image back to the Depth Swapchain",
-      instance_vr_->get_instance());
-  }
 
   render_layer_info_.layer_projection.layerFlags = XR_COMPOSITION_LAYER_BLEND_TEXTURE_SOURCE_ALPHA_BIT | XR_COMPOSITION_LAYER_CORRECT_CHROMATIC_ABERRATION_BIT;
   render_layer_info_.layer_projection.space = blend_space_->get_space();
   render_layer_info_.layer_projection.viewCount = static_cast<uint32_t>(render_layer_info_.layer_projection_views.size());
   render_layer_info_.layer_projection.views = render_layer_info_.layer_projection_views.data();
 
+  if (rendered_) {
+    render_layer_info_.layers.push_back(reinterpret_cast<XrCompositionLayerBaseHeader*>(&render_layer_info_.layer_projection));
+  }
 
 
   // Tell OpenXR that we are finished with this frame; specifying its display time, environment blending and layers.
@@ -108,34 +120,31 @@ void LavaEngineVR::endFrame() {
     xrEndFrame(session_->get_session(), &frame_end_info),
     "Failed to end the XR Frame.",
     instance_vr_->get_instance());
-}
 
-bool LavaEngineVR::renderLayer() {
-  
-  // Locate the views from the view configuration within the (reference) space at the display time.
-  std::vector<XrView> views(session_->get_view_configuration_views().size(), { XR_TYPE_VIEW });
 
-  XrViewState view_state{ XR_TYPE_VIEW_STATE };  // Will contain information on whether the position and/or orientation is valid and/or tracked.
-  XrViewLocateInfo view_locate_info{ XR_TYPE_VIEW_LOCATE_INFO };
-  view_locate_info.viewConfigurationType = session_->get_configuration_view_type();
-  view_locate_info.displayTime = render_layer_info_.predicted_display_time;
-  view_locate_info.space = blend_space_->get_space();
-
-  XrResult result = xrLocateViews(session_->get_session(), &view_locate_info, &view_state, static_cast<uint32_t>(views.size()), &view_count_, views.data());
-  if (result != XR_SUCCESS) {
-    XR_TUT_LOG("Failed to locate Views.");
-    return false;
+  if (rendered_) {
+    //increase the number of frames drawn
+    for (int i = 0; i < FRAME_OVERLAP; i++) {
+      frame_data_[i]->increaseFrameNumber();
+    }
   }
 
+  dt_ = std::chrono::duration_cast<std::chrono::microseconds>(chrono_now_ - chrono_last_update_).count() / 1000000.0f;
+  chrono_last_update_ = chrono_now_;
+}
+
+void LavaEngineVR::prepareView(uint32_t i) {
+  // Locate the views from the view configuration within the (reference) space at the display time.
+  
   // Resize the layer projection views to match the view count. The layer projection views are used in the layer projection.
   render_layer_info_.layer_projection_views.resize(view_count_, { XR_TYPE_COMPOSITION_LAYER_PROJECTION_VIEW });
-
+  
   std::vector<LavaSwapchainVR::SwapchainInfo>& color_swapchain_info_vector = swapchain_->get_color_swapchain_infos();
   std::vector<LavaSwapchainVR::SwapchainInfo>& depth_swapchain_info_vector = swapchain_->get_depth_swapchain_infos();
   // Per view in the view configuration:
-  for (uint32_t i = 0; i < view_count_; i++) {
-    LavaSwapchainVR::SwapchainInfo& color_swapchain_info = color_swapchain_info_vector[i];
-    LavaSwapchainVR::SwapchainInfo& depth_swapchain_info = depth_swapchain_info_vector[i];
+  //for (uint32_t i = 0; i < view_count_; i++) {
+  LavaSwapchainVR::SwapchainInfo& color_swapchain_info = color_swapchain_info_vector[i];
+  LavaSwapchainVR::SwapchainInfo& depth_swapchain_info = depth_swapchain_info_vector[i];
 
     // Acquire and wait for an image from the swapchains.
     // Get the image index of an image in the swapchains.
@@ -177,8 +186,8 @@ bool LavaEngineVR::renderLayer() {
     // Fill out the XrCompositionLayerProjectionView structure specifying the pose and fov from the view.
     // This also associates the swapchain image with this layer projection view.
     render_layer_info_.layer_projection_views[i] = { XR_TYPE_COMPOSITION_LAYER_PROJECTION_VIEW };
-    render_layer_info_.layer_projection_views[i].pose = views[i].pose;
-    render_layer_info_.layer_projection_views[i].fov = views[i].fov;
+    render_layer_info_.layer_projection_views[i].pose = views_[i].pose;
+    render_layer_info_.layer_projection_views[i].fov = views_[i].fov;
     render_layer_info_.layer_projection_views[i].subImage.swapchain = color_swapchain_info.swapchain;
     render_layer_info_.layer_projection_views[i].subImage.imageRect.offset.x = 0;
     render_layer_info_.layer_projection_views[i].subImage.imageRect.offset.y = 0;
@@ -186,31 +195,160 @@ bool LavaEngineVR::renderLayer() {
     render_layer_info_.layer_projection_views[i].subImage.imageRect.extent.height = static_cast<int32_t>(height);
     render_layer_info_.layer_projection_views[i].subImage.imageArrayIndex = 0;  // Useful for multiview rendering.
 
-    // Rendering code to clear the color and depth image views.
-    
-    //m_graphicsAPI->BeginRendering();
+    //Begin Vulkan rendering
+    VULKAN_CHECK(vkWaitForFences(device_->get_device(), 1,
+      &frame_data_[i]->getCurrentFrame().render_fence,
+      true, UINT64_MAX), "Failed to wait for fences");
 
-    //if (m_environmentBlendMode == XR_ENVIRONMENT_BLEND_MODE_OPAQUE) {
-    //  // VR mode use a background color.
-    //  m_graphicsAPI->ClearColor(colorSwapchainInfo.imageViews[colorImageIndex], 0.17f, 0.17f, 0.17f, 1.00f);
-    //}
-    //else {
-    //  // In AR mode make the background color black.
-    //  m_graphicsAPI->ClearColor(colorSwapchainInfo.imageViews[colorImageIndex], 0.00f, 0.00f, 0.00f, 1.00f);
-    //}
-    //m_graphicsAPI->ClearDepth(depthSwapchainInfo.imageViews[depthImageIndex], 1.0f);
-    //m_graphicsAPI->EndRendering();
+    VULKAN_CHECK(vkResetFences(device_->get_device(), 1,
+      &frame_data_[i]->getCurrentFrame().render_fence),
+      "Failed to reset fences");
 
+    command_buffer_ = frame_data_[i]->getCurrentFrame().main_command_buffer;
+    VULKAN_CHECK(vkResetCommandBuffer(command_buffer_, 0),
+      "Failed to reset command buffer");
 
-  }
+    //Ahora se rellena la estructura del begin command buffer
+    VkCommandBufferBeginInfo commandBufferBeginInfo{};
+    commandBufferBeginInfo.sType =
+      VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    commandBufferBeginInfo.pNext = nullptr;
+    commandBufferBeginInfo.pInheritanceInfo = nullptr;
+    commandBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
-  // Fill out the XrCompositionLayerProjection structure for usage with xrEndFrame().
-
-  return true;
+    VULKAN_CHECK(vkBeginCommandBuffer(command_buffer_, &commandBufferBeginInfo),
+      "Failed to begin command buffer");
 }
 
-void LavaEngineVR::clearWindow() {
+void LavaEngineVR::releaseView(uint32_t i) {
+  //Release Vulkan command buffer
 
+  VULKAN_CHECK(vkEndCommandBuffer(command_buffer_),
+    "Failed to end command buffer");
+
+  VkSubmitInfo2 submit;
+  VkCommandBufferSubmitInfo commandSubmitInfo = vkinit::CommandBufferSubmitInfo(command_buffer_);
+
+  VkSemaphoreSubmitInfo signalInfo = vkinit::SemaphoreSubmitInfo(
+    VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT, frame_data_[i]->getCurrentFrame().render_semaphore);
+
+  if (&frame_data_[i]->getCurrentFrame() != &frame_data_[i]->getPreviousFrame()) {
+    VkSemaphoreSubmitInfo waitInfo = vkinit::SemaphoreSubmitInfo(
+      VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT_KHR, frame_data_[i]->getPreviousFrame().render_semaphore);
+     submit = vkinit::SubmitInfo(&commandSubmitInfo, &signalInfo, &waitInfo);
+  }
+  else {
+     submit = vkinit::SubmitInfo(&commandSubmitInfo, &signalInfo, nullptr);
+  }
+  
+  //VkSemaphoreSubmitInfo waitInfo = vkinit::SemaphoreSubmitInfo(
+  //  VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT_KHR, frame_data_[i]->getCurrentFrame().swap_chain_semaphore);
+  
+
+  
+
+  VULKAN_CHECK(vkQueueSubmit2(device_->get_graphics_queue(), 1,
+    &submit, frame_data_[i]->getCurrentFrame().render_fence),
+    "Failed to submit queue2");
+
+  std::vector<LavaSwapchainVR::SwapchainInfo>& color_swapchain_info_vector = swapchain_->get_color_swapchain_infos();
+  std::vector<LavaSwapchainVR::SwapchainInfo>& depth_swapchain_info_vector = swapchain_->get_depth_swapchain_infos();
+  LavaSwapchainVR::SwapchainInfo& color_swapchain_info = color_swapchain_info_vector[i];
+  LavaSwapchainVR::SwapchainInfo& depth_swapchain_info = depth_swapchain_info_vector[i];
+
+  // Give the swapchain image back to OpenXR, allowing the compositor to use the image.
+  XrSwapchainImageReleaseInfo release_info{ XR_TYPE_SWAPCHAIN_IMAGE_RELEASE_INFO };
+  OPENXR_CHECK_INSTANCE(
+    xrReleaseSwapchainImage(color_swapchain_info.swapchain, &release_info),
+    "Failed to release Image back to the Color Swapchain",
+    instance_vr_->get_instance());
+  OPENXR_CHECK_INSTANCE(
+    xrReleaseSwapchainImage(depth_swapchain_info.swapchain, &release_info),
+    "Failed to release Image back to the Depth Swapchain",
+    instance_vr_->get_instance());
+  
+
+}
+
+void LavaEngineVR::clearWindow() {}
+
+
+void LavaEngineVR::clearWindow(uint32_t i) {
+  //Convertimos la imagen de dibujado a escribible
+  std::vector<LavaSwapchainVR::SwapchainInfo>& color_swapchain_info_vector = swapchain_->get_color_swapchain_infos();
+  std::vector<LavaSwapchainVR::SwapchainInfo>& depth_swapchain_info_vector = swapchain_->get_depth_swapchain_infos();
+  // Per view in the view configuration:
+  //for (uint32_t i = 0; i < view_count_; i++) {
+  LavaSwapchainVR::SwapchainInfo& color_swapchain_info = color_swapchain_info_vector[i];
+  LavaSwapchainVR::SwapchainInfo& depth_swapchain_info = depth_swapchain_info_vector[i];
+
+
+  VkImage image = swapchain_->get_image_from_image_view(color_swapchain_info.imageViews[color_image_index_]);
+  TransitionImage(command_buffer_, image,
+    VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+
+  //Limpiamos la imagen con un clear color
+  VkClearColorValue clearValue;
+  clearValue = { {1.0f,1.0f,1.0f,0.0f} };
+
+  //Seleccionamos un rango de la imagen sobre la que actuar
+  VkImageSubresourceRange clearRange = ImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT);
+
+  //Aplicamos el clear color a una imagen 
+  vkCmdClearColorImage(command_buffer_, image, VK_IMAGE_LAYOUT_GENERAL, &clearValue, 1, &clearRange);
+
+
+
+}
+
+void LavaEngineVR::clearColor(uint32_t i, float r, float g, float b, float a) {
+  //Convertimos la imagen de dibujado a escribible
+  std::vector<LavaSwapchainVR::SwapchainInfo>& color_swapchain_info_vector = swapchain_->get_color_swapchain_infos();
+  std::vector<LavaSwapchainVR::SwapchainInfo>& depth_swapchain_info_vector = swapchain_->get_depth_swapchain_infos();
+  // Per view in the view configuration:
+  //for (uint32_t i = 0; i < view_count_; i++) {
+  LavaSwapchainVR::SwapchainInfo& color_swapchain_info = color_swapchain_info_vector[i];
+  LavaSwapchainVR::SwapchainInfo& depth_swapchain_info = depth_swapchain_info_vector[i];
+
+  VkClearColorValue clearColor;
+  clearColor.float32[0] = r;
+  clearColor.float32[1] = g;
+  clearColor.float32[2] = b;
+  clearColor.float32[3] = a;
+
+  VkImageSubresourceRange range;
+  range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+  range.baseMipLevel = 0;
+  range.levelCount = 1;
+  range.baseArrayLayer = 0;
+  range.layerCount = 1;
+
+  VkImage image = swapchain_->get_image_from_image_view(color_swapchain_info.imageViews[color_image_index_]);
+
+  VkImageMemoryBarrier imageBarrier;
+  imageBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+  imageBarrier.pNext = nullptr;
+  imageBarrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+  imageBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+  imageBarrier.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+  imageBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+  imageBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+  imageBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+  imageBarrier.image = image;
+  imageBarrier.subresourceRange = range;
+  vkCmdPipelineBarrier(command_buffer_, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VkDependencyFlagBits(0), 0, nullptr, 0, nullptr, 1, &imageBarrier);
+
+  vkCmdClearColorImage(command_buffer_, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearColor, 1, &range);
+
+  imageBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+  imageBarrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
+  imageBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+  imageBarrier.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+  imageBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+  imageBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+  imageBarrier.image = image;
+  imageBarrier.subresourceRange = range;
+  vkCmdPipelineBarrier(command_buffer_, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VkDependencyFlagBits(0), 0, nullptr, 0, nullptr, 1, &imageBarrier);
 }
 
 

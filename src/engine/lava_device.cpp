@@ -277,4 +277,6 @@ void LavaDevice::createLogicalDevice(LavaInstanceVR& instance_vr,LavaBindingVR& 
 
 	VULKAN_CHECK(vkCreateDevice(physical_device_, &deviceCI, nullptr, &device_), "Failed to create Device.");
 
+	vkGetDeviceQueue(device_, queue_family_index_, queue_index_, &graphics_queue_);
+
 }
