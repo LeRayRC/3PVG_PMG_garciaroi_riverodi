@@ -19,9 +19,10 @@ int main(int argc, char** argv) {
         //It is necessary to render in two views
         for (uint32_t i = 0; i < engine.get_view_count(); i++) {
           engine.prepareView(i);
-
+          engine.updateGlobalData(i);
           //RENDER!!!!
-          engine.clearColor(i, 1.0f, 0.0f, 0.0f, 1.0f);
+          engine.clearColor(i, 1.0f,0.0f,0.0f, 1.0f);
+          
 
           engine.releaseView(i);
         }

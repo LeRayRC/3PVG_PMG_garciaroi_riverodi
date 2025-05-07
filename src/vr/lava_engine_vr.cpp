@@ -10,7 +10,9 @@
 #include "engine/lava_frame_data.hpp"
 #include "lava/openxr_common/DebugOutput.h"
 #include "engine/lava_vulkan_helpers.hpp"
+#include "lava/common/lava_global_helpers.hpp"
 #include "engine/lava_vulkan_inits.hpp"
+#include "vr/xr_linear_algebra.hpp"
 #include <openxr/openxr.h>
 
 
@@ -43,6 +45,10 @@ LavaEngineVR::LavaEngineVR(XrPosef reference_pose) {
     frame_data_[i] = std::make_unique<LavaFrameData>(*device_, *allocator_);
   }
   
+  global_descriptor_allocator_ = std::make_unique<LavaDescriptorManager>(device_->get_device(), LavaDescriptorManager::initial_sets, LavaDescriptorManager::pool_ratios);
+
+
+  initGlobalData();
   application_running_ = true;
 }
 
@@ -444,4 +450,90 @@ void LavaEngineVR::pollEvents() {
 }
 void LavaEngineVR::updateMainCamera() {
 
+}
+
+void LavaEngineVR::initGlobalData() {
+  global_descriptor_allocator_->clear();
+  DescriptorLayoutBuilder builder;
+  builder.addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+  global_descriptor_set_layout_ = builder.build(device_->get_device(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
+
+  global_descriptor_set_ = global_descriptor_allocator_->allocate(global_descriptor_set_layout_);
+  global_data_buffer_ = std::make_unique<LavaBuffer>(*allocator_, sizeof(GlobalSceneData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
+  global_data_buffer_->setMappedData();
+  global_descriptor_allocator_->clear();
+
+  global_descriptor_allocator_->writeBuffer(0, global_data_buffer_->buffer_.buffer, sizeof(GlobalSceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+  global_descriptor_allocator_->updateSet(global_descriptor_set_);
+  global_descriptor_allocator_->clear();
+
+  //Descriptor set layout of every light
+  builder.clear();
+  builder.addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+  builder.addBinding(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+  builder.addBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+  builder.addBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+  builder.addBinding(4, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+  global_lights_descriptor_set_layout_ = builder.build(device_->get_device(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_GEOMETRY_BIT);
+
+  builder.clear();
+  builder.addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER); // base color texture
+  builder.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER); // normal
+  builder.addBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER); // roughness_metallic_texture
+  builder.addBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER); // opacity
+  builder.addBinding(4, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+  builder.addBinding(5, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER); // opacity
+  global_pbr_descriptor_set_layout_ = builder.build(device_->get_device(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
+}
+
+void LavaEngineVR::updateGlobalData(uint32_t view_index) {
+  //Detect input
+  XrMatrix4x4f viewProj;
+  XrMatrix4x4f proj;
+  XrMatrix4x4f_CreateProjectionFov(&proj, VULKAN, views_[view_index].fov, 50 , 0.1f);
+  XrMatrix4x4f toView;
+  XrVector3f scale1m{ 1.0f, 1.0f, 1.0f };
+  XrMatrix4x4f_CreateTranslationRotationScale(&toView, &views_[view_index].pose.position, &views_[view_index].pose.orientation, &scale1m);
+  XrMatrix4x4f view;
+  XrMatrix4x4f_InvertRigidBody(&view, &toView);
+  XrMatrix4x4f_Multiply(&viewProj, &proj, &view);
+  
+  global_scene_data_.viewproj = reinterpret_cast<glm::mat4&>(viewProj);
+  global_scene_data_.proj = reinterpret_cast<glm::mat4&>(proj);
+  global_scene_data_.view = reinterpret_cast<glm::mat4&>(view);
+
+  global_scene_data_.cameraPos = reinterpret_cast<glm::vec3&>(views_[view_index].pose.position);
+
+
+  //global_scene_data_.view = main_camera_camera_->view_;
+
+  //global_scene_data_.proj = glm::perspective(glm::radians(views_[view_index].fov),
+  //    (float)window_extent_.width / (float)window_extent_.height,
+  //    10000f, 0.05f);
+  //
+
+  global_scene_data_.proj[1][1] *= -1;
+  //global_scene_data_.viewproj = global_scene_data_.proj * global_scene_data_.view;
+
+  global_data_buffer_->updateBufferData(&global_scene_data_, sizeof(GlobalSceneData));
+
+}
+
+void LavaEngineVR::setDynamicViewportAndScissor(const VkExtent2D& extend) {
+  //set dynamic viewport and scissor
+  VkViewport viewport = {};
+  viewport.x = 0;
+  viewport.y = 0;
+  viewport.width = (float)extend.width;
+  viewport.height = (float)extend.height;
+  viewport.minDepth = 0.0f;
+  viewport.maxDepth = 1.0f;
+  vkCmdSetViewport(command_buffer_, 0, 1, &viewport);
+
+  VkRect2D scissor = {};
+  scissor.offset.x = 0;
+  scissor.offset.y = 0;
+  scissor.extent.width = (uint32_t)extend.width;//swap_chain_.get_draw_extent().width;
+  scissor.extent.height = (uint32_t)extend.height;//swap_chain_.get_draw_extent().height;
+  vkCmdSetScissor(command_buffer_, 0, 1, &scissor);
 }

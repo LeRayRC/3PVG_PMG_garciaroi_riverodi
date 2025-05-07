@@ -2,6 +2,7 @@
 #include "lava/engine/lava_image.hpp"
 #include "lava/ecs/lava_ecs_components.hpp"
 #include "engine/lava_instance.hpp"
+#include "engine/lava_descriptor_manager.hpp"
 
 
 
@@ -31,3 +32,5 @@ void LavaEngineBase::setMainCamera(struct CameraComponent* camera_component,
 	main_camera_camera_ = camera_component;
 	main_camera_transform_ = camera_tr;
 }
+
+

@@ -32,8 +32,14 @@ public:
 
 	bool is_initialized_ = false;
 	GlobalSceneData global_scene_data_;
+	VkDescriptorSetLayout global_descriptor_set_layout_;
+	VkDescriptorSetLayout global_lights_descriptor_set_layout_;
+	VkDescriptorSetLayout global_pbr_descriptor_set_layout_;
 
+	std::unique_ptr<class LavaDescriptorManager> global_descriptor_allocator_;
+	std::unique_ptr<class LavaBuffer> global_data_buffer_;
 
+	VkDescriptorSet global_descriptor_set_;
 
 	void setMainCamera(struct CameraComponent* camera_component,
 		struct TransformComponent* camera_tr);
@@ -53,6 +59,7 @@ public:
 	virtual void updateMainCamera() = 0;
 
 	VkInstance get_instance() const;
+
 private:
 
 };

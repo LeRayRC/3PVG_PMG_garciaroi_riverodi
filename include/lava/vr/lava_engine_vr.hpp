@@ -24,8 +24,15 @@ public:
 
 	std::unique_ptr<class LavaAllocator> allocator_;
 	std::unique_ptr<class LavaFrameData> frame_data_[2];
-	
 
+	std::unique_ptr<class LavaDescriptorManager> global_descriptor_allocator_;
+	std::unique_ptr<class LavaBuffer> global_data_buffer_;
+	VkDescriptorSetLayout global_descriptor_set_layout_;
+	VkDescriptorSetLayout global_lights_descriptor_set_layout_;
+	VkDescriptorSetLayout global_pbr_descriptor_set_layout_;
+	VkDescriptorSet global_descriptor_set_;
+	
+	void initGlobalData();
 	virtual bool shouldClose() override;
 	virtual void beginFrame() override;
 	virtual void endFrame() override;
@@ -34,9 +41,16 @@ public:
 	void clearColor(uint32_t i, float r, float g, float b, float a);
 	virtual void pollEvents() override;
 	virtual void updateMainCamera() override;
+	void updateGlobalData(uint32_t view_index);
+	void setDynamicViewportAndScissor(const VkExtent2D& extend);
 
 	void prepareView(uint32_t i);
 	void releaseView(uint32_t i);
+
+	LavaSessionVR& get_session() {
+		return *session_.get();
+	}
+
 	bool is_session_running() const {
 		return session_running_;
 	}
@@ -49,7 +63,15 @@ public:
 		return view_count_;
 	}
 
+	LavaSwapchainVR& get_swapchain() {
+		return *swapchain_.get();
+	}
+
+
 	uint32_t color_image_index_ = 0;
+	uint32_t depth_image_index_ = 0;
+	VkCommandBuffer command_buffer_;
+	std::vector<XrView> views_;
 private:
 	bool session_active_;
 	RenderLayerInfo render_layer_info_;
@@ -58,10 +80,7 @@ private:
 	bool application_running_ = false;
 	bool rendered_;
 
-	VkCommandBuffer command_buffer_;
-	uint32_t depth_image_index_ = 0;
 	uint32_t view_count_ = 0;
-	std::vector<XrView> views_;
 };
 
 
