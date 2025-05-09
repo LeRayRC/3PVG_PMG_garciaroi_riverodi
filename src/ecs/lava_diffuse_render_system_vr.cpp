@@ -6,6 +6,7 @@
 #include "engine/lava_frame_data.hpp"
 #include "engine/lava_pipeline.hpp"
 #include "vr/lava_swapchain_vr.hpp"
+#include "vr/lava_session_vr.hpp"
 #include "lava/engine/lava_pbr_material.hpp"
 
 LavaDiffuseRenderSystemVR::LavaDiffuseRenderSystemVR(LavaEngineVR &engine) :
@@ -46,13 +47,20 @@ void LavaDiffuseRenderSystemVR::render(uint32_t view_index,
   TransitionImage(engine_.command_buffer_, depth_image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
 
 	//begin a render pass  connected to our draw image
-	VkRenderingAttachmentInfo color_attachment = vkinit::AttachmentInfo(engine_.swap_chain_->get_draw_image().image_view, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-	VkRenderingAttachmentInfo depth_attachment = vkinit::DepthAttachmentInfo(engine_.swap_chain_->get_depth_image().image_view, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
+	VkRenderingAttachmentInfo color_attachment = vkinit::AttachmentInfo((VkImageView)color_swapchain_info.imageViews[engine_.color_image_index_], nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+	VkRenderingAttachmentInfo depth_attachment = vkinit::DepthAttachmentInfo((VkImageView)depth_swapchain_info.imageViews[engine_.depth_image_index_], VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
 	//
-	VkRenderingInfo renderInfo = vkinit::RenderingInfo(engine_.swap_chain_->get_draw_extent(), &color_attachment, &depth_attachment);
+
+	//engine_.get_session().get_view_configuration_views()[view_index].
+
+	VkExtent2D window_extent = {
+		engine_.get_session().get_view_configuration_views()[view_index].recommendedImageRectWidth,
+		engine_.get_session().get_view_configuration_views()[view_index].recommendedImageRectHeight,
+	};
+	VkRenderingInfo renderInfo = vkinit::RenderingInfo(window_extent, &color_attachment, &depth_attachment);
 	vkCmdBeginRendering(engine_.command_buffer_, &renderInfo);
 
-	engine_.setDynamicViewportAndScissor(engine_.swap_chain_->get_draw_extent());
+	engine_.setDynamicViewportAndScissor(window_extent);
 	
 	vkCmdBindPipeline(engine_.command_buffer_, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_->get_pipeline());
 	//Bind both descriptor sets on the mesh
@@ -61,7 +69,7 @@ void LavaDiffuseRenderSystemVR::render(uint32_t view_index,
 		0, 1, &engine_.global_descriptor_set_, 0, nullptr);
 
 
-	FrameData& frame_data = engine_.frame_data_->getCurrentFrame();
+	FrameData& frame_data = engine_.frame_data_[view_index]->getCurrentFrame();
   //Draw everycomponent
   auto transform_it = transform_vector.begin();
   auto render_it = render_vector.begin();
@@ -80,7 +88,7 @@ void LavaDiffuseRenderSystemVR::render(uint32_t view_index,
 		std::shared_ptr<MeshAsset> mesh = lava_mesh->mesh_;
 
 		VkDescriptorSet pbr_descriptor_set = lava_mesh->get_material()->get_descriptor_set();
-		vkCmdBindDescriptorSets(engine_.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+		vkCmdBindDescriptorSets(engine_.command_buffer_, VK_PIPELINE_BIND_POINT_GRAPHICS,
 			pipeline_->get_layout(),
 			1, 1, &pbr_descriptor_set, 0, nullptr);
 
@@ -112,15 +120,15 @@ void LavaDiffuseRenderSystemVR::render(uint32_t view_index,
 
 	vkCmdEndRendering(engine_.command_buffer_);
 
-  TransitionImage(engine_.command_buffer_, engine_.swap_chain_->get_draw_image().image,
-    VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
-  //Cambiamos la imagen a tipo presentable para enseñarla en la superficie
-  TransitionImage(engine_.command_buffer_, engine_.swap_chain_->get_swap_chain_images()[engine_.swap_chain_image_index],
-    VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+  //TransitionImage(engine_.command_buffer_, color_image,
+  //  VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+  ////Cambiamos la imagen a tipo presentable para enseñarla en la superficie
+  //TransitionImage(engine_.command_buffer_, engine_.swap_chain_->get_swap_chain_images()[engine_.swap_chain_image_index],
+  //  VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
-  // Devolvemos la imagen al swapchain
-  CopyImageToImage(engine_.command_buffer_, engine_.swap_chain_->get_draw_image().image,
-    engine_.swap_chain_->get_swap_chain_images()[engine_.swap_chain_image_index], engine_.swap_chain_->get_draw_extent(), engine_.window_extent_);
+  //// Devolvemos la imagen al swapchain
+  //CopyImageToImage(engine_.command_buffer_, engine_.swap_chain_->get_draw_image().image,
+  //  engine_.swap_chain_->get_swap_chain_images()[engine_.swap_chain_image_index], engine_.swap_chain_->get_draw_extent(), engine_.window_extent_);
 
 }
 
