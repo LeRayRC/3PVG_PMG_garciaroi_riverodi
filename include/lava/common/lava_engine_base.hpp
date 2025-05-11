@@ -57,9 +57,6 @@ public:
 	virtual void clearWindow() = 0;
 	virtual void pollEvents() = 0;
 	virtual void updateMainCamera() = 0;
-
-	VkInstance get_instance() const;
-
 private:
 
 };

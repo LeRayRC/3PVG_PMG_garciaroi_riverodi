@@ -116,6 +116,11 @@ VkSurfaceKHR LavaEngine::get_surface() const {
 	return surface_->get_surface();
 }
 
+
+VkInstance LavaEngine::get_instance() {
+	return instance_->get_instance();
+}
+
 void LavaEngine::initGlobalData() {
 	global_descriptor_allocator_->clear();
 	DescriptorLayoutBuilder builder;

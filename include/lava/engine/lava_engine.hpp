@@ -86,6 +86,8 @@ public:
 	void drawImgui(VkCommandBuffer cmd, VkImageView targetImageView);
 	void immediate_submit(std::function<void(VkCommandBuffer)>&& function);
 	void updateMainCamera() override;
+
+	VkInstance get_instance();
 private:
 	/**
 	* @brief Copy constructor(never use)
