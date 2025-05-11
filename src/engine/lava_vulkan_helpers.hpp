@@ -3,6 +3,16 @@
 
 #include "lava/common/lava_types.hpp"
 
+
+#define VULKAN_CHECK(x, y)                                                                         \
+    {                                                                                              \
+        VkResult result = (x);                                                                     \
+        if (result != VK_SUCCESS) {                                                                \
+            std::cout << "ERROR: VULKAN: " << std::hex << "0x" << result << std::dec << std::endl; \
+            std::cout << "ERROR: VULKAN: " << y << std::endl;                                      \
+        }                                                                                          \
+    }
+
 struct QueueFamilyIndices {
 	//Familia para lanzar comandos de graficos
 	std::optional<uint32_t> graphicsFamily;

@@ -53,19 +53,12 @@ const std::vector<const char*> validationLayers = {
 	"VK_LAYER_KHRONOS_validation"
 };
 
-LavaEngine* loaded_engine = nullptr;
 std::vector<std::function<void()>> LavaEngine::end_frame_callbacks;
 
 LavaEngine::LavaEngine(unsigned int window_width, unsigned int window_height) :
-	global_scene_data_{ glm::mat4(1.0f),
-	glm::mat4(1.0f),
-	glm::mat4(1.0f),
-	glm::vec3(0.0f),
-	0,
-	glm::vec3(0.0f),
-	0 },
+	//Init base engine
+	instance_{ std::make_unique<LavaInstance>(validationLayers) },
 	surface_{ std::make_unique<LavaSurface>(instance_->get_instance(), window_.get_window()) },
-	instance_{std::make_unique<LavaInstance>(validationLayers)},
 	window_{ window_width, window_height, "LavaEngine" },
 	device_{ std::make_unique<LavaDevice>(*instance_,*surface_) },
 	window_extent_{ window_width, window_height },
@@ -73,17 +66,11 @@ LavaEngine::LavaEngine(unsigned int window_width, unsigned int window_height) :
 	swap_chain_{ std::make_unique<LavaSwapChain>(*device_, *surface_, window_extent_, allocator_->get_allocator())},
 	frame_data_{ std::make_unique<LavaFrameData>(*device_, *surface_, *allocator_, &global_scene_data_)},
 	inmediate_communication{ std::make_unique<LavaInmediateCommunication>(*device_, *surface_)},
-	global_descriptor_allocator_{ std::make_unique<LavaDescriptorManager>(device_->get_device(),LavaDescriptorManager::initial_sets,LavaDescriptorManager::pool_ratios)},
-	dt_{0.0f}
+	global_descriptor_allocator_{ std::make_unique<LavaDescriptorManager>(device_->get_device(),LavaDescriptorManager::initial_sets,LavaDescriptorManager::pool_ratios)}
 {
-	//Singleton Functionality
-	assert(loaded_engine == nullptr);
-	loaded_engine = this;
-	is_initialized_ = false;
 	stop_rendering = false;
 	//GLOBAL DATA
 	initGlobalData();
-
 
 	//Build proj and view matrix
 	global_scene_data_.proj = glm::perspective(glm::radians(90.0f),
@@ -93,8 +80,6 @@ LavaEngine::LavaEngine(unsigned int window_width, unsigned int window_height) :
 	global_scene_data_.viewproj = global_scene_data_.proj * global_scene_data_.view;
 	global_scene_data_.gbuffer_render_selected = GBUFFER_ALBEDO;
 	global_data_buffer_->updateBufferData(&global_scene_data_, sizeof(GlobalSceneData));
-	
-
 
 	//Default data
 	uint32_t pink_color_ = glm::packUnorm4x8(glm::vec4(1, 0, 1, 1));
@@ -109,8 +94,8 @@ LavaEngine::LavaEngine(unsigned int window_width, unsigned int window_height) :
 	default_texture_image_white = std::make_shared<LavaImage>(this, (void*)&black_color_, VkExtent3D{ 1, 1, 1 }, VK_FORMAT_R8G8B8A8_UNORM,
 		VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
 
+
 	initImgui();
-	is_initialized_ = true;
 	swap_chain_image_index = 0;
 }
 
@@ -119,15 +104,8 @@ LavaEngine::~LavaEngine(){
 	vkDestroyDescriptorSetLayout(device_->get_device(), global_descriptor_set_layout_, nullptr);
 	vkDestroyDescriptorSetLayout(device_->get_device(), global_lights_descriptor_set_layout_, nullptr);
 	vkDestroyDescriptorSetLayout(device_->get_device(), global_pbr_descriptor_set_layout_, nullptr);
-
-	//pipelines_.clear();
-	/*main_deletion_queue_.flush();*/
 	ImGui_ImplVulkan_Shutdown();
 	imgui_descriptor_alloc.destroy_pool(device_->get_device());
-}
-
-VkInstance LavaEngine::get_instance() const{
-	return instance_->get_instance();
 }
 
 GLFWwindow* LavaEngine::get_window() const {
@@ -136,6 +114,11 @@ GLFWwindow* LavaEngine::get_window() const {
 
 VkSurfaceKHR LavaEngine::get_surface() const {
 	return surface_->get_surface();
+}
+
+
+VkInstance LavaEngine::get_instance() {
+	return instance_->get_instance();
 }
 
 void LavaEngine::initGlobalData() {
@@ -170,8 +153,6 @@ void LavaEngine::initGlobalData() {
 	builder.addBinding(4, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
 	builder.addBinding(5, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER); // opacity
 	global_pbr_descriptor_set_layout_ = builder.build(device_->get_device(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
-
-
 }
 
 void LavaEngine::beginFrame() {
@@ -179,9 +160,6 @@ void LavaEngine::beginFrame() {
 
 	updateMainCamera();
 	//Check every light component to allocate or free again
-
-
-	
 
 	//Esperamos a que el fence comunique que la grafica ya ha terminado de dibujar
 	//El timeout esta en nanosegundos 10e-9
@@ -450,12 +428,6 @@ void LavaEngine::setDynamicViewportAndScissor(const VkExtent2D& extend) {
 	scissor.extent.width = (uint32_t)extend.width;//swap_chain_.get_draw_extent().width;
 	scissor.extent.height = (uint32_t)extend.height;//swap_chain_.get_draw_extent().height;
 	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
-}
-
-void LavaEngine::setMainCamera(struct CameraComponent* camera_component,
-	struct TransformComponent* camera_tr) {
-	main_camera_camera_ = camera_component;
-	main_camera_transform_ = camera_tr;
 }
 
 void LavaEngine::updateMainCamera() {

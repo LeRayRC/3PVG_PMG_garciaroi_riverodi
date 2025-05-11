@@ -14,6 +14,9 @@ namespace vkinit {
 
   VkImageCreateInfo ImageCreateInfo(VkFormat format, VkImageUsageFlags usageFlags, VkExtent3D extent, int layers = 1);
   VkImageViewCreateInfo ImageViewCreateInfo(VkFormat format, VkImage image, VkImageAspectFlags aspectFlags, int layers = 1);
+  VkImageViewCreateInfo ImageViewCreateInfo(VkImageViewType view_type, VkFormat format, VkImage image, VkImageAspectFlags aspectFlags, int layers = 1);
+
+
 
   VkCommandBufferBeginInfo CommandBufferBeginInfo(VkCommandBufferUsageFlags flags = 0);
   VkRenderingAttachmentInfo AttachmentInfo(

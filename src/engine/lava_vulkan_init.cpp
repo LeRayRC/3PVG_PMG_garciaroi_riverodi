@@ -90,6 +90,30 @@ VkImageViewCreateInfo vkinit::ImageViewCreateInfo(VkFormat format, VkImage image
   return info;
 }
 
+VkImageViewCreateInfo vkinit::ImageViewCreateInfo(
+  VkImageViewType view_type, VkFormat format, 
+  VkImage image, VkImageAspectFlags aspectFlags, int layers) {
+  VkImageViewCreateInfo info = {};
+  info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+  info.pNext = nullptr;
+  info.viewType = view_type;
+  info.image = image;
+  info.format = format;
+  info.subresourceRange.baseMipLevel = 0;
+  info.subresourceRange.levelCount = 1;
+  info.subresourceRange.baseArrayLayer = 0;
+  info.subresourceRange.layerCount = layers;
+  info.viewType = VK_IMAGE_VIEW_TYPE_2D;
+  if (layers == 6) info.viewType = VK_IMAGE_VIEW_TYPE_CUBE;
+  else if (layers != 1) info.viewType = VK_IMAGE_VIEW_TYPE_2D_ARRAY;
+  info.subresourceRange.aspectMask = aspectFlags;
+
+  return info;
+}
+
+
+
+
 VkCommandBufferBeginInfo vkinit::CommandBufferBeginInfo(VkCommandBufferUsageFlags flags) {
 
   VkCommandBufferBeginInfo command_buffer_begin_info{};
