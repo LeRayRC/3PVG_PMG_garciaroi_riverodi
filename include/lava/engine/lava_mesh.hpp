@@ -58,10 +58,13 @@ class LavaMesh
 {
 public:
 	LavaMesh(class LavaEngine& engine, MeshProperties prop);
+	LavaMesh(class LavaEngineVR& engine, MeshProperties prop);
 	~LavaMesh();
 
 	template<typename t>
-	GPUMeshBuffers upload(std::span<uint32_t> indices, std::span<t> vertices);
+	GPUMeshBuffers upload(class LavaEngine* engine, std::span<uint32_t> indices, std::span<t> vertices);
+	template<typename t>
+	GPUMeshBuffers upload(class LavaEngineVR* engine, std::span<uint32_t> indices, std::span<t> vertices);
 
 	template<typename t = Vertex>
 	bool loadAsGLTF(std::filesystem::path file_path);
@@ -71,7 +74,7 @@ public:
 	LavaPBRMaterial* get_material() { return material_; };
 	bool isLoaded() const { return is_loaded_; }
 	std::shared_ptr<MeshAsset> mesh_;
-	std::shared_ptr<class LavaImage> loadImage(LavaEngine* engine, fastgltf::Asset& asset, fastgltf::Image& image, std::filesystem::path);
+	std::shared_ptr<class LavaImage> loadImage(fastgltf::Asset& asset, fastgltf::Image& image, std::filesystem::path);
 
 
 private:
@@ -80,6 +83,7 @@ private:
 	bool is_loaded_; 
 	class LavaPBRMaterial* material_;
 	class LavaEngine* engine_;
+	class LavaEngineVR* engine_vr_;
 
 };
 

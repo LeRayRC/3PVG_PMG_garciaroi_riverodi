@@ -17,6 +17,7 @@
 #include "lava/engine/lava_engine.hpp"
 #include "lava/ecs/lava_ecs_components.hpp"
 
+
 static inline glm::mat4 GenerateViewMatrix(glm::vec3& pos, glm::vec3& rot) {
   float pitch = glm::radians(rot.x); // Rotaci�n en el eje X
   float yaw = glm::radians(rot.y);   // Rotaci�n en el eje Y

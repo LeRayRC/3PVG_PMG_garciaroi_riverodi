@@ -160,7 +160,9 @@ int main(int argc, char* argv[]) {
 
 	LavaPBRMaterial sphere_material(engine, MaterialPBRProperties());
 	//sphere_material.UpdateBaseColorImage(sun_texture);
-	std::shared_ptr<LavaMesh> sphere_mesh = CreateSphere(engine, &sphere_material);
+	//std::shared_ptr<LavaMesh> sphere_mesh = CreateSphere(engine, &sphere_material);
+	std::shared_ptr<LavaMesh> sphere_mesh = CreateCube8v(&sphere_material);
+
 
 	LavaPBRMaterial terrain_material(engine, MaterialPBRProperties());
 	terrain_material.UpdateBaseColorImage(forest_texture);

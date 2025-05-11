@@ -8,13 +8,6 @@
 
 
 LavaEngineBase::LavaEngineBase() :
-	global_scene_data_{ glm::mat4(1.0f),
-											glm::mat4(1.0f),
-											glm::mat4(1.0f),
-											glm::vec3(0.0f),
-											0,
-											glm::vec3(0.0f),
-											0 },
 	dt_{ 0.0f }
 {
 	

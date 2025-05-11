@@ -66,7 +66,7 @@ void LavaDiffuseRenderSystemVR::render(uint32_t view_index,
 	//Bind both descriptor sets on the mesh
 	vkCmdBindDescriptorSets(engine_.command_buffer_, VK_PIPELINE_BIND_POINT_GRAPHICS,
 		pipeline_->get_layout(),
-		0, 1, &engine_.global_descriptor_set_, 0, nullptr);
+		0, 1, &engine_.global_descriptor_set_vector_[view_index], 0, nullptr);
 
 
 	FrameData& frame_data = engine_.frame_data_[view_index]->getCurrentFrame();
@@ -103,9 +103,9 @@ void LavaDiffuseRenderSystemVR::render(uint32_t view_index,
 		// Vincular los Vertex y Index Buffers
 		GPUMeshBuffers& meshBuffers = mesh->meshBuffers;
 		VkDeviceSize offsets[] = { 0 };
-		if (frame_data.last_bound_mesh != lava_mesh) {
+		//if (frame_data.last_bound_mesh != lava_mesh) {
 			vkCmdBindIndexBuffer(engine_.command_buffer_, meshBuffers.index_buffer->get_buffer().buffer, 0, VK_INDEX_TYPE_UINT32);
-		}
+		//}
 		
 		push_constants.world_matrix = model; 
 		push_constants.vertex_buffer = meshBuffers.vertex_buffer_address;

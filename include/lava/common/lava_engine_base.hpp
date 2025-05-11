@@ -28,10 +28,8 @@ public:
 	LavaEngineBase();
 	~LavaEngineBase();
 
-	
-
 	bool is_initialized_ = false;
-	GlobalSceneData global_scene_data_;
+	
 	VkDescriptorSetLayout global_descriptor_set_layout_;
 	VkDescriptorSetLayout global_lights_descriptor_set_layout_;
 	VkDescriptorSetLayout global_pbr_descriptor_set_layout_;

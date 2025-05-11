@@ -63,6 +63,8 @@ public:
 	std::shared_ptr<class LavaImage> default_texture_image_pink;
 	std::shared_ptr<class LavaImage> default_texture_image_white;
 	std::shared_ptr<class LavaImage> default_texture_image_black;
+
+	GlobalSceneData global_scene_data_;
 	
 	//draw stuff
 	uint32_t swap_chain_image_index;
