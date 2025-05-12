@@ -47,7 +47,7 @@ int main(int argc, char** argv) {
     auto transform_component = ecs_manager.getComponent<TransformComponent>(avocado_entity);
     if (transform_component) {
       auto& transform = transform_component->value();
-      transform.pos_ = glm::vec3(0.0f, 0.0f, -1.0f);
+      transform.pos_ = glm::vec3(0.0f, 0.0f, -5.0f);
       transform.scale_ = glm::vec3(3.0f, 3.0f, 3.0f);
       transform.rot_ = glm::vec3(0.0f, 0.0f, 0.0f);
     }
@@ -68,7 +68,7 @@ int main(int argc, char** argv) {
     auto transform_component = ecs_manager.getComponent<TransformComponent>(entity);
     if (transform_component) {
       auto& transform = transform_component->value();
-      transform.pos_ = glm::vec3(0.0f, -2.0f, 0.0f);
+      transform.pos_ = glm::vec3(0.0f, -10.0f, -20.0f);
       transform.scale_ = glm::vec3(1.0f, 1.0f, 1.0f);
     }
 
@@ -87,7 +87,7 @@ int main(int argc, char** argv) {
     if (transform_component) {
       auto& transform = transform_component->value();
       //transform.pos_.x = cosf((++count)*0.01f);
-      transform.pos_.y = sinf((++count)*0.01f);
+      transform.pos_.y = 20.0f * sinf((++count)*0.01f);
       transform.rot_ = glm::vec3(0.0f);
     }
 

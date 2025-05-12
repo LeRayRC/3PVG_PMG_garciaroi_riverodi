@@ -22,7 +22,7 @@ LavaDiffuseRenderSystemVR::LavaDiffuseRenderSystemVR(LavaEngineVR &engine) :
 							engine_.global_pbr_descriptor_set_layout_,
 							engine_.global_lights_descriptor_set_layout_,
               PipelineFlags::PIPELINE_USE_PUSHCONSTANTS | PipelineFlags::PIPELINE_USE_DESCRIPTOR_SET,
-							PipelineBlendMode::PIPELINE_BLEND_ONE_ZERO))}
+							PipelineBlendMode::PIPELINE_BLEND_DISABLE))}
 {
 
 }

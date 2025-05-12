@@ -66,8 +66,8 @@ int64_t SelectDepthSwapchainFormat(const std::vector<int64_t>& formats) {
 
 const std::vector<int64_t> GetSupportedDepthSwapchainFormats() {
   return {
-      VK_FORMAT_D32_SFLOAT,
-      VK_FORMAT_D16_UNORM };
+      VK_FORMAT_D32_SFLOAT };//,
+      //VK_FORMAT_D16_UNORM };
 }
 
 int64_t SelectColorSwapchainFormat(const std::vector<int64_t>& formats) {
