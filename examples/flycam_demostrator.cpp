@@ -167,7 +167,7 @@ int main(int argc, char* argv[]) {
 	LavaPBRMaterial terrain_material(engine, MaterialPBRProperties());
 	terrain_material.UpdateBaseColorImage(forest_texture);
 
-	std::shared_ptr<LavaMesh> terrain_mesh = CreateTerrain(engine, &terrain_material, 
+	std::shared_ptr<LavaMesh> terrain_mesh = CreateTerrain(&terrain_material, 
 		32,32,8.0f,1.0f, 0.15f, {20,20});
 
 

@@ -27,7 +27,7 @@ std::shared_ptr<LavaMesh> CreateSphere(LavaEngine& engine,
   LavaPBRMaterial* material,float sphere_size = 0.1f, 
   int num_heights = 20, int num_revs = 30);
 
-std::shared_ptr<LavaMesh> CreateTerrain(LavaEngine& engine,
+std::shared_ptr<LavaMesh> CreateTerrain(
   LavaPBRMaterial* material,
   int num_cols = 32, int num_rows = 32,
   float height_mult = 10.0f,
@@ -36,7 +36,6 @@ std::shared_ptr<LavaMesh> CreateTerrain(LavaEngine& engine,
   glm::vec2 tilling = {1.0, 1.0f},
   bool is_centered = true);
 
-std::vector<VertexWithTangents> GenerateVertex(GeometryShape Shape);
 
 
 

@@ -516,7 +516,7 @@ void LavaEngineVR::updateGlobalData(uint32_t view_index) {
   //Detect input
   XrMatrix4x4f viewProj;
   XrMatrix4x4f proj;
-  XrMatrix4x4f_CreateProjectionFov(&proj, VULKAN, views_[view_index].fov, 0.1f , 50.0f);
+  XrMatrix4x4f_CreateProjectionFov(&proj, VULKAN, views_[view_index].fov, 0.05f , 50.0f);
   XrMatrix4x4f toView;
   XrVector3f scale1m{ 1.0f, 1.0f, 1.0f };
   XrMatrix4x4f_CreateTranslationRotationScale(&toView, &views_[view_index].pose.position, &views_[view_index].pose.orientation, &scale1m);
@@ -529,23 +529,6 @@ void LavaEngineVR::updateGlobalData(uint32_t view_index) {
   global_scene_data_vector_[view_index].view = convertXrToGlm(&view);
   XrVector3f vector_pos = views_[view_index].pose.position;
   global_scene_data_vector_[view_index].cameraPos = glm::vec3(vector_pos.x, vector_pos.y, vector_pos.z);
-
-  //global_scene_data_.viewproj = reinterpret_cast<glm::mat4&>(viewProj);
-  //global_scene_data_.proj = reinterpret_cast<glm::mat4&>(proj);
-  //global_scene_data_.view = reinterpret_cast<glm::mat4&>(view);
-  //
-  //global_scene_data_.cameraPos = reinterpret_cast<glm::vec3&>(views_[view_index].pose.position);
-
-
-  //global_scene_data_.view = main_camera_camera_->view_;
-
-  //global_scene_data_.proj = glm::perspective(glm::radians(views_[view_index].fov),
-  //    (float)window_extent_.width / (float)window_extent_.height,
-  //    10000f, 0.05f);
-  //
-
-  //global_scene_data_.proj[1][1] *= -1;
-  //global_scene_data_.viewproj = global_scene_data_.proj * global_scene_data_.view;
 
   global_data_buffer_vector_[view_index]->updateBufferData(&global_scene_data_vector_[view_index], sizeof(GlobalSceneData));
 

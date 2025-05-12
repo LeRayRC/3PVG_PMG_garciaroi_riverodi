@@ -326,7 +326,6 @@ std::shared_ptr<LavaMesh> CreateSphere(LavaEngine& engine,
 
 
 std::shared_ptr<LavaMesh> CreateTerrain(
-  LavaEngine& engine,
   LavaPBRMaterial* material,
   int num_cols,                // Número de columnas (por defecto: 64)
   int num_rows,                // Número de filas (por defecto: 64)
@@ -444,6 +443,12 @@ std::shared_ptr<LavaMesh> CreateTerrain(
   mesh_properties.index = terrain_indices;
 
   // Crear y devolver la malla del terreno
-  std::shared_ptr<LavaMesh> terrain_mesh = std::make_shared<LavaMesh>(engine, mesh_properties);
+  std::shared_ptr<LavaMesh> terrain_mesh;
+  if (material->engine_) {
+    terrain_mesh = std::make_shared<LavaMesh>(*material->engine_, mesh_properties);
+  }
+  else {
+    terrain_mesh = std::make_shared<LavaMesh>(*material->engine_vr_, mesh_properties);
+  }
   return terrain_mesh;
 }
