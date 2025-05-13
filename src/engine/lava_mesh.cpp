@@ -159,7 +159,9 @@ bool LavaMesh::loadAsGLTFWithNodes(std::filesystem::path file_path) {
       // Cargar texturas
       if (gltfMat.pbrData.baseColorTexture.has_value()) {
         int base_color_index = (int)gltfMat.pbrData.baseColorTexture.value().textureIndex;
-        mat->base_color_ = loadImage(gltf, gltf.images[base_color_index], root_path);
+        if (base_color_index < gltf.images.size()) {
+          mat->base_color_ = loadImage(gltf, gltf.images[base_color_index], root_path);
+        }
       }
       else {
         if (engine_) {
@@ -172,13 +174,20 @@ bool LavaMesh::loadAsGLTFWithNodes(std::filesystem::path file_path) {
 
       if (gltfMat.normalTexture.has_value()) {
         int normal_index = (int)gltfMat.normalTexture.value().textureIndex;
-        mat->normal_ = loadImage(gltf, gltf.images[normal_index], root_path);
-        mat->uniform_properties.use_normal_ = 1.0f;
+        if (normal_index < gltf.images.size()) {
+          mat->normal_ = loadImage(gltf, gltf.images[normal_index], root_path);
+          mat->uniform_properties.use_normal_ = 1.0f;
+        }
       }
 
       if (gltfMat.pbrData.metallicRoughnessTexture.has_value()) {
         int mt_rg_index = (int)gltfMat.pbrData.metallicRoughnessTexture.value().textureIndex;
-        mat->metallic_roughness_ = loadImage(gltf, gltf.images[mt_rg_index], root_path);
+        if(mt_rg_index < gltf.images.size()){
+          mat->metallic_roughness_ = loadImage(gltf, gltf.images[mt_rg_index], root_path);
+        }
+        else {
+          printf("Fail to metallic roughness %s material\n", gltfMat.name.c_str());
+        }
       }
 
       // Actualizar descriptor set para el material
