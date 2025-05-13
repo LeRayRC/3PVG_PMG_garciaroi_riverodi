@@ -62,7 +62,7 @@ LavaEngineVR::LavaEngineVR(XrPosef reference_pose) {
     VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
 
   uint32_t black_color_ = glm::packUnorm4x8(glm::vec4(0, 0, 0, 1));
-  default_texture_image_white = std::make_shared<LavaImage>(this, (void*)&black_color_, VkExtent3D{ 1, 1, 1 }, VK_FORMAT_R8G8B8A8_UNORM,
+  default_texture_image_black = std::make_shared<LavaImage>(this, (void*)&black_color_, VkExtent3D{ 1, 1, 1 }, VK_FORMAT_R8G8B8A8_UNORM,
     VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
 
 
@@ -516,7 +516,7 @@ void LavaEngineVR::updateGlobalData(uint32_t view_index) {
   //Detect input
   XrMatrix4x4f viewProj;
   XrMatrix4x4f proj;
-  XrMatrix4x4f_CreateProjectionFov(&proj, VULKAN, views_[view_index].fov, 0.05f, 50.0f );
+  XrMatrix4x4f_CreateProjectionFov(&proj, VULKAN, views_[view_index].fov, 0.05f, 10000.0f );
   XrMatrix4x4f toView;
   XrVector3f scale1m{ 1.0f, 1.0f, 1.0f };
   XrMatrix4x4f_CreateTranslationRotationScale(&toView, &views_[view_index].pose.position, &views_[view_index].pose.orientation, &scale1m);

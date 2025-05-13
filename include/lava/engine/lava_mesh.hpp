@@ -50,7 +50,7 @@ struct MeshProperties {
 	std::string name = "Generic Mesh";
 	MeshType type = MESH_GLTF;
 	std::filesystem::path mesh_path;
-	class LavaPBRMaterial* material;
+	std::shared_ptr<class LavaPBRMaterial>  material;
 	std::vector<VertexWithTangents> vertex;
 	std::vector<uint32_t> index;
 };
@@ -86,7 +86,7 @@ public:
 
 	bool loadCustomMesh(MeshProperties prop);
 
-	LavaPBRMaterial* get_material() { return material_; };
+	LavaPBRMaterial* get_material() { return material_.get(); };
 	bool isLoaded() const { return is_loaded_; }
 	std::shared_ptr<MeshAsset> mesh_;
 	std::shared_ptr<class LavaImage> loadImage(fastgltf::Asset& asset, fastgltf::Image& image, std::filesystem::path);
@@ -97,7 +97,7 @@ private:
 	std::string name_;
 	MeshType type_;
 	bool is_loaded_; 
-	class LavaPBRMaterial* material_;
+	std::shared_ptr<LavaPBRMaterial> material_;
 	class LavaEngine* engine_;
 	class LavaEngineVR* engine_vr_;
 

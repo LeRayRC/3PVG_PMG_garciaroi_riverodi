@@ -67,7 +67,7 @@ LavaMesh::LavaMesh(LavaEngineVR& engine, MeshProperties prop) {
     break;
   case MESH_GLTF:
     //NEED FIX: SHOULD ALSO BE POSIBLE TO CALL WITHOUT TANGENTS (ONLY VERTEX)
-    loadAsGLTF<VertexWithTangents>(prop.mesh_path);
+    loadAsGLTFWithNodes<VertexWithTangents>(prop.mesh_path);
     material_->UpdateDescriptorSet();
     break;
   case MESH_OBJ:
@@ -537,7 +537,7 @@ bool LavaMesh::loadAsGLTF(std::filesystem::path file_path) {
 
 bool LavaMesh::loadCustomMesh(MeshProperties prop) {
   MeshAsset newmesh;
-  GeoSurface surface = { 0,static_cast<uint32_t>(prop.index.size()) };
+  GeoSurface surface = { 0,static_cast<uint32_t>(prop.index.size()),0 };
   
   if (engine_) {
     newmesh.meshBuffers = upload<VertexWithTangents>(engine_,prop.index, prop.vertex);
@@ -545,7 +545,9 @@ bool LavaMesh::loadCustomMesh(MeshProperties prop) {
   else {
     newmesh.meshBuffers = upload<VertexWithTangents>(engine_vr_,prop.index, prop.vertex);
   }
+  materials_.push_back(prop.material);
   //newmesh.surfaces[0] = surface;
+  newmesh.surfaces.push_back(surface);
   newmesh.count_surfaces = 1;
   newmesh.index_count = surface.count;
   mesh_ = std::make_shared<MeshAsset>(std::move(newmesh));

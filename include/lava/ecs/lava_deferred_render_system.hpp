@@ -25,7 +25,7 @@ private:
 	std::unique_ptr<class LavaPipeline> pipeline_shadows_[3];
 
 
-	LavaPBRMaterial light_pass_material;
+	std::shared_ptr<LavaPBRMaterial> light_pass_material;
 	std::shared_ptr<class LavaMesh> light_pass_quad_;
 
 	//Gbuffer mapping

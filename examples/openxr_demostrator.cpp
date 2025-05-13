@@ -18,23 +18,23 @@ int main(int argc, char** argv) {
   LavaECSManager ecs_manager;
   LavaDiffuseRenderSystemVR diffuse_render_system_vr{ engine };
 
-  LavaPBRMaterial cube_material(engine, MaterialPBRProperties());
-  std::shared_ptr<LavaMesh> cube_mesh = CreateCube8v(&cube_material);
+  std::shared_ptr<LavaPBRMaterial> cube_material = std::make_shared<LavaPBRMaterial>(engine, MaterialPBRProperties());
+  std::shared_ptr<LavaMesh> cube_mesh = CreateCube8v(cube_material);
 
-  LavaPBRMaterial basic_material(engine, MaterialPBRProperties());
+  std::shared_ptr<LavaPBRMaterial> basic_material_ptr = std::make_shared<LavaPBRMaterial>(engine, MaterialPBRProperties());
   MeshProperties mesh_properties = {};
 
-  mesh_properties.mesh_path = "../examples/assets/spaceship_cockpit__seat.glb";
-  mesh_properties.material = &basic_material;
+  mesh_properties.mesh_path = "../examples/assets/x-wing_cockpit.glb";
+  mesh_properties.material = basic_material_ptr;
 
   std::shared_ptr<LavaMesh> mesh_ = std::make_shared<LavaMesh>(engine, mesh_properties);
 
   std::shared_ptr<LavaImage> forest_texture = std::make_shared<LavaImage>(&engine, "../examples/assets/textures/forest.png");
 
-  LavaPBRMaterial terrain_material(engine, MaterialPBRProperties());
-  terrain_material.UpdateBaseColorImage(forest_texture);
+  std::shared_ptr<LavaPBRMaterial> terrain_material = std::make_shared<LavaPBRMaterial>(engine, MaterialPBRProperties());
+  terrain_material->UpdateBaseColorImage(forest_texture);
 
-  std::shared_ptr<LavaMesh> terrain_mesh = CreateTerrain(&terrain_material,
+  std::shared_ptr<LavaMesh> terrain_mesh = CreateTerrain(terrain_material,
     32, 32, 8.0f, 1.0f, 0.15f, { 20,20 });
 
 
@@ -48,8 +48,8 @@ int main(int argc, char** argv) {
     if (transform_component) {
       auto& transform = transform_component->value();
       transform.pos_ = glm::vec3(0.0f, 0.0f, -5.0f);
-      transform.scale_ = glm::vec3(3.0f, 3.0f, 3.0f);
-      transform.rot_ = glm::vec3(0.0f, 0.0f, 0.0f);
+      transform.scale_ = glm::vec3(30.0f, 30.0f, 30.0f);
+      transform.rot_ = glm::vec3(0.0f, 180.0f, 0.0f);
     }
 
     auto render_component = ecs_manager.getComponent<RenderComponent>(avocado_entity);
@@ -59,37 +59,31 @@ int main(int argc, char** argv) {
     }
   }
 
-  {
-    size_t entity = ecs_manager.createEntity();
-    ecs_manager.addComponent<TransformComponent>(entity);
-    ecs_manager.addComponent<RenderComponent>(entity);
-    //ecs_manager.addComponent<UpdateComponent>(entity);
+  //{
+  //  size_t entity = ecs_manager.createEntity();
+  //  ecs_manager.addComponent<TransformComponent>(entity);
+  //  ecs_manager.addComponent<RenderComponent>(entity);
+  //  //ecs_manager.addComponent<UpdateComponent>(entity);
 
-    auto transform_component = ecs_manager.getComponent<TransformComponent>(entity);
-    if (transform_component) {
-      auto& transform = transform_component->value();
-      transform.pos_ = glm::vec3(0.0f, -10.0f, -20.0f);
-      transform.scale_ = glm::vec3(1.0f, 1.0f, 1.0f);
-    }
+  //  auto transform_component = ecs_manager.getComponent<TransformComponent>(entity);
+  //  if (transform_component) {
+  //    auto& transform = transform_component->value();
+  //    transform.pos_ = glm::vec3(0.0f, -10.0f, -20.0f);
+  //    transform.scale_ = glm::vec3(1.0f, 1.0f, 1.0f);
+  //  }
 
-    auto render_component = ecs_manager.getComponent<RenderComponent>(entity);
-    if (render_component) {
-      auto& render = render_component->value();
-      render.mesh_ = terrain_mesh;
-    }
-  }
+  //  auto render_component = ecs_manager.getComponent<RenderComponent>(entity);
+  //  if (render_component) {
+  //    auto& render = render_component->value();
+  //    render.mesh_ = terrain_mesh;
+  //  }
+  //}
 
 
 
   int count = 0;
   while (!engine.shouldClose()) {
-    auto transform_component = ecs_manager.getComponent<TransformComponent>(avocado_entity);
-    if (transform_component) {
-      auto& transform = transform_component->value();
-      //transform.pos_.x = cosf((++count)*0.01f);
-      transform.pos_.y = 20.0f * sinf((++count)*0.01f);
-      transform.rot_ = glm::vec3(0.0f);
-    }
+
 
 
     engine.pollEvents();

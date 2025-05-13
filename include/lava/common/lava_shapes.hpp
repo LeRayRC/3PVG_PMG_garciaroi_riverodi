@@ -15,20 +15,20 @@ enum class GeometryShape {
 };
 
 std::shared_ptr<LavaMesh> CreateQuad(LavaEngine& engine,
-  class LavaPBRMaterial* material, float size = 1.0f);
+  std::shared_ptr<LavaPBRMaterial> material, float size = 1.0f);
 
 std::shared_ptr<LavaMesh> CreateCube8v(
-  class LavaPBRMaterial* material , float size = 0.1f);
+  std::shared_ptr<LavaPBRMaterial> material, float size = 0.1f);
 
 std::shared_ptr<LavaMesh> CreateCube24v(LavaEngine& engine, 
-  class LavaPBRMaterial* material, float size = 0.1f);
+  std::shared_ptr<LavaPBRMaterial> material, float size = 0.1f);
 
 std::shared_ptr<LavaMesh> CreateSphere(LavaEngine& engine, 
-  LavaPBRMaterial* material,float sphere_size = 0.1f, 
+  std::shared_ptr<LavaPBRMaterial> material,float sphere_size = 0.1f,
   int num_heights = 20, int num_revs = 30);
 
 std::shared_ptr<LavaMesh> CreateTerrain(
-  LavaPBRMaterial* material,
+  std::shared_ptr<LavaPBRMaterial> material,
   int num_cols = 32, int num_rows = 32,
   float height_mult = 10.0f,
   float size = 1.0f,

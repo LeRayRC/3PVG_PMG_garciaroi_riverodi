@@ -4,7 +4,7 @@
 #include "PerlinNoise.hpp"
 
 
-std::shared_ptr<LavaMesh> CreateQuad(LavaEngine& engine, LavaPBRMaterial* material, float size) {
+std::shared_ptr<LavaMesh> CreateQuad(LavaEngine& engine, std::shared_ptr<LavaPBRMaterial> material, float size) {
 
   std::vector<VertexWithTangents> quad_vertices(4);
 
@@ -48,7 +48,7 @@ std::shared_ptr<LavaMesh> CreateQuad(LavaEngine& engine, LavaPBRMaterial* materi
   return quad_mesh;
 }
 
-std::shared_ptr<LavaMesh> CreateCube24v(LavaEngine& engine, LavaPBRMaterial* material, float size) {
+std::shared_ptr<LavaMesh> CreateCube24v(LavaEngine& engine, std::shared_ptr<LavaPBRMaterial> material, float size) {
 
   
   std::vector<VertexWithTangents> cube_vertices(24);
@@ -152,7 +152,7 @@ std::shared_ptr<LavaMesh> CreateCube24v(LavaEngine& engine, LavaPBRMaterial* mat
   return cube_mesh;
 }
 
-std::shared_ptr<LavaMesh> CreateCube8v(LavaPBRMaterial* material, float size) {
+std::shared_ptr<LavaMesh> CreateCube8v(std::shared_ptr<LavaPBRMaterial> material, float size) {
   float cube_size = size;
 
   std::vector<VertexWithTangents> cube_vertices(8); // 8 vértices para el cubo
@@ -248,7 +248,7 @@ std::shared_ptr<LavaMesh> CreateCube8v(LavaPBRMaterial* material, float size) {
 
 
 std::shared_ptr<LavaMesh> CreateSphere(LavaEngine& engine, 
-  LavaPBRMaterial* material, 
+  std::shared_ptr<LavaPBRMaterial> material,
   float sphere_size, 
   int num_heights, 
   int num_revs) 
@@ -326,7 +326,7 @@ std::shared_ptr<LavaMesh> CreateSphere(LavaEngine& engine,
 
 
 std::shared_ptr<LavaMesh> CreateTerrain(
-  LavaPBRMaterial* material,
+  std::shared_ptr<LavaPBRMaterial> material,
   int num_cols,                // Número de columnas (por defecto: 64)
   int num_rows,                // Número de filas (por defecto: 64)
   float height_mult,        // Multiplicador de altura (por defecto: 10.0)

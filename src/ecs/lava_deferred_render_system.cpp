@@ -108,7 +108,7 @@ LavaDeferredRenderSystem::LavaDeferredRenderSystem(LavaEngine& engine) :
 													engine_.global_lights_descriptor_set_layout_,
 													PipelineFlags::PIPELINE_USE_PUSHCONSTANTS | PipelineFlags::PIPELINE_USE_DESCRIPTOR_SET | PipelineFlags::PIPELINE_DONT_USE_COLOR_ATTACHMENT,
 													PipelineBlendMode::PIPELINE_BLEND_ONE_ZERO)), },
-	light_pass_material{ engine_, MaterialPBRProperties()}
+	light_pass_material{std::make_shared<LavaPBRMaterial>(engine_, MaterialPBRProperties())}
 {
 
 	VkExtent3D shadowmap_image_extent = {4096,4096,1};
@@ -171,10 +171,10 @@ LavaDeferredRenderSystem::LavaDeferredRenderSystem(LavaEngine& engine) :
 	}
 
 	//Create Quad
-	light_pass_quad_ = CreateQuad(engine_, &light_pass_material);
-	light_pass_material.UpdatePositionImage(gbuffers_[0]);
-	light_pass_material.UpdateBaseColorImage(gbuffers_[1]);
-	light_pass_material.UpdateNormalImage(gbuffers_[2]);
+	light_pass_quad_ = CreateQuad(engine_, light_pass_material);
+	light_pass_material->UpdatePositionImage(gbuffers_[0]);
+	light_pass_material->UpdateBaseColorImage(gbuffers_[1]);
+	light_pass_material->UpdateNormalImage(gbuffers_[2]);
 
 }
 
