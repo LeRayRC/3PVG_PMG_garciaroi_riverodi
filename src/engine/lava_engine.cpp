@@ -316,7 +316,7 @@ void LavaEngine::clearWindow() {
 
 	//Limpiamos la imagen con un clear color
 	VkClearColorValue clearValue;
-	clearValue = { {0.0f,0.0f,0.0f,0.0f} };
+	clearValue = { {1.0f,1.0f,1.0f,1.0f} };
 
 	//Seleccionamos un rango de la imagen sobre la que actuar
 	VkImageSubresourceRange clearRange = ImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT);

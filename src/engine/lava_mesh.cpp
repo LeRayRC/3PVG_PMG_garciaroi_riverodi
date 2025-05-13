@@ -10,6 +10,8 @@
 #include <fastgltf/glm_element_traits.hpp>
 #include <fastgltf/core.hpp>
 #include <fastgltf/tools.hpp>
+#include <fastgltf/types.hpp>
+#include <fastgltf/util.hpp>
 
 #include "lava/engine/lava_pbr_material.hpp"
 #include "engine/lava_allocator.hpp"
@@ -34,7 +36,7 @@ LavaMesh::LavaMesh(LavaEngine& engine, MeshProperties prop){
 		break;
 	case MESH_GLTF:
         //NEED FIX: SHOULD ALSO BE POSIBLE TO CALL WITHOUT TANGENTS (ONLY VERTEX)
-    loadAsGLTF<VertexWithTangents>(prop.mesh_path);
+    loadAsGLTFWithNodes<VertexWithTangents>(prop.mesh_path);
     material_->UpdateDescriptorSet();
 		break;
 	case MESH_OBJ:
@@ -83,6 +85,165 @@ LavaMesh::LavaMesh(LavaEngineVR& engine, MeshProperties prop) {
 
 LavaMesh::~LavaMesh(){
 }
+
+template<typename t>
+bool LavaMesh::loadAsGLTFWithNodes(std::filesystem::path file_path) {
+  std::cout << "Loading GLTF: " << file_path << std::endl;
+
+  const auto root_path = file_path.parent_path();
+
+  fastgltf::GltfDataBuffer data;
+  data.loadFromFile(file_path);
+
+  auto extension = file_path.extension().string();
+  std::transform(extension.begin(), extension.end(), extension.begin(), ::tolower);
+
+  constexpr auto gltfOptions = fastgltf::Options::LoadGLBBuffers
+    | fastgltf::Options::LoadExternalBuffers;// | fastgltf::Options::LoadExternalImages;
+
+  fastgltf::Asset gltf;
+  fastgltf::Parser parser{};
+
+  if (extension == ".glb") {
+    auto result = parser.loadGltfBinary(&data, file_path.parent_path(), gltfOptions);
+    if (result) {
+      gltf = std::move(result.get());
+    }
+  }
+  else if (extension == ".gltf") {
+    auto result = parser.loadGltf(&data, file_path.parent_path(), gltfOptions);
+    if (result) {
+      gltf = std::move(result.get());
+    }
+  }
+  else {
+    std::cerr << "File format no supported, engine supports gltf or glb: " << extension << std::endl;
+    return false;
+  }
+
+
+
+  std::vector<t> combinedVertices;
+  std::vector<uint32_t> combinedIndices;
+
+  MeshAsset newmesh;
+  int count_surfaces = 0;
+
+  // Iniciar el procesamiento desde la escena raíz
+  if (!gltf.scenes.empty()) {
+    size_t sceneIndex = 0;
+    // Usa la escena por defecto si está disponible
+    if (gltf.defaultScene.has_value()) {
+      sceneIndex = gltf.defaultScene.value();
+    }
+
+    const fastgltf::Scene& scene = gltf.scenes[sceneIndex];
+
+    // Matriz de identidad como transformación inicial
+    glm::mat4 rootTransform(1.0f);
+
+    // Procesar todos los nodos de la escena raíz
+    for (const auto& nodeIndex : scene.nodeIndices) {
+      const fastgltf::Node& node = gltf.nodes[nodeIndex];
+      processNode(gltf, node, rootTransform, combinedVertices, combinedIndices,
+        newmesh.index_count, newmesh.count_surfaces);
+    }
+  }
+
+  // Subir datos combinados al GPU
+  if (engine_) {
+    newmesh.meshBuffers = upload<t>(engine_, combinedIndices, combinedVertices);
+  }
+  else {
+    newmesh.meshBuffers = upload<t>(engine_vr_, combinedIndices, combinedVertices);
+
+  }
+  newmesh.count_surfaces = count_surfaces;
+
+  // Agregar la malla combinada al contenedor
+  //meshes_.emplace_back(std::make_shared<MeshAsset>(std::move(newmesh)));
+  mesh_ = std::make_shared<MeshAsset>(std::move(newmesh));
+
+  //Update material
+  //int base_color_index = -1;
+  if (gltf.materials.size() > 0) {
+    material_->uniform_properties.metallic_factor_ = gltf.materials[0].pbrData.metallicFactor;
+    material_->uniform_properties.roughness_factor_ = gltf.materials[0].pbrData.roughnessFactor;
+    material_->uniform_properties.opacity_mask_ = gltf.materials[0].alphaCutoff;
+
+    if (gltf.materials[0].specular.get() != nullptr) {
+      material_->uniform_properties.specular_factor_ = gltf.materials[0].specular->specularFactor;
+    }
+    if (gltf.materials[0].pbrData.baseColorTexture.has_value()) {
+      int base_color_index = (int)gltf.materials[0].pbrData.baseColorTexture.value().textureIndex;
+      material_->base_color_ = loadImage(gltf, gltf.images[base_color_index], root_path);
+    }
+
+    if (gltf.materials[0].normalTexture.has_value()) {
+      int normal_index = (int)gltf.materials[0].normalTexture.value().textureIndex;
+      material_->normal_ = loadImage(gltf, gltf.images[normal_index], root_path);
+      material_->uniform_properties.use_normal_ = 1.0f;
+      constexpr bool calc_tangents = sizeof(t) == sizeof(VertexWithTangents);
+      if (calc_tangents) {
+
+        glm::vec3 edge1;
+        glm::vec3 edge2;
+        glm::vec2 deltaUV1;
+        glm::vec2 deltaUV2;
+        glm::vec3 tangent;
+        glm::vec3 bitangent;
+        for (int i = 0; i < combinedIndices.size() - 2; i += 3) {
+          //Calculate Tangent an Bitangent
+          edge1 = combinedVertices[combinedIndices[i + 1]].position - combinedVertices[combinedIndices[i]].position;
+          edge2 = combinedVertices[combinedIndices[i + 2]].position - combinedVertices[combinedIndices[i]].position;
+          deltaUV1.x = combinedVertices[combinedIndices[i + 1]].uv_x - combinedVertices[combinedIndices[i]].uv_x;
+          deltaUV1.y = combinedVertices[combinedIndices[i + 1]].uv_y - combinedVertices[combinedIndices[i]].uv_y;
+          deltaUV2.x = combinedVertices[combinedIndices[i + 2]].uv_x - combinedVertices[combinedIndices[i]].uv_x;;
+          deltaUV2.y = combinedVertices[combinedIndices[i + 1]].uv_y - combinedVertices[combinedIndices[i]].uv_y;
+
+          float f = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y);
+
+          tangent.x = f * (deltaUV2.y * edge1.x - deltaUV1.y * edge2.x);
+          tangent.y = f * (deltaUV2.y * edge1.y - deltaUV1.y * edge2.y);
+          tangent.z = f * (deltaUV2.y * edge1.z - deltaUV1.y * edge2.z);
+
+          bitangent.x = f * (-deltaUV2.x * edge1.x + deltaUV1.x * edge2.x);
+          bitangent.y = f * (-deltaUV2.x * edge1.y + deltaUV1.x * edge2.y);
+          bitangent.z = f * (-deltaUV2.x * edge1.z + deltaUV1.x * edge2.z);
+
+          char* vertex_pointer = (char*)(&combinedVertices[combinedIndices[i]]); // collect pointer to first vertex
+
+          glm::vec3* tangent_ptr = (glm::vec3*)(vertex_pointer + offsetof(VertexWithTangents, tangent_));
+          glm::vec3* bitangent_ptr = (glm::vec3*)(vertex_pointer + offsetof(VertexWithTangents, bitangent_));
+          *tangent_ptr = tangent;
+          *bitangent_ptr = bitangent;
+
+          vertex_pointer = (char*)(&combinedVertices[combinedIndices[i + 1]]); // collect pointer to second vertex
+
+          tangent_ptr = (glm::vec3*)(vertex_pointer + offsetof(VertexWithTangents, tangent_));
+          bitangent_ptr = (glm::vec3*)(vertex_pointer + offsetof(VertexWithTangents, bitangent_));
+          *tangent_ptr = tangent;
+          *bitangent_ptr = bitangent;
+
+          vertex_pointer = (char*)(&combinedVertices[combinedIndices[i + 2]]); // collect pointer to third vertex
+
+          tangent_ptr = (glm::vec3*)(vertex_pointer + offsetof(VertexWithTangents, tangent_));
+          bitangent_ptr = (glm::vec3*)(vertex_pointer + offsetof(VertexWithTangents, bitangent_));
+          *tangent_ptr = tangent;
+          *bitangent_ptr = bitangent;
+        }
+      }
+    }
+
+    if (gltf.materials[0].pbrData.metallicRoughnessTexture.has_value()) {
+      int mt_rg_index = (int)gltf.materials[0].pbrData.metallicRoughnessTexture.value().textureIndex;
+      material_->metallic_roughness_ = loadImage(gltf, gltf.images[mt_rg_index], root_path);
+    }
+  }
+
+  return true;
+}
+
 
 template<typename t>
 bool LavaMesh::loadAsGLTF(std::filesystem::path file_path) {
@@ -301,19 +462,6 @@ bool LavaMesh::loadAsGLTF(std::filesystem::path file_path) {
     }
   }
 
-
-
-  //material_->base_color_ = std::make_shared<LavaImage>(engine_,gltf. );
-
-  //  pink_color_ = glm::packUnorm4x8(glm::vec4(1, 0, 1, 1));
-  //default_texture_image_ = std::make_shared<LavaImage>(this, (void*)&pink_color_, VkExtent3D{ 1, 1, 1 }, VK_FORMAT_R8G8B8A8_UNORM,
-  //  VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
-  /*for (fastgltf::Image& image : gltf.images) {
-    std::shared_ptr<LavaImage> img = loadImage(engine_, gltf, image);
-
-  }*/
-
-
   return true;
 }
 
@@ -529,4 +677,136 @@ std::shared_ptr<LavaImage> LavaMesh::loadImage(fastgltf::Asset& asset, fastgltf:
       },
       image.data);
   return loaded_image;
+}
+
+
+template<typename t>
+// Agregar esta función para recorrer nodos recursivamente
+void LavaMesh::processNode(const fastgltf::Asset& gltf,
+  const fastgltf::Node& node,
+  const glm::mat4& parentTransform,
+  std::vector<t>& combinedVertices,
+  std::vector<uint32_t>& combinedIndices,
+  uint32_t& index_count,
+  uint16_t& count_surfaces) {
+
+  // Calcular la transformación de este nodo
+  glm::mat4 nodeTransform = parentTransform;
+
+  // En fastgltf 0.7.0, los tipos de transformación se manejan con std::variant
+  // Comprobamos qué tipo de transformación está presente usando std::holds_alternative
+
+  if (std::holds_alternative<fastgltf::Node::TransformMatrix>(node.transform)) {
+    // Matriz de transformación
+    const auto& matrix = std::get<fastgltf::Node::TransformMatrix>(node.transform);
+    glm::mat4 localTransform(
+      matrix[0], matrix[1], matrix[2], matrix[3],
+      matrix[4], matrix[5], matrix[6], matrix[7],
+      matrix[8], matrix[9], matrix[10], matrix[11],
+      matrix[12], matrix[13], matrix[14], matrix[15]
+    );
+    nodeTransform = nodeTransform * localTransform;
+  }
+  else if (std::holds_alternative<fastgltf::TRS>(node.transform)) {
+    // Transformación TRS (Translation, Rotation, Scale)
+    const auto& trs = std::get<fastgltf::TRS>(node.transform);
+
+    glm::vec3 translation(trs.translation[0], trs.translation[1], trs.translation[2]);
+    glm::quat rotation(trs.rotation[3], trs.rotation[0], trs.rotation[1], trs.rotation[2]); // w, x, y, z
+    glm::vec3 scale(trs.scale[0], trs.scale[1], trs.scale[2]);
+
+    glm::mat4 translationMatrix = glm::translate(glm::mat4(1.0f), translation);
+    glm::mat4 rotationMatrix = glm::mat4_cast(rotation);
+    glm::mat4 scaleMatrix = glm::scale(glm::mat4(1.0f), scale);
+
+    glm::mat4 localTransform = translationMatrix * rotationMatrix * scaleMatrix;
+    nodeTransform = nodeTransform * localTransform;
+  }
+
+  // Procesar la malla asociada al nodo actual, si existe
+  if (node.meshIndex.has_value()) {
+    const fastgltf::Mesh& mesh = gltf.meshes[node.meshIndex.value()];
+    size_t initial_vtx = combinedVertices.size();
+
+    for (auto&& p : mesh.primitives) {
+      GeoSurface newSurface;
+      newSurface.start_index = static_cast<uint32_t>(combinedIndices.size());
+      newSurface.count = static_cast<uint32_t>(gltf.accessors[p.indicesAccessor.value()].count);
+
+      index_count += newSurface.count;
+
+      // Cargar índices
+      {
+        const fastgltf::Accessor& indexAccessor = gltf.accessors[p.indicesAccessor.value()];
+        combinedIndices.reserve(combinedIndices.size() + indexAccessor.count);
+
+        fastgltf::iterateAccessor<std::uint32_t>(gltf, indexAccessor,
+          [&](std::uint32_t idx) {
+            combinedIndices.push_back(idx + static_cast<uint32_t>(initial_vtx));
+          });
+      }
+
+      // Cargar posiciones
+      {
+        const fastgltf::Accessor& posAccessor = gltf.accessors[p.findAttribute("POSITION")->second];
+        size_t start_index = combinedVertices.size();
+        combinedVertices.resize(combinedVertices.size() + posAccessor.count);
+
+        fastgltf::iterateAccessorWithIndex<glm::vec3>(gltf, posAccessor,
+          [&](glm::vec3 v, size_t index) {
+            t newVertex;
+
+            // Aplicar la transformación del nodo a la posición
+            glm::vec4 transformedPos = nodeTransform * glm::vec4(v, 1.0f);
+            newVertex.position = glm::vec3(transformedPos);
+
+            newVertex.normal = { 1, 0, 0 };  // Por defecto
+            newVertex.color = glm::vec4{ 1.f };
+            newVertex.uv_x = 0;
+            newVertex.uv_y = 0;
+            combinedVertices[start_index + index] = newVertex;
+          });
+      }
+
+      // Cargar normales
+      auto normals = p.findAttribute("NORMAL");
+      if (normals != p.attributes.end()) {
+        size_t start_index = initial_vtx;
+        fastgltf::iterateAccessorWithIndex<glm::vec3>(gltf, gltf.accessors[normals->second],
+          [&](glm::vec3 v, size_t index) {
+            // Transformar la normal con la matriz de rotación (ignorando escala y traslación)
+            glm::mat3 normalMatrix = glm::transpose(glm::inverse(glm::mat3(nodeTransform)));
+            glm::vec3 transformedNormal = normalMatrix * v;
+            combinedVertices[start_index + index].normal = glm::normalize(transformedNormal);
+          });
+      }
+
+      // Cargar UVs
+      auto uv = p.findAttribute("TEXCOORD_0");
+      if (uv != p.attributes.end()) {
+        size_t start_index = initial_vtx;
+        fastgltf::iterateAccessorWithIndex<glm::vec2>(gltf, gltf.accessors[uv->second],
+          [&](glm::vec2 v, size_t index) {
+            combinedVertices[start_index + index].uv_x = v.x;
+            combinedVertices[start_index + index].uv_y = v.y;
+          });
+      }
+
+      // Cargar colores
+      auto colors = p.findAttribute("COLOR_0");
+      if (colors != p.attributes.end()) {
+        size_t start_index = initial_vtx;
+        fastgltf::iterateAccessorWithIndex<glm::vec4>(gltf, gltf.accessors[colors->second],
+          [&](glm::vec4 v, size_t index) {
+            combinedVertices[start_index + index].color = v;
+          });
+      }
+    }
+  }
+
+  // Procesar recursivamente los nodos hijos
+  for (const auto& childIndex : node.children) {
+    const fastgltf::Node& childNode = gltf.nodes[childIndex];
+    processNode(gltf, childNode, nodeTransform, combinedVertices, combinedIndices, index_count, count_surfaces);
+  }
 }

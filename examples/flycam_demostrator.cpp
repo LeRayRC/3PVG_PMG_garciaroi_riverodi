@@ -144,7 +144,7 @@ int main(int argc, char* argv[]) {
 	LavaPBRMaterial basic_material(engine, MaterialPBRProperties());
 	MeshProperties mesh_properties = {};
 
-	mesh_properties.mesh_path = "../examples/assets/Avocado.glb";
+	mesh_properties.mesh_path = "../examples/assets/x-wing_cockpit.glb";
 	mesh_properties.material = &basic_material;
 
 
@@ -172,25 +172,25 @@ int main(int argc, char* argv[]) {
 
 
 
-	{
-		size_t entity = ecs_manager.createEntity();
-		ecs_manager.addComponent<TransformComponent>(entity);
-		ecs_manager.addComponent<RenderComponent>(entity);
-		//ecs_manager.addComponent<UpdateComponent>(entity);
+	//{
+	//	size_t entity = ecs_manager.createEntity();
+	//	ecs_manager.addComponent<TransformComponent>(entity);
+	//	ecs_manager.addComponent<RenderComponent>(entity);
+	//	//ecs_manager.addComponent<UpdateComponent>(entity);
 
-		auto transform_component = ecs_manager.getComponent<TransformComponent>(entity);
-		if (transform_component) {
-			auto& transform = transform_component->value();
-			transform.pos_ = glm::vec3(0.0f, 0.0f, -1.0f);
-			transform.scale_ = glm::vec3(1.0f, 1.0f, 1.0f);
-		}
+	//	auto transform_component = ecs_manager.getComponent<TransformComponent>(entity);
+	//	if (transform_component) {
+	//		auto& transform = transform_component->value();
+	//		transform.pos_ = glm::vec3(0.0f, 0.0f, -1.0f);
+	//		transform.scale_ = glm::vec3(1.0f, 1.0f, 1.0f);
+	//	}
 
-		auto render_component = ecs_manager.getComponent<RenderComponent>(entity);
-		if (render_component) {
-			auto& render = render_component->value();
-			render.mesh_ = terrain_mesh;
-		}
-	}
+	//	auto render_component = ecs_manager.getComponent<RenderComponent>(entity);
+	//	if (render_component) {
+	//		auto& render = render_component->value();
+	//		render.mesh_ = terrain_mesh;
+	//	}
+	//}
 
 
 	{
@@ -202,7 +202,7 @@ int main(int argc, char* argv[]) {
 		if (transform_component) {
 			auto& transform = transform_component->value();
 			transform.pos_ = glm::vec3(0.0f, 0.0f, -2.0f);
-			transform.scale_ = glm::vec3(20.0f, 20.0f, 20.0f);
+			transform.scale_ = glm::vec3(1.0f, 1.0f, 1.0f);
 		}
 
 		auto render_component = ecs_manager.getComponent<RenderComponent>(entity);
@@ -212,23 +212,24 @@ int main(int argc, char* argv[]) {
 		}
 	}
 
-	{
-		size_t entity = ecs_manager.createEntity();
-		ecs_manager.addComponent<TransformComponent>(entity);
-		ecs_manager.addComponent<RenderComponent>(entity);
-		auto transform_component = ecs_manager.getComponent<TransformComponent>(entity);
-		if (transform_component) {
-			auto& transform = transform_component->value();
-			transform.pos_ = glm::vec3(-0.5f, 5.0f, -1.0f);
-			transform.scale_ = glm::vec3(20.0f, 20.0f, 20.0f);
-		}
+	//{
+	//	size_t entity = ecs_manager.createEntity();
+	//	ecs_manager.addComponent<TransformComponent>(entity);
+	//	ecs_manager.addComponent<RenderComponent>(entity);
+	//	auto transform_component = ecs_manager.getComponent<TransformComponent>(entity);
+	//	if (transform_component) {
+	//		auto& transform = transform_component->value();
+	//		transform.pos_ = glm::vec3(-0.5f, 5.0f, -1.0f);
+	//		transform.scale_ = glm::vec3(20.0f, 20.0f, 20.0f);
+	//	}
 
-		auto render_component = ecs_manager.getComponent<RenderComponent>(entity);
-		if (render_component) {
-			auto& render = render_component->value();
-			render.mesh_ = sphere_mesh;
-		}
-	}
+	//	auto render_component = ecs_manager.getComponent<RenderComponent>(entity);
+	//	if (render_component) {
+	//		auto& render = render_component->value();
+	//		render.mesh_ = sphere_mesh;
+	//	}
+	//}
+	// 
 	//{
 	//	size_t entity = ecs_manager.createEntity();
 	//	ecs_manager.addComponent<TransformComponent>(entity);
@@ -350,11 +351,11 @@ int main(int argc, char* argv[]) {
 
 		//pbr_render_system.renderWithShadows(ecs_manager.getComponentList<TransformComponent>(),
 		//	ecs_manager.getComponentList<RenderComponent>(), ecs_manager.getComponentList<LightComponent>());
-		//diffuse_render_system.render(ecs_manager.getComponentList<TransformComponent>(),
-		//	ecs_manager.getComponentList<RenderComponent>());
+		diffuse_render_system.render(ecs_manager.getComponentList<TransformComponent>(),
+			ecs_manager.getComponentList<RenderComponent>());
 
-		deferred_render_system.render(ecs_manager.getComponentList<TransformComponent>(),
-			ecs_manager.getComponentList<RenderComponent>(), ecs_manager.getComponentList<LightComponent>());
+		//deferred_render_system.render(ecs_manager.getComponentList<TransformComponent>(),
+		//	ecs_manager.getComponentList<RenderComponent>(), ecs_manager.getComponentList<LightComponent>());
 
 		ecs_render_imgui(ecs_manager, camera_entity);
 		ecs_light_imgui(ecs_manager.getComponentList<TransformComponent>(),

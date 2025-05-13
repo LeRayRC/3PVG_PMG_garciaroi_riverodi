@@ -24,7 +24,7 @@ int main(int argc, char** argv) {
   LavaPBRMaterial basic_material(engine, MaterialPBRProperties());
   MeshProperties mesh_properties = {};
 
-  mesh_properties.mesh_path = "../examples/assets/Avocado.glb";
+  mesh_properties.mesh_path = "../examples/assets/spaceship_cockpit__seat.glb";
   mesh_properties.material = &basic_material;
 
   std::shared_ptr<LavaMesh> mesh_ = std::make_shared<LavaMesh>(engine, mesh_properties);

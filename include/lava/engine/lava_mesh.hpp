@@ -66,8 +66,20 @@ public:
 	template<typename t>
 	GPUMeshBuffers upload(class LavaEngineVR* engine, std::span<uint32_t> indices, std::span<t> vertices);
 
-	template<typename t = Vertex>
+	template<typename t>
 	bool loadAsGLTF(std::filesystem::path file_path);
+
+	template<typename t>
+	bool loadAsGLTFWithNodes(std::filesystem::path file_path);
+
+	template<typename t>
+	void processNode(const fastgltf::Asset& gltf,
+		const fastgltf::Node& node,
+		const glm::mat4& parentTransform,
+		std::vector<t>& combinedVertices,
+		std::vector<uint32_t>& combinedIndices,
+		uint32_t& index_count,
+		uint16_t& count_surfaces);
 
 	bool loadCustomMesh(MeshProperties prop);
 
