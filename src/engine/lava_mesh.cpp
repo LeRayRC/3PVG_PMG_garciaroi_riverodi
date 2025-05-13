@@ -18,6 +18,7 @@
 #include "lava/engine/lava_image.hpp"
 
 #include "lava/vr/lava_engine_vr.hpp"
+#include "lava/engine/lava_pbr_material.hpp"
 
 #include "stb_image.h"
 
@@ -125,9 +126,70 @@ bool LavaMesh::loadAsGLTFWithNodes(std::filesystem::path file_path) {
 
   std::vector<t> combinedVertices;
   std::vector<uint32_t> combinedIndices;
+  std::vector<GeoSurface> surfaces;
 
   MeshAsset newmesh;
   int count_surfaces = 0;
+
+  materials_.clear();
+
+  if (!gltf.materials.empty()) {
+    for (size_t i = 0; i < gltf.materials.size(); ++i) {
+      const fastgltf::Material& gltfMat = gltf.materials[i];
+
+      // Crear un nuevo material para cada material GLTF
+      std::shared_ptr<LavaPBRMaterial> mat;
+      if (engine_) {
+        mat = std::make_shared<LavaPBRMaterial>(*engine_, MaterialPBRProperties()/* o *engine_vr_ según corresponda */);
+      }
+      else {
+        mat = std::make_shared<LavaPBRMaterial>(*engine_vr_, MaterialPBRProperties() /* o *engine_vr_ según corresponda */);
+
+      }
+
+      // Configurar propiedades básicas
+      mat->uniform_properties.metallic_factor_ = gltfMat.pbrData.metallicFactor;
+      mat->uniform_properties.roughness_factor_ = gltfMat.pbrData.roughnessFactor;
+      mat->uniform_properties.opacity_mask_ = gltfMat.alphaCutoff;
+
+      if (gltfMat.specular.get() != nullptr) {
+        mat->uniform_properties.specular_factor_ = gltfMat.specular->specularFactor;
+      }
+
+      // Cargar texturas
+      if (gltfMat.pbrData.baseColorTexture.has_value()) {
+        int base_color_index = (int)gltfMat.pbrData.baseColorTexture.value().textureIndex;
+        mat->base_color_ = loadImage(gltf, gltf.images[base_color_index], root_path);
+      }
+      else {
+        if (engine_) {
+          mat->base_color_ = engine_->default_texture_image_black;
+        }
+        else {
+          mat->base_color_ = engine_vr_->default_texture_image_black;
+        }
+      }
+
+      if (gltfMat.normalTexture.has_value()) {
+        int normal_index = (int)gltfMat.normalTexture.value().textureIndex;
+        mat->normal_ = loadImage(gltf, gltf.images[normal_index], root_path);
+        mat->uniform_properties.use_normal_ = 1.0f;
+      }
+
+      if (gltfMat.pbrData.metallicRoughnessTexture.has_value()) {
+        int mt_rg_index = (int)gltfMat.pbrData.metallicRoughnessTexture.value().textureIndex;
+        mat->metallic_roughness_ = loadImage(gltf, gltf.images[mt_rg_index], root_path);
+      }
+
+      // Actualizar descriptor set para el material
+      mat->UpdateDescriptorSet();
+
+      // Agregar a la lista de materiales
+      materials_.push_back(mat);
+    }
+  }
+
+
 
   // Iniciar el procesamiento desde la escena raíz
   if (!gltf.scenes.empty()) {
@@ -146,8 +208,11 @@ bool LavaMesh::loadAsGLTFWithNodes(std::filesystem::path file_path) {
     for (const auto& nodeIndex : scene.nodeIndices) {
       const fastgltf::Node& node = gltf.nodes[nodeIndex];
       processNode(gltf, node, rootTransform, combinedVertices, combinedIndices,
-        newmesh.index_count, newmesh.count_surfaces);
+        surfaces,newmesh.index_count, newmesh.count_surfaces);
+      
     }
+
+    newmesh.surfaces = surfaces;
   }
 
   // Subir datos combinados al GPU
@@ -166,6 +231,8 @@ bool LavaMesh::loadAsGLTFWithNodes(std::filesystem::path file_path) {
 
   //Update material
   //int base_color_index = -1;
+
+  /*
   if (gltf.materials.size() > 0) {
     material_->uniform_properties.metallic_factor_ = gltf.materials[0].pbrData.metallicFactor;
     material_->uniform_properties.roughness_factor_ = gltf.materials[0].pbrData.roughnessFactor;
@@ -178,6 +245,7 @@ bool LavaMesh::loadAsGLTFWithNodes(std::filesystem::path file_path) {
       int base_color_index = (int)gltf.materials[0].pbrData.baseColorTexture.value().textureIndex;
       material_->base_color_ = loadImage(gltf, gltf.images[base_color_index], root_path);
     }
+
 
     if (gltf.materials[0].normalTexture.has_value()) {
       int normal_index = (int)gltf.materials[0].normalTexture.value().textureIndex;
@@ -241,6 +309,7 @@ bool LavaMesh::loadAsGLTFWithNodes(std::filesystem::path file_path) {
     }
   }
 
+  */
   return true;
 }
 
@@ -681,23 +750,20 @@ std::shared_ptr<LavaImage> LavaMesh::loadImage(fastgltf::Asset& asset, fastgltf:
 
 
 template<typename t>
-// Agregar esta función para recorrer nodos recursivamente
 void LavaMesh::processNode(const fastgltf::Asset& gltf,
   const fastgltf::Node& node,
   const glm::mat4& parentTransform,
   std::vector<t>& combinedVertices,
   std::vector<uint32_t>& combinedIndices,
+  std::vector<GeoSurface>& surfaces,        // NUEVO: parámetro para almacenar las superficies
   uint32_t& index_count,
   uint16_t& count_surfaces) {
 
   // Calcular la transformación de este nodo
   glm::mat4 nodeTransform = parentTransform;
-
-  // En fastgltf 0.7.0, los tipos de transformación se manejan con std::variant
-  // Comprobamos qué tipo de transformación está presente usando std::holds_alternative
-
+  printf("%s\n", node.name.c_str());
+  // Verificar qué tipo de transformación está presente
   if (std::holds_alternative<fastgltf::Node::TransformMatrix>(node.transform)) {
-    // Matriz de transformación
     const auto& matrix = std::get<fastgltf::Node::TransformMatrix>(node.transform);
     glm::mat4 localTransform(
       matrix[0], matrix[1], matrix[2], matrix[3],
@@ -708,7 +774,6 @@ void LavaMesh::processNode(const fastgltf::Asset& gltf,
     nodeTransform = nodeTransform * localTransform;
   }
   else if (std::holds_alternative<fastgltf::TRS>(node.transform)) {
-    // Transformación TRS (Translation, Rotation, Scale)
     const auto& trs = std::get<fastgltf::TRS>(node.transform);
 
     glm::vec3 translation(trs.translation[0], trs.translation[1], trs.translation[2]);
@@ -728,11 +793,23 @@ void LavaMesh::processNode(const fastgltf::Asset& gltf,
     const fastgltf::Mesh& mesh = gltf.meshes[node.meshIndex.value()];
     size_t initial_vtx = combinedVertices.size();
 
-    for (auto&& p : mesh.primitives) {
+    for (const auto& p : mesh.primitives) {
       GeoSurface newSurface;
       newSurface.start_index = static_cast<uint32_t>(combinedIndices.size());
       newSurface.count = static_cast<uint32_t>(gltf.accessors[p.indicesAccessor.value()].count);
 
+      // NUEVO: Asignar el material correspondiente a la superficie
+      if (p.materialIndex.has_value()) {
+        newSurface.material_index = static_cast<uint32_t>(p.materialIndex.value());
+      }
+      else {
+        newSurface.material_index = 0; // Material por defecto si no se especifica
+      }
+
+      // NUEVO: Añadir la superficie al vector de superficies
+      surfaces.push_back(newSurface);
+
+      // Actualizar el contador de índices
       index_count += newSurface.count;
 
       // Cargar índices
@@ -748,65 +825,74 @@ void LavaMesh::processNode(const fastgltf::Asset& gltf,
 
       // Cargar posiciones
       {
-        const fastgltf::Accessor& posAccessor = gltf.accessors[p.findAttribute("POSITION")->second];
-        size_t start_index = combinedVertices.size();
-        combinedVertices.resize(combinedVertices.size() + posAccessor.count);
+        auto posIt = p.findAttribute("POSITION");
+        if (posIt != p.attributes.end()) {
+          const fastgltf::Accessor& posAccessor = gltf.accessors[posIt->second];
+          size_t start_index = combinedVertices.size();
+          combinedVertices.resize(combinedVertices.size() + posAccessor.count);
 
-        fastgltf::iterateAccessorWithIndex<glm::vec3>(gltf, posAccessor,
-          [&](glm::vec3 v, size_t index) {
-            t newVertex;
+          fastgltf::iterateAccessorWithIndex<glm::vec3>(gltf, posAccessor,
+            [&](glm::vec3 v, size_t index) {
+              t newVertex;
 
-            // Aplicar la transformación del nodo a la posición
-            glm::vec4 transformedPos = nodeTransform * glm::vec4(v, 1.0f);
-            newVertex.position = glm::vec3(transformedPos);
+              // Aplicar la transformación del nodo a la posición
+              glm::vec4 transformedPos = nodeTransform * glm::vec4(v, 1.0f);
+              newVertex.position = glm::vec3(transformedPos);
 
-            newVertex.normal = { 1, 0, 0 };  // Por defecto
-            newVertex.color = glm::vec4{ 1.f };
-            newVertex.uv_x = 0;
-            newVertex.uv_y = 0;
-            combinedVertices[start_index + index] = newVertex;
-          });
+              newVertex.normal = { 1, 0, 0 };  // Por defecto
+              newVertex.color = glm::vec4{ 1.f };
+              newVertex.uv_x = 0;
+              newVertex.uv_y = 0;
+              combinedVertices[start_index + index] = newVertex;
+            });
+        }
       }
 
       // Cargar normales
       auto normals = p.findAttribute("NORMAL");
       if (normals != p.attributes.end()) {
-        size_t start_index = initial_vtx;
-        fastgltf::iterateAccessorWithIndex<glm::vec3>(gltf, gltf.accessors[normals->second],
+        const fastgltf::Accessor& normalAccessor = gltf.accessors[normals->second];
+
+        fastgltf::iterateAccessorWithIndex<glm::vec3>(gltf, normalAccessor,
           [&](glm::vec3 v, size_t index) {
             // Transformar la normal con la matriz de rotación (ignorando escala y traslación)
             glm::mat3 normalMatrix = glm::transpose(glm::inverse(glm::mat3(nodeTransform)));
             glm::vec3 transformedNormal = normalMatrix * v;
-            combinedVertices[start_index + index].normal = glm::normalize(transformedNormal);
+            combinedVertices[initial_vtx + index].normal = glm::normalize(transformedNormal);
           });
       }
 
       // Cargar UVs
       auto uv = p.findAttribute("TEXCOORD_0");
       if (uv != p.attributes.end()) {
-        size_t start_index = initial_vtx;
-        fastgltf::iterateAccessorWithIndex<glm::vec2>(gltf, gltf.accessors[uv->second],
+        const fastgltf::Accessor& uvAccessor = gltf.accessors[uv->second];
+
+        fastgltf::iterateAccessorWithIndex<glm::vec2>(gltf, uvAccessor,
           [&](glm::vec2 v, size_t index) {
-            combinedVertices[start_index + index].uv_x = v.x;
-            combinedVertices[start_index + index].uv_y = v.y;
+            combinedVertices[initial_vtx + index].uv_x = v.x;
+            combinedVertices[initial_vtx + index].uv_y = v.y;
           });
       }
 
       // Cargar colores
       auto colors = p.findAttribute("COLOR_0");
       if (colors != p.attributes.end()) {
-        size_t start_index = initial_vtx;
-        fastgltf::iterateAccessorWithIndex<glm::vec4>(gltf, gltf.accessors[colors->second],
+        const fastgltf::Accessor& colorAccessor = gltf.accessors[colors->second];
+
+        fastgltf::iterateAccessorWithIndex<glm::vec4>(gltf, colorAccessor,
           [&](glm::vec4 v, size_t index) {
-            combinedVertices[start_index + index].color = v;
+            combinedVertices[initial_vtx + index].color = v;
           });
       }
+
+      // Incrementar contador de superficies
+      count_surfaces++;
     }
   }
 
   // Procesar recursivamente los nodos hijos
   for (const auto& childIndex : node.children) {
     const fastgltf::Node& childNode = gltf.nodes[childIndex];
-    processNode(gltf, childNode, nodeTransform, combinedVertices, combinedIndices, index_count, count_surfaces);
+    processNode(gltf, childNode, nodeTransform, combinedVertices, combinedIndices, surfaces, index_count, count_surfaces);
   }
 }

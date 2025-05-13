@@ -26,6 +26,7 @@ struct GPUMeshBuffers {
 struct GeoSurface {
 	uint32_t start_index;
 	uint32_t count;
+	uint32_t material_index;
 };
 
 struct MeshAsset {
@@ -33,6 +34,7 @@ struct MeshAsset {
 	std::string name;
 	uint16_t count_surfaces;
 	uint32_t index_count;
+	std::vector<GeoSurface> surfaces;
 	//GeoSurface surfaces[5];
 	GPUMeshBuffers meshBuffers;
 };
@@ -78,6 +80,7 @@ public:
 		const glm::mat4& parentTransform,
 		std::vector<t>& combinedVertices,
 		std::vector<uint32_t>& combinedIndices,
+		std::vector<GeoSurface>& surfaces,
 		uint32_t& index_count,
 		uint16_t& count_surfaces);
 
@@ -88,6 +91,7 @@ public:
 	std::shared_ptr<MeshAsset> mesh_;
 	std::shared_ptr<class LavaImage> loadImage(fastgltf::Asset& asset, fastgltf::Image& image, std::filesystem::path);
 
+	std::vector<std::shared_ptr<LavaPBRMaterial>> materials_;
 
 private:
 	std::string name_;

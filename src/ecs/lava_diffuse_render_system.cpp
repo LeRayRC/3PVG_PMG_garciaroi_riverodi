@@ -83,18 +83,54 @@ void LavaDiffuseRenderSystem::render(
 		model = glm::rotate(model, glm::radians(transform_it->value().rot_.z), glm::vec3(0.0f, 0.0f, 1.0f));
 		model = glm::scale(model, transform_it->value().scale_);
 
-		// Vincular los Vertex y Index Buffers
-		GPUMeshBuffers& meshBuffers = mesh->meshBuffers;
-		VkDeviceSize offsets[] = { 0 };
-		if (frame_data.last_bound_mesh != lava_mesh) {
-			vkCmdBindIndexBuffer(engine_.commandBuffer, meshBuffers.index_buffer->get_buffer().buffer, 0, VK_INDEX_TYPE_UINT32);
-		}
-		
-		push_constants.world_matrix = model; 
-		push_constants.vertex_buffer = meshBuffers.vertex_buffer_address;
-		
-		vkCmdPushConstants(engine_.commandBuffer, pipeline_->get_layout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &push_constants);
-		vkCmdDrawIndexed(engine_.commandBuffer, mesh->index_count, 1, 0, 0, 0);
+
+    GPUMeshBuffers& meshBuffers = mesh->meshBuffers;
+    if (frame_data.last_bound_mesh != lava_mesh) {
+      vkCmdBindIndexBuffer(engine_.commandBuffer, meshBuffers.index_buffer->get_buffer().buffer, 0, VK_INDEX_TYPE_UINT32);
+      frame_data.last_bound_mesh = lava_mesh;
+    }
+
+    // Dibujar cada superficie con su material correspondiente
+    for (const GeoSurface& surface : mesh->surfaces) {
+      // Obtener el material para esta superficie
+      std::shared_ptr<LavaPBRMaterial> material;
+
+      if (surface.material_index < lava_mesh->materials_.size()) {
+        material = lava_mesh->materials_[surface.material_index];
+      }
+      else {
+        //material = lava_mesh->get_material(); // Material por defecto
+      }
+
+      // Vincular descriptor set del material
+      VkDescriptorSet pbr_descriptor_set = material->get_descriptor_set();
+      vkCmdBindDescriptorSets(engine_.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+        pipeline_->get_layout(),
+        1, 1, &pbr_descriptor_set, 0, nullptr);
+
+      // Configurar push constants
+      GPUDrawPushConstants push_constants;
+      push_constants.world_matrix = model;
+      push_constants.vertex_buffer = meshBuffers.vertex_buffer_address;
+
+      vkCmdPushConstants(engine_.commandBuffer, pipeline_->get_layout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &push_constants);
+
+      // Dibujar la superficie
+      vkCmdDrawIndexed(engine_.commandBuffer, surface.count, 1, surface.start_index, 0, 0);
+    }
+
+		//// Vincular los Vertex y Index Buffers
+		//GPUMeshBuffers& meshBuffers = mesh->meshBuffers;
+		//VkDeviceSize offsets[] = { 0 };
+		//if (frame_data.last_bound_mesh != lava_mesh) {
+		//	vkCmdBindIndexBuffer(engine_.commandBuffer, meshBuffers.index_buffer->get_buffer().buffer, 0, VK_INDEX_TYPE_UINT32);
+		//}
+		//
+		//push_constants.world_matrix = model; 
+		//push_constants.vertex_buffer = meshBuffers.vertex_buffer_address;
+		//
+		//vkCmdPushConstants(engine_.commandBuffer, pipeline_->get_layout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &push_constants);
+		//vkCmdDrawIndexed(engine_.commandBuffer, mesh->index_count, 1, 0, 0, 0);
 
 		if (frame_data.last_bound_mesh != lava_mesh) {
 			frame_data.last_bound_mesh = lava_mesh;
