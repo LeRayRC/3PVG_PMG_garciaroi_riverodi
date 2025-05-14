@@ -1,4 +1,4 @@
-#include "lava/ecs/lava_pbr_render_system.hpp"
+ #include "lava/ecs/lava_pbr_render_system.hpp"
 
 #include "lava/engine/lava_engine.hpp"
 #include "engine/lava_vulkan_inits.hpp"
@@ -40,7 +40,7 @@ LavaPBRRenderSystem::LavaPBRRenderSystem(LavaEngine &engine) :
 													PipelineBlendMode::PIPELINE_BLEND_ONE_ZERO))},
 	pipeline_shadows_{ std::make_unique<LavaPipeline>(PipelineConfig( //TO DO: DIRECTIONAL LIGHT
 													PIPELINE_TYPE_SHADOW,
-													"../src/shaders/shadow_mapping.vert.spv",
+													"../src/shaders/point_shadow_mapping.vert.spv",
 													"../src/shaders/shadow_mapping.frag.spv",
 													engine_.device_.get(),
 													engine_.swap_chain_.get(),
@@ -49,8 +49,8 @@ LavaPBRRenderSystem::LavaPBRRenderSystem(LavaEngine &engine) :
 													engine_.global_pbr_descriptor_set_layout_,
 													engine_.global_lights_descriptor_set_layout_,
 													PipelineFlags::PIPELINE_USE_PUSHCONSTANTS | PipelineFlags::PIPELINE_USE_DESCRIPTOR_SET | PipelineFlags::PIPELINE_DONT_USE_COLOR_ATTACHMENT,
-													PipelineBlendMode::PIPELINE_BLEND_ONE_ZERO/*,
-													"../src/shaders/directional_shadows.geom.spv"*/)), 
+													PipelineBlendMode::PIPELINE_BLEND_ONE_ZERO,
+													"../src/shaders/directional_shadows.geom.spv", 1, VK_COMPARE_OP_LESS_OR_EQUAL)),
 
 					   std::make_unique<LavaPipeline>(PipelineConfig(
 													PIPELINE_TYPE_SHADOW,
@@ -81,8 +81,8 @@ LavaPBRRenderSystem::LavaPBRRenderSystem(LavaEngine &engine) :
 
 {
 	VkExtent3D draw_image_extent = {
-		2048,
-		2048,
+		2048*2,
+		2048*2,
 		1
 	};
 
@@ -323,7 +323,7 @@ void LavaPBRRenderSystem::renderWithShadows(
 			VkClearValue clear_value;
 			clear_value.color = { 0.0f,0.0f,0.0f,0.0f };
 			VkRenderingAttachmentInfo color_attachment = vkinit::AttachmentInfo(engine_.swap_chain_->get_draw_image().image_view, NULL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-			VkRenderingAttachmentInfo depth_attachment = vkinit::DepthAttachmentInfo(current_shadowmap_image_view, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
+			VkRenderingAttachmentInfo depth_attachment = vkinit::DepthAttachmentInfo(current_shadowmap_image_view, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR, (light_index == 0) ? 1.0f : 0.0f);
 			int layers = 1;
 			if (light_index == 0) layers = 3;
 			else if (light_index == 1)layers = 6;
@@ -597,7 +597,7 @@ static std::vector<glm::vec4> getFrustumCornersWorldSpace(const glm::mat4& proj,
 					inv * glm::vec4(
 						2.0f * x - 1.0f,
 						2.0f * y - 1.0f,
-						2.0f * z - 1.0f,
+						z,
 						1.0f);
 				frustumCorners.push_back(pt / pt.w);
 			}
@@ -606,6 +606,7 @@ static std::vector<glm::vec4> getFrustumCornersWorldSpace(const glm::mat4& proj,
 
 	return frustumCorners;
 }
+
 
 void LavaPBRRenderSystem::update_lights(std::vector<std::optional<struct LightComponent>>& light_component_vector, std::vector<std::optional<struct TransformComponent>>& transform_vector)
 {
@@ -633,15 +634,15 @@ void LavaPBRRenderSystem::update_lights(std::vector<std::optional<struct LightCo
 
 		if (light_component.type_ == LIGHT_TYPE_DIRECTIONAL) {
 
-			//float planeStep = engine_.main_camera_camera_->near_ * (1.0f / 3.0f);
-			//glm::vec3 light_dir = CalculateForwardVector(light_transform_it->value().rot_);
-			//std::vector<glm::mat4> shadowTransforms;
-			//
-			//for (int i = 0; i < 3; i++) {
-			//	glm::mat4 proj = glm::perspective(glm::radians(engine_.main_camera_camera_->fov_),
-			//		(float)engine_.window_extent_.width / (float)engine_.window_extent_.height,0.1f /*(((float)i) * planeStep) + 0.1f^*/, 50.0f/*((float)(i + 1)) * planeStep*/);
-			//	proj[1][1] *= -1.0f;
-				std::vector<glm::vec4> corners = getFrustumCornersWorldSpace(engine_.global_scene_data_.proj, engine_.main_camera_camera_->view_);
+			float planeStep = engine_.main_camera_camera_->near_ * (1.0f / 3.0f);
+			std::vector<glm::mat4> shadowTransforms;
+			
+			for (int i = 0; i < 3; i++) {
+				glm::mat4 proj = glm::perspective(glm::radians(engine_.main_camera_camera_->fov_),
+					(float)engine_.window_extent_.width / (float)engine_.window_extent_.height, (((float)i) * planeStep) + 0.1f, ((float)(i + 1)) * planeStep);
+				proj[1][1] *= -1.0f;
+
+				std::vector<glm::vec4> corners = getFrustumCornersWorldSpace(proj, engine_.main_camera_camera_->view_);
 
 				glm::vec3 center = glm::vec3(0, 0, 0);
 				for (const glm::vec4& v : corners)
@@ -649,81 +650,56 @@ void LavaPBRRenderSystem::update_lights(std::vector<std::optional<struct LightCo
 					center += glm::vec3(v);
 				}
 				center /= corners.size();
-				printf("%0.2f,%0.2f,%0.2f\n", center.x, center.y, center.z);
-				
-				glm::vec3 forward = CalculateForwardVector(light_transform_it->value().rot_);
-				glm::vec3 pos = center - 10.0f * forward;
 
-				glm::mat4 light_view = GenerateViewMatrix(pos, light_transform_it->value().rot_);
+				glm::mat4 light_view = GenerateViewMatrix(center, light_transform_it->value().rot_); //Tengo dudas (dir o -dir)
 
-			//	//glm::mat4 light_view = glm::lookAt(
-			//	//	center + light_dir,
-			//	//	center,
-			//	//	glm::vec3(0.0f, 1.0f, 0.0f)
-			//	//);
+				//glm::mat4 light_view = glm::lookAt(
+				//	center - CalculateForwardVector(light_transform_it->value().rot_),
+				//	center,
+				//	glm::vec3(0.0f, 1.0f, 0.0f)
+				//);
 
-			//	float min_x = std::numeric_limits<float>::max();
-			//	float max_x = std::numeric_limits<float>::lowest();
-			//	float min_y = std::numeric_limits<float>::max();
-			//	float max_y = std::numeric_limits<float>::lowest();
-			//	float min_z = std::numeric_limits<float>::max();
-			//	float max_z = std::numeric_limits<float>::lowest();
-			//	for (const glm::vec4& v : corners)
-			//	{
-			//		const glm::vec4 trf = light_view * v;
-			//		min_x = std::min(min_x, trf.x);
-			//		max_x = std::max(max_x, trf.x);
-			//		min_y = std::min(min_y, trf.y);
-			//		max_y = std::max(max_y, trf.y);
-			//		min_z = std::min(min_z, trf.z);
-			//		max_z = std::max(max_z, trf.z);
-			//	}
+				float min_x = std::numeric_limits<float>::max();
+				float max_x = std::numeric_limits<float>::lowest();
+				float min_y = std::numeric_limits<float>::max();
+				float max_y = std::numeric_limits<float>::lowest();
+				float min_z = std::numeric_limits<float>::max();
+				float max_z = std::numeric_limits<float>::lowest();
+				for (const glm::vec4& v : corners)
+				{
+					const glm::vec4 trf = light_view * v;
+					min_x = std::min(min_x, trf.x);
+					max_x = std::max(max_x, trf.x);
+					min_y = std::min(min_y, trf.y);
+					max_y = std::max(max_y, trf.y);
+					min_z = std::min(min_z, trf.z);
+					max_z = std::max(max_z, trf.z);
+				}
 
-			//	constexpr float z_mult = 10.0f;
-			//	if (min_z < 0)
-			//	{
-			//		min_z *= z_mult;
-			//	}
-			//	else
-			//	{
-			//		min_z /= z_mult;
-			//	}
-			//	if (max_z < 0)
-			//	{
-			//		max_z /= z_mult;
-			//	}
-			//	else
-			//	{
-			//		max_z *= z_mult;
-			//	}
+				constexpr float z_mult = 10.0f;
+				if (min_z < 0)
+				{
+					min_z *= z_mult;
+				}
+				else
+				{
+					min_z /= z_mult;
+				}
+				if (max_z < 0)
+				{
+					max_z /= z_mult;
+				}
+				else
+				{
+					max_z *= z_mult;
+				}
 
-			//	glm::mat4 light_projection = glm::ortho(min_x, max_x, min_y, max_y, min_z, max_z);
-			//	light_projection[1][1] *= -1.0f;
-
-			//	shadowTransforms.push_back(light_projection * light_view);
-			//}
-			//glm::vec3 forward = CalculateForwardVector(engine_.main_camera_transform_->rot_);
-			//glm::vec3 pos = light_transform_it->value().pos_ - (10.0f * forward);
-			//
-			//glm::mat4 view = GenerateViewMatrix(
-			//	pos,
-			//	light_transform_it->value().rot_
-			//);
-
-
-			// Generar la matriz de proyección en perspectiva
-			float size = 10.0f;
-			float left = -size;
-			float right = size;
-			float bottom = -size;
-			float top = size;
-			glm::mat4 proj = glm::ortho(left, right, bottom, top, engine_.main_camera_camera_->near_, engine_.main_camera_camera_->far_);
-
-
-			proj[1][1] *= -1;
-			light_component.viewproj_ = proj * light_view;
-			light_component.light_viewproj_buffer_->updateBufferData(&light_component.viewproj_, sizeof(glm::mat4));
-
+				glm::mat4 light_projection = glm::ortho(min_x, max_x, max_y, min_y, min_z, max_z);
+				proj[1][1] *= -1;
+				light_component.viewproj_ = light_projection * light_view;
+				shadowTransforms.push_back(light_component.viewproj_);
+			}
+			light_component.light_viewproj_buffer_->updateBufferData(shadowTransforms.data(), sizeof(glm::mat4) * 3);
 		}
 		else if (light_component.type_ == LIGHT_TYPE_SPOT) {
 			glm::mat4 view = GenerateViewMatrix(

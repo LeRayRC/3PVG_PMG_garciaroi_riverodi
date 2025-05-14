@@ -153,20 +153,78 @@ float PointShadowCalculation(vec3 fragPos)
 }  
 
 float DirectionalShadowCalculation(vec3 fragPos){
-
-  for(int i = 0; i < 3; i++){
-    vec4 fragPosLight = light_viewproj.viewproj[i] * vec4(fragPos, 1.0);
-    vec3 projCoords = fragPosLight.xyz / fragPosLight.w;
-    float currentDepth = projCoords.z;
-    projCoords = projCoords * 0.5 + 0.5;  
-
-    if(projCoords.x > 0.0 && projCoords.x < 1.0 
-      && projCoords.y > 0.0 && projCoords.y < 1.0){
-          return currentDepth + 0.0005 < texture(directionalShadowMaps, vec3(projCoords.xy, i)).r  ? 1.0 : 0.0;
+    vec4 fragPosViewSpace = cameraView * vec4(fragPos, 1.0);
+    float depthValue = abs(fragPosViewSpace.z);
+    
+    int layer = -1;
+    float planeStep = 50.0 / 3.0;
+    for (int i = 0; i < 3; ++i)
+    {
+        float curPlaneStep = (float(i + 1)) * planeStep;
+        if (depthValue < curPlaneStep)
+        {
+            layer = i;
+            break;
+        }
     }
-  }
+    if (layer == -1)
+    {
+        layer = 2;
+    }
+        
+    vec4 fragmPosLightSpace = light_viewproj.viewproj[layer] * vec4(fragPos, 1.0);
+        
+    // get depth of current fragment from light's perspective
+    float currentDepth = fragmPosLightSpace.z;
+    if (currentDepth  > 1.0)
+    {
+        return 0.0;
+    }
 
-  return 1.0;
+    // perform perspective divide
+    vec3 projCoords = fragmPosLightSpace.xyz / fragmPosLightSpace.w;
+
+    // transform to [0,1] range
+    projCoords = (projCoords * 0.5) + 0.5;
+
+
+    // calculate bias (based on depth map resolution and slope)
+    vec3 normal = normalize(inNormal);
+    float bias = max(0.05 * (1.0 - dot(normal, light.dir)), 0.005);
+    if (layer == 2)
+    {
+        bias *= 1 / (50.0 * 0.5);
+    }
+    else
+    {
+        float planeDistance = planeStep * (float(layer+1));
+        bias *= 1 / (0.5 * planeDistance);
+    }
+
+    // PCF
+    float shadow = 0.0;
+    vec2 texelSize = 1.0 / vec2(textureSize(directionalShadowMaps, 0));
+    for(int x = -1; x <= 1; ++x)
+    {
+        for(int y = -1; y <= 1; ++y)
+        {
+            float pcfDepth = texture(
+                        directionalShadowMaps,
+                        vec3(projCoords.xy + (vec2(x, y) * texelSize),
+                        layer)
+                        ).r; 
+            shadow += ((currentDepth - bias) > pcfDepth) ? 1.0 : 0.0;        
+        }    
+    }
+    shadow /= 9.0;
+        
+    // keep the shadow at 0.0 when outside the far_plane region of the light's frustum.
+    if(projCoords.z > 1.0)
+    {
+        shadow = 0.0;
+    }
+        	
+    return shadow;
 }
 
 
@@ -176,8 +234,9 @@ void main()
   if(light.enabled == 1){
     switch(light.type){
       case 0: {
-        float shadow_fr = DirectionalShadowCalculation(inPos.xyz);
-        outFragColor = vec4(DirectionalLight() * (1.0 - shadow_fr),1.0); 
+        float shadow_fr = 1.0 - DirectionalShadowCalculation(inPos.xyz);
+        vec3 lightColor = DirectionalLight();
+        outFragColor = vec4(lightColor * shadow_fr,1.0); 
         break;
        }
        case 1: {
