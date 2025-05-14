@@ -117,6 +117,7 @@ inline static bool XrMatrix4x4f_CullBounds(const XrMatrix4x4f* mvp, const XrVect
 #include <assert.h>
 #include <math.h>
 #include <stdbool.h>
+#include "lava/common/lava_global_helpers.hpp"
 
 #define MATH_PI 3.14159265358979323846f
 
@@ -131,6 +132,7 @@ static const XrColor4f XrColorPurple = {1.0f, 0.0f, 1.0f, 1.0f};
 static const XrColor4f XrColorCyan = {0.0f, 1.0f, 1.0f, 1.0f};
 static const XrColor4f XrColorLightGrey = {0.7f, 0.7f, 0.7f, 1.0f};
 static const XrColor4f XrColorDarkGrey = {0.3f, 0.3f, 0.3f, 1.0f};
+
 
 //typedef enum GraphicsAPI_Type { GRAPHICS_VULKAN, GRAPHICS_OPENGL, GRAPHICS_OPENGL_ES, GRAPHICS_D3D } GraphicsAPI_Type;
 

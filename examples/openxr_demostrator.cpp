@@ -2,6 +2,8 @@
 #include "lava/vr/lava_engine_vr.hpp"
 #include "lava/ecs/lava_ecs.hpp"
 #include "lava/ecs/lava_diffuse_render_system_vr.hpp"
+#include "lava/ecs/lava_deferred_render_system_vr.hpp"
+#include "lava/ecs/lava_pbr_render_system_vr.hpp"
 #include "lava/engine/lava_pbr_material.hpp"
 #include "lava/engine/lava_mesh.hpp"
 #include "lava/common/lava_shapes.hpp"
@@ -17,6 +19,8 @@ int main(int argc, char** argv) {
   LavaEngineVR engine(reference_pose);
   LavaECSManager ecs_manager;
   LavaDiffuseRenderSystemVR diffuse_render_system_vr{ engine };
+  LavaDeferredRenderSystemVR deferred_render_system_vr{ engine };
+  LavaPBRRenderSystemVR pbr_render_system_vr{ engine };
 
   std::shared_ptr<LavaPBRMaterial> cube_material = std::make_shared<LavaPBRMaterial>(engine, MaterialPBRProperties());
   std::shared_ptr<LavaMesh> cube_mesh = CreateCube8v(cube_material);
@@ -38,7 +42,9 @@ int main(int argc, char** argv) {
   std::shared_ptr<LavaMesh> terrain_mesh = CreateTerrain(terrain_material,
     32, 32, 8.0f, 1.0f, 0.15f, { 20,20 });
 
-
+  for (auto& data : engine.global_scene_data_vector_) {
+    data.ambientColor = glm::vec3(0.2f, 0.2f, 0.2f);
+  }
 
   size_t avocado_entity;
   {
@@ -59,6 +65,54 @@ int main(int argc, char** argv) {
       render.mesh_ = mesh_;
     }
   }
+
+
+  {
+    size_t light_entity = ecs_manager.createEntity();
+    ecs_manager.addComponent<TransformComponent>(light_entity);
+    ecs_manager.addComponent<LightComponent>(light_entity);
+
+    auto light_component = ecs_manager.getComponent<LightComponent>(light_entity);
+    if (light_component) {
+      auto& light = light_component->value();
+      light.enabled_ = true;
+      light.type_ = LIGHT_TYPE_SPOT;
+      light.base_color_ = glm::vec3(1.0f, 1.0f, 1.0f);
+      light.spec_color_ = glm::vec3(0.0f, 0.0f, 0.0f);
+      light.cutoff_ = 34.0f;
+      light.outer_cutoff_ = 56.410f;
+      light.constant_att_ = 1.0f;
+      light.quad_att_ = 0.112f;
+      light.strength_ = 0.28f;
+    }
+    auto tr_component = ecs_manager.getComponent<TransformComponent>(light_entity);
+    if (tr_component) {
+      auto& tr = tr_component->value();
+      tr.rot_ = glm::vec3(-110.0f, 0.0f, -0.5f);
+      tr.pos_ = glm::vec3(0.03f, 0.06f, -1.68f);
+    }
+  }
+
+  //{
+  //  size_t light_entity = ecs_manager.createEntity();
+  //  ecs_manager.addComponent<TransformComponent>(light_entity);
+  //  ecs_manager.addComponent<LightComponent>(light_entity);
+
+  //  auto light_component = ecs_manager.getComponent<LightComponent>(light_entity);
+  //  if (light_component) {
+  //    auto& light = light_component->value();
+  //    light.enabled_ = true;
+  //    light.type_ = LIGHT_TYPE_POINT;
+  //    light.base_color_ = glm::vec3(1.0f, 1.0f, 1.0f);
+  //    light.spec_color_ = glm::vec3(0.0f, 0.0f, 0.0f);
+  //  }
+  //  auto tr_component = ecs_manager.getComponent<TransformComponent>(light_entity);
+  //  if (tr_component) {
+  //    auto& tr = tr_component->value();
+  //    tr.rot_ = glm::vec3(0.0f, 0.0f, 0.0f);
+  //    tr.pos_ = glm::vec3(0.0f, 0.0f, 0.0f);
+  //  }
+  //}
 
   //{
   //  size_t entity = ecs_manager.createEntity();
@@ -98,11 +152,21 @@ int main(int argc, char** argv) {
           //RENDER!!!!
           engine.clearWindow(i);
           
-          diffuse_render_system_vr.render(i,
+          //diffuse_render_system_vr.render(i,
+          //  ecs_manager.getComponentList<TransformComponent>(),
+          //  ecs_manager.getComponentList<RenderComponent>()
+          //  );
+          deferred_render_system_vr.render(i,
             ecs_manager.getComponentList<TransformComponent>(),
-            ecs_manager.getComponentList<RenderComponent>()
+            ecs_manager.getComponentList<RenderComponent>(),
+            ecs_manager.getComponentList<LightComponent>()
             );
-          
+
+          //pbr_render_system_vr.renderWithShadows(i,
+          //  ecs_manager.getComponentList<TransformComponent>(),
+          //  ecs_manager.getComponentList<RenderComponent>(),
+          //  ecs_manager.getComponentList<LightComponent>()
+          //);
 
           engine.releaseView(i);
         }

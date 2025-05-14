@@ -1,6 +1,7 @@
 #include "vr/lava_helpers_vr.hpp"
 #include "vr/lava_instance_vr.hpp"
 #include "vr/lava_binding_vr.hpp"
+#include "lava/openxr_common/OpenXRHelper.h"
 
 std::vector<std::string> GetInstanceExtensionsForOpenXR(LavaInstanceVR& instance, LavaBindingVR& binding) {
   uint32_t extension_names_size = 0;

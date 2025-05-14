@@ -1,7 +1,7 @@
 #version 450
 
 #extension GL_GOOGLE_include_directive : require
-#include "input_structures.glsl"
+#include "..\input_structures.glsl"
 
 layout(set = 1, binding = 0) uniform sampler2D baseColorTex;
 layout(set = 1, binding = 1) uniform sampler2D normalTex;
@@ -257,6 +257,7 @@ float DirectionalShadowCalculation(vec3 fragPos){
 void main() 
 {
 
+/*
   if(light.enabled == 1){
     
     
@@ -288,7 +289,9 @@ void main()
     }
   }
 
+*/
 
   vec3 albedo = texture(baseColorTex, inUV).rgb;
   outFragColor = vec4(globalData.ambientColor * albedo,1.0);
+
 }

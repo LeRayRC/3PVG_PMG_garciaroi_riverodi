@@ -1,6 +1,6 @@
-#include "lava/ecs/lava_deferred_render_system.hpp"
+#include "lava/ecs/lava_deferred_render_system_vr.hpp"
 
-#include "lava/engine/lava_engine.hpp"
+#include "lava/vr/lava_engine_vr.hpp"
 #include "engine/lava_vulkan_inits.hpp"
 #include "lava/engine/lava_mesh.hpp"
 #include "engine/lava_frame_data.hpp"
@@ -8,16 +8,21 @@
 #include "engine/lava_allocator.hpp"
 #include "lava/engine/lava_pbr_material.hpp"
 #include "lava/common/lava_shapes.hpp"
+#include "vr/lava_session_vr.hpp"
+#include "vr/lava_swapchain_vr.hpp"
 #include "lava/common/lava_global_helpers.hpp"
+#include "vr/xr_linear_algebra.hpp"
+#include <openxr/openxr.h>
 
-LavaDeferredRenderSystem::LavaDeferredRenderSystem(LavaEngine& engine) :
+
+LavaDeferredRenderSystemVR::LavaDeferredRenderSystemVR(LavaEngineVR& engine) :
 	engine_{ engine },
-	pipeline_geometry_pass_{ std::make_unique<LavaPipeline>(PipelineConfig(
+	pipeline_geometry_pass_{ std::make_unique<LavaPipeline>(PipelineConfigVR(
 							PIPELINE_TYPE_PBR,
 							"../src/shaders/deferred/geometry_pass.vert.spv",
 							"../src/shaders/deferred/geometry_pass.frag.spv",
 							engine_.device_.get(),
-							engine_.swap_chain_.get(),
+							engine_.swapchain_.get(),
 							engine_.global_descriptor_allocator_.get(),
 							engine_.global_descriptor_set_layout_,
 							engine_.global_pbr_descriptor_set_layout_,
@@ -26,12 +31,12 @@ LavaDeferredRenderSystem::LavaDeferredRenderSystem(LavaEngine& engine) :
 							PipelineBlendMode::PIPELINE_BLEND_ONE_ZERO,
 							nullptr,gbuffer_count)
 							) },
-	pipeline_light_pass_first_{ std::make_unique<LavaPipeline>(PipelineConfig(
+	pipeline_light_pass_first_{ std::make_unique<LavaPipeline>(PipelineConfigVR(
 							PIPELINE_TYPE_PBR,
-							"../src/shaders/deferred/light_pass.vert.spv",
-							"../src/shaders/deferred/light_pass.frag.spv",
+							"../src/shaders/deferred/vr/light_pass.vert.spv",
+							"../src/shaders/deferred/vr/light_pass.frag.spv",
 							engine_.device_.get(),
-							engine_.swap_chain_.get(),
+							engine_.swapchain_.get(),
 							engine_.global_descriptor_allocator_.get(),
 							engine_.global_descriptor_set_layout_,
 							engine_.global_pbr_descriptor_set_layout_,
@@ -40,12 +45,12 @@ LavaDeferredRenderSystem::LavaDeferredRenderSystem(LavaEngine& engine) :
 							PipelineBlendMode::PIPELINE_BLEND_ONE_ZERO,
 							nullptr,1))
 							},
-	pipeline_light_pass_additive_{ std::make_unique<LavaPipeline>(PipelineConfig(
+	pipeline_light_pass_additive_{ std::make_unique<LavaPipeline>(PipelineConfigVR(
 							PIPELINE_TYPE_PBR,
-							"../src/shaders/deferred/light_pass.vert.spv",
-							"../src/shaders/deferred/light_pass.frag.spv",
+							"../src/shaders/deferred/vr/light_pass.vert.spv",
+							"../src/shaders/deferred/vr/light_pass.frag.spv",
 							engine_.device_.get(),
-							engine_.swap_chain_.get(),
+							engine_.swapchain_.get(),
 							engine_.global_descriptor_allocator_.get(),
 							engine_.global_descriptor_set_layout_,
 							engine_.global_pbr_descriptor_set_layout_,
@@ -54,12 +59,12 @@ LavaDeferredRenderSystem::LavaDeferredRenderSystem(LavaEngine& engine) :
 							PipelineBlendMode::PIPELINE_BLEND_ONE_ONE,
 							nullptr,1))
 							},
-	pipeline_light_pass_ambient_{ std::make_unique<LavaPipeline>(PipelineConfig(
+	pipeline_light_pass_ambient_{ std::make_unique<LavaPipeline>(PipelineConfigVR(
 							PIPELINE_TYPE_PBR,
 							"../src/shaders/deferred/light_pass.vert.spv",
 							"../src/shaders/deferred/light_pass_ambient.frag.spv",
 							engine_.device_.get(),
-							engine_.swap_chain_.get(),
+							engine_.swapchain_.get(),
 							engine_.global_descriptor_allocator_.get(),
 							engine_.global_descriptor_set_layout_,
 							engine_.global_pbr_descriptor_set_layout_,
@@ -68,12 +73,12 @@ LavaDeferredRenderSystem::LavaDeferredRenderSystem(LavaEngine& engine) :
 							PipelineBlendMode::PIPELINE_BLEND_ONE_ONE,
 							nullptr,1))
 							},
-	pipeline_shadows_{ std::make_unique<LavaPipeline>(PipelineConfig( //TO DO: DIRECTIONAL LIGHT
+	pipeline_shadows_{ std::make_unique<LavaPipeline>(PipelineConfigVR( //TO DO: DIRECTIONAL LIGHT
 													PIPELINE_TYPE_SHADOW,
 													"../src/shaders/point_shadow_mapping.vert.spv", 
 													"../src/shaders/shadow_mapping.frag.spv",
 													engine_.device_.get(),
-													engine_.swap_chain_.get(),
+													engine_.swapchain_.get(),
 													engine_.global_descriptor_allocator_.get(),
 													engine_.global_descriptor_set_layout_,
 													engine_.global_pbr_descriptor_set_layout_,
@@ -82,12 +87,12 @@ LavaDeferredRenderSystem::LavaDeferredRenderSystem(LavaEngine& engine) :
 													PipelineBlendMode::PIPELINE_BLEND_ONE_ZERO,
 													"../src/shaders/directional_shadows.geom.spv")),
 
-						 std::make_unique<LavaPipeline>(PipelineConfig(
+						 std::make_unique<LavaPipeline>(PipelineConfigVR(
 													PIPELINE_TYPE_SHADOW,
 													"../src/shaders/point_shadow_mapping.vert.spv",
 													"../src/shaders/point_shadow_mapping.frag.spv",
 													engine_.device_.get(),
-													engine_.swap_chain_.get(),
+													engine_.swapchain_.get(),
 													engine_.global_descriptor_allocator_.get(),
 													engine_.global_descriptor_set_layout_,
 													engine_.global_pbr_descriptor_set_layout_,
@@ -96,12 +101,12 @@ LavaDeferredRenderSystem::LavaDeferredRenderSystem(LavaEngine& engine) :
 													PipelineBlendMode::PIPELINE_BLEND_ONE_ZERO,
 													"../src/shaders/point_shadows.geom.spv")),
 
-						 std::make_unique<LavaPipeline>(PipelineConfig(
+						 std::make_unique<LavaPipeline>(PipelineConfigVR(
 													PIPELINE_TYPE_SHADOW,
 													"../src/shaders/shadow_mapping.vert.spv",
 													"../src/shaders/shadow_mapping.frag.spv",
 													engine_.device_.get(),
-													engine_.swap_chain_.get(),
+													engine_.swapchain_.get(),
 													engine_.global_descriptor_allocator_.get(),
 													engine_.global_descriptor_set_layout_,
 													engine_.global_pbr_descriptor_set_layout_,
@@ -158,14 +163,18 @@ LavaDeferredRenderSystem::LavaDeferredRenderSystem(LavaEngine& engine) :
 	draw_image_usages |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 	draw_image_usages |= VK_IMAGE_USAGE_SAMPLED_BIT;
 
-	VkExtent3D gbuffer_extent = VkExtent3D(engine.window_extent_.width, engine.window_extent_.height, 1);
+	VkExtent3D gbuffer_extent = {
+	engine_.get_session().get_view_configuration_views()[0].recommendedImageRectWidth,
+	engine_.get_session().get_view_configuration_views()[0].recommendedImageRectHeight,
+	1};
 
+	//VK_FORMAT_R16G16B16A16_SFLOAT
 	for (int i = 0; i < gbuffer_count; i++) {
 		
 		//VK_FORMAT_R32G32B32A32_SFLOAT
 		gbuffers_[i] = std::make_shared<LavaImage>(&engine_,
 			gbuffer_extent,  
-			VK_FORMAT_R16G16B16A16_SFLOAT,
+			VK_FORMAT_R8G8B8A8_UNORM,
 			draw_image_usages);
 
 	}
@@ -179,62 +188,77 @@ LavaDeferredRenderSystem::LavaDeferredRenderSystem(LavaEngine& engine) :
 }
 
 
-void LavaDeferredRenderSystem::render(
+void LavaDeferredRenderSystemVR::render(
+	uint32_t view_index,
 	std::vector<std::optional<TransformComponent>>& transform_vector,
 	std::vector<std::optional<RenderComponent>>& render_vector,
 	std::vector<std::optional<LightComponent>>& light_component_vector
 ) {
 
-	VkCommandBuffer cmd = engine_.commandBuffer;
-	FrameData& frame_data = engine_.frame_data_->getCurrentFrame();
+	VkCommandBuffer cmd = engine_.command_buffer_;
+	FrameData& frame_data = engine_.frame_data_[view_index]->getCurrentFrame();
 
 
 	allocateLights(light_component_vector);
 	updateLights(light_component_vector, transform_vector);
 
-	renderGeometryPass(transform_vector, render_vector, light_component_vector);
-	renderShadowMaps(transform_vector, render_vector, light_component_vector);
-	renderLightPass(transform_vector, render_vector, light_component_vector);
-	renderAmbient();
+	renderGeometryPass(view_index,transform_vector, render_vector, light_component_vector);
+	renderShadowMaps(view_index,transform_vector, render_vector, light_component_vector);
+	renderLightPass(view_index,transform_vector, render_vector, light_component_vector);
+	renderAmbient(view_index);
 
-	//Return image to swapchain
-	AdvancedTransitionImage(cmd, engine_.swap_chain_->get_draw_image().image,
-		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+	////Return image to swapchain
+	//AdvancedTransitionImage(cmd, engine_.swap_chain_->get_draw_image().image,
+	//	VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
-	AdvancedTransitionImage(cmd, engine_.swap_chain_->get_swap_chain_images()[engine_.swap_chain_image_index],
-		VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+	//AdvancedTransitionImage(cmd, engine_.swap_chain_->get_swap_chain_images()[engine_.swap_chain_image_index],
+	//	VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
-	CopyImageToImage(engine_.commandBuffer, engine_.swap_chain_->get_draw_image().image,
-		engine_.swap_chain_->get_swap_chain_images()[engine_.swap_chain_image_index], engine_.swap_chain_->get_draw_extent(), engine_.window_extent_);
+	//CopyImageToImage(engine_.commandBuffer, engine_.swap_chain_->get_draw_image().image,
+	//	engine_.swap_chain_->get_swap_chain_images()[engine_.swap_chain_image_index], engine_.swap_chain_->get_draw_extent(), engine_.window_extent_);
 
 }
 
-void LavaDeferredRenderSystem::renderAmbient() {
-	VkCommandBuffer cmd = engine_.commandBuffer;
-	FrameData& frame_data = engine_.frame_data_->getCurrentFrame();
+void LavaDeferredRenderSystemVR::renderAmbient(uint32_t view_index) {
+	VkCommandBuffer cmd = engine_.command_buffer_;
+	FrameData& frame_data = engine_.frame_data_[view_index]->getCurrentFrame();
 
-	VkRenderingAttachmentInfo depth_attachment = vkinit::DepthAttachmentInfo(engine_.swap_chain_->get_depth_image().image_view, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
-	VkRenderingAttachmentInfo color_attachment = vkinit::AttachmentInfo(engine_.swap_chain_->get_draw_image().image_view, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+	std::vector<LavaSwapchainVR::SwapchainInfo>& color_swapchain_info_vector = engine_.get_swapchain().get_color_swapchain_infos();
+	std::vector<LavaSwapchainVR::SwapchainInfo>& depth_swapchain_info_vector = engine_.get_swapchain().get_depth_swapchain_infos();
+	LavaSwapchainVR::SwapchainInfo& color_swapchain_info = color_swapchain_info_vector[view_index];
+	LavaSwapchainVR::SwapchainInfo& depth_swapchain_info = depth_swapchain_info_vector[view_index];
+	VkImage color_image = engine_.get_swapchain().get_image_from_image_view(color_swapchain_info.imageViews[engine_.color_image_index_]);
+	VkImage depth_image = engine_.get_swapchain().get_image_from_image_view(depth_swapchain_info.imageViews[engine_.depth_image_index_]);
+
+
+
+	VkRenderingAttachmentInfo depth_attachment = vkinit::DepthAttachmentInfo((VkImageView)depth_swapchain_info.imageViews[engine_.depth_image_index_], VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR,1.0f);
+	VkRenderingAttachmentInfo color_attachment = vkinit::AttachmentInfo((VkImageView)color_swapchain_info.imageViews[engine_.color_image_index_], nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+	
+	VkExtent2D window_extent = {
+		engine_.get_session().get_view_configuration_views()[view_index].recommendedImageRectWidth,
+		engine_.get_session().get_view_configuration_views()[view_index].recommendedImageRectHeight,
+	};
 
 	VkRenderingInfo renderInfo = vkinit::RenderingInfo(
-		engine_.swap_chain_->get_draw_extent(),
+		window_extent,
 		&color_attachment,
 		&depth_attachment);
 
 	vkCmdBeginRendering(cmd, &renderInfo);
 
-	engine_.setDynamicViewportAndScissor(engine_.swap_chain_->get_draw_extent());
+	engine_.setDynamicViewportAndScissor(window_extent);
 
 	vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
 		pipeline_light_pass_first_->get_layout(),
-		0, 1, &engine_.global_descriptor_set_, 0, nullptr);
+		0, 1, &engine_.global_descriptor_set_vector_[view_index], 0, nullptr);
 
 	VkDescriptorSet quad_descriptor_set = light_pass_quad_->get_material()->get_descriptor_set();
 	vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
 		pipeline_light_pass_first_->get_layout(),
 		1, 1, &quad_descriptor_set, 0, nullptr);
 
-	vkCmdBindPipeline(engine_.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_light_pass_ambient_->get_pipeline());
+	vkCmdBindPipeline(engine_.command_buffer_, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_light_pass_ambient_->get_pipeline());
 
 	GPUDrawPushConstants push_constants;
 	glm::mat4 model = glm::mat4(1.0f);
@@ -254,12 +278,14 @@ void LavaDeferredRenderSystem::renderAmbient() {
 	vkCmdEndRendering(cmd);
 }
 
-void LavaDeferredRenderSystem::renderShadowMaps(std::vector<std::optional<TransformComponent>>& transform_vector,
+void LavaDeferredRenderSystemVR::renderShadowMaps(
+	uint32_t view_index,
+	std::vector<std::optional<TransformComponent>>& transform_vector,
 	std::vector<std::optional<RenderComponent>>& render_vector,
 	std::vector<std::optional<LightComponent>>& light_component_vector) {
 
-	VkCommandBuffer cmd = engine_.commandBuffer;
-	FrameData& frame_data = engine_.frame_data_->getCurrentFrame();
+	VkCommandBuffer cmd = engine_.command_buffer_;
+	FrameData& frame_data = engine_.frame_data_[view_index]->getCurrentFrame();
 
 
 
@@ -289,25 +315,25 @@ void LavaDeferredRenderSystem::renderShadowMaps(std::vector<std::optional<Transf
 		current_extent.width = shadowmaps_[light_index]->get_allocated_image().image_extent.width;
 		current_extent.height = shadowmaps_[light_index]->get_allocated_image().image_extent.height;
 
-		VkRenderingAttachmentInfo depth_attachment = vkinit::DepthAttachmentInfo(current_shadowmap_image_view, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
+		VkRenderingAttachmentInfo depth_attachment = vkinit::DepthAttachmentInfo(current_shadowmap_image_view, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR,1.0f);
 		int layers = 1;
 		if (light_index == 0) layers = 3;
 		else if (light_index == 1)layers = 6;
 		VkRenderingInfo renderInfo = vkinit::RenderingInfo(current_extent, nullptr, &depth_attachment, layers);
 
-		vkCmdBeginRendering(engine_.commandBuffer, &renderInfo);
+		vkCmdBeginRendering(engine_.command_buffer_, &renderInfo);
 		engine_.setDynamicViewportAndScissor(current_extent);
 		
 
 		//First Draw Create Shadow Map
 		LavaPipeline* active_pipeline = pipeline_shadows_[light_index].get();
-		vkCmdBindPipeline(engine_.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, active_pipeline->get_pipeline());
+		vkCmdBindPipeline(engine_.command_buffer_, VK_PIPELINE_BIND_POINT_GRAPHICS, active_pipeline->get_pipeline());
 
-		vkCmdBindDescriptorSets(engine_.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+		vkCmdBindDescriptorSets(engine_.command_buffer_, VK_PIPELINE_BIND_POINT_GRAPHICS,
 			active_pipeline->get_layout(),
-			0, 1, &engine_.global_descriptor_set_, 0, nullptr);
+			0, 1, &engine_.global_descriptor_set_vector_[view_index], 0, nullptr);
 
-		vkCmdBindDescriptorSets(engine_.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+		vkCmdBindDescriptorSets(engine_.command_buffer_, VK_PIPELINE_BIND_POINT_GRAPHICS,
 			active_pipeline->get_layout(),
 			2, 1, &light_it->value().descriptor_set_, 0, nullptr);
 
@@ -325,7 +351,7 @@ void LavaDeferredRenderSystem::renderShadowMaps(std::vector<std::optional<Transf
 			std::shared_ptr<MeshAsset> mesh = lava_mesh->mesh_;
 
 			VkDescriptorSet pbr_descriptor_set = lava_mesh->get_material()->get_descriptor_set();
-			vkCmdBindDescriptorSets(engine_.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+			vkCmdBindDescriptorSets(engine_.command_buffer_, VK_PIPELINE_BIND_POINT_GRAPHICS,
 				active_pipeline->get_layout(),
 				1, 1, &pbr_descriptor_set, 0, nullptr);
 
@@ -341,22 +367,22 @@ void LavaDeferredRenderSystem::renderShadowMaps(std::vector<std::optional<Transf
 			// Vincular los Vertex y Index Buffers
 			GPUMeshBuffers& meshBuffers = mesh->meshBuffers;
 			VkDeviceSize offsets[] = { 0 };
-			if (frame_data.last_bound_mesh != lava_mesh) {
-				vkCmdBindIndexBuffer(engine_.commandBuffer, meshBuffers.index_buffer->get_buffer().buffer, 0, VK_INDEX_TYPE_UINT32);
-			}
+			//if (frame_data.last_bound_mesh != lava_mesh) {
+				vkCmdBindIndexBuffer(engine_.command_buffer_, meshBuffers.index_buffer->get_buffer().buffer, 0, VK_INDEX_TYPE_UINT32);
+			//}
 
 			push_constants.world_matrix = model;
 			push_constants.vertex_buffer = meshBuffers.vertex_buffer_address;
 
-			vkCmdPushConstants(engine_.commandBuffer, active_pipeline->get_layout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &push_constants);
-			vkCmdDrawIndexed(engine_.commandBuffer, mesh->index_count, 1, 0, 0, 0);
+			vkCmdPushConstants(engine_.command_buffer_, active_pipeline->get_layout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &push_constants);
+			vkCmdDrawIndexed(engine_.command_buffer_, mesh->index_count, 1, 0, 0, 0);
 
 			if (frame_data.last_bound_mesh != lava_mesh) {
 				frame_data.last_bound_mesh = lava_mesh;
 			}
 		}
 
-		vkCmdEndRendering(engine_.commandBuffer);
+		vkCmdEndRendering(engine_.command_buffer_);
 
 
 	}
@@ -371,35 +397,51 @@ void LavaDeferredRenderSystem::renderShadowMaps(std::vector<std::optional<Transf
 	setupShadowMapBarriers(cmd, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 }
 
-void LavaDeferredRenderSystem::renderLightPass(std::vector<std::optional<TransformComponent>>& transform_vector,
+void LavaDeferredRenderSystemVR::renderLightPass(
+	uint32_t view_index,
+	std::vector<std::optional<TransformComponent>>& transform_vector,
 	std::vector<std::optional<RenderComponent>>& render_vector,
 	std::vector<std::optional<LightComponent>>& light_component_vector) {
 
-	VkCommandBuffer cmd = engine_.commandBuffer;
-	FrameData& frame_data = engine_.frame_data_->getCurrentFrame();
+	VkCommandBuffer cmd = engine_.command_buffer_;
+	FrameData& frame_data = engine_.frame_data_[view_index]->getCurrentFrame();
+
+	std::vector<LavaSwapchainVR::SwapchainInfo>& color_swapchain_info_vector = engine_.get_swapchain().get_color_swapchain_infos();
+	std::vector<LavaSwapchainVR::SwapchainInfo>& depth_swapchain_info_vector = engine_.get_swapchain().get_depth_swapchain_infos();
+	LavaSwapchainVR::SwapchainInfo& color_swapchain_info = color_swapchain_info_vector[view_index];
+	LavaSwapchainVR::SwapchainInfo& depth_swapchain_info = depth_swapchain_info_vector[view_index];
+	VkImage color_image = engine_.get_swapchain().get_image_from_image_view(color_swapchain_info.imageViews[engine_.color_image_index_]);
+	VkImage depth_image = engine_.get_swapchain().get_image_from_image_view(depth_swapchain_info.imageViews[engine_.depth_image_index_]);
+
 	
 	LavaPipeline* binded_pipeline = nullptr;
 	LavaPipeline* active_pipeline = pipeline_light_pass_first_.get();
 
 
-	AdvancedTransitionImage(cmd, engine_.swap_chain_->get_draw_image().image,
+	AdvancedTransitionImage(cmd, color_image,
 		VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
-	VkRenderingAttachmentInfo depth_attachment = vkinit::DepthAttachmentInfo(engine_.swap_chain_->get_depth_image().image_view, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
-	VkRenderingAttachmentInfo color_attachment = vkinit::AttachmentInfo(engine_.swap_chain_->get_draw_image().image_view, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+	VkRenderingAttachmentInfo depth_attachment = vkinit::DepthAttachmentInfo((VkImageView)depth_swapchain_info.imageViews[engine_.depth_image_index_], VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR,1.0f);
+	VkRenderingAttachmentInfo color_attachment = vkinit::AttachmentInfo((VkImageView)color_swapchain_info.imageViews[engine_.color_image_index_], nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+	
+	VkExtent2D window_extent = {
+	engine_.get_session().get_view_configuration_views()[view_index].recommendedImageRectWidth,
+	engine_.get_session().get_view_configuration_views()[view_index].recommendedImageRectHeight,
+	};
 
 	VkRenderingInfo renderInfo = vkinit::RenderingInfo(
-		engine_.swap_chain_->get_draw_extent(),
+		window_extent,
 		&color_attachment,
 		&depth_attachment);
 
 	vkCmdBeginRendering(cmd, &renderInfo);
 
-	engine_.setDynamicViewportAndScissor(engine_.swap_chain_->get_draw_extent());
+	engine_.setDynamicViewportAndScissor(window_extent);
 
 	vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
 		pipeline_light_pass_first_->get_layout(),
-		0, 1, &engine_.global_descriptor_set_, 0, nullptr);
+		0, 1, &engine_.global_descriptor_set_vector_[view_index], 0, nullptr);
 
 	VkDescriptorSet quad_descriptor_set = light_pass_quad_->get_material()->get_descriptor_set();
 	vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -419,11 +461,11 @@ void LavaDeferredRenderSystem::renderLightPass(std::vector<std::optional<Transfo
 		if (!light_it->value().enabled_) continue;
 	
 		if (active_pipeline != binded_pipeline) {
-			vkCmdBindPipeline(engine_.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, active_pipeline->get_pipeline());
+			vkCmdBindPipeline(engine_.command_buffer_, VK_PIPELINE_BIND_POINT_GRAPHICS, active_pipeline->get_pipeline());
 			binded_pipeline = active_pipeline;
 		}
 
-		vkCmdBindDescriptorSets(engine_.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+		vkCmdBindDescriptorSets(engine_.command_buffer_, VK_PIPELINE_BIND_POINT_GRAPHICS,
 			active_pipeline->get_layout(),
 			2, 1, &light_it->value().descriptor_set_, 0, nullptr);
 
@@ -451,19 +493,29 @@ void LavaDeferredRenderSystem::renderLightPass(std::vector<std::optional<Transfo
 }
 
 
-void LavaDeferredRenderSystem::renderGeometryPass(
+void LavaDeferredRenderSystemVR::renderGeometryPass(
+	uint32_t view_index,
 	std::vector<std::optional<TransformComponent>>& transform_vector,
 	std::vector<std::optional<RenderComponent>>& render_vector,
 	std::vector<std::optional<LightComponent>>& light_component_vector)
 {
 
-	VkCommandBuffer cmd = engine_.commandBuffer;
-	FrameData& frame_data = engine_.frame_data_->getCurrentFrame();
+	VkCommandBuffer cmd = engine_.command_buffer_;
+	FrameData& frame_data = engine_.frame_data_[view_index]->getCurrentFrame();
+
+	std::vector<LavaSwapchainVR::SwapchainInfo>& color_swapchain_info_vector = engine_.get_swapchain().get_color_swapchain_infos();
+	std::vector<LavaSwapchainVR::SwapchainInfo>& depth_swapchain_info_vector = engine_.get_swapchain().get_depth_swapchain_infos();
+	LavaSwapchainVR::SwapchainInfo& color_swapchain_info = color_swapchain_info_vector[view_index];
+	LavaSwapchainVR::SwapchainInfo& depth_swapchain_info = depth_swapchain_info_vector[view_index];
+	VkImage color_image = engine_.get_swapchain().get_image_from_image_view(color_swapchain_info.imageViews[engine_.color_image_index_]);
+	VkImage depth_image = engine_.get_swapchain().get_image_from_image_view(depth_swapchain_info.imageViews[engine_.depth_image_index_]);
+
+
 
 	setupGBufferBarriers(cmd, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
-	AdvancedTransitionImage(engine_.commandBuffer,
-		engine_.swap_chain_->get_depth_image().image,
+	AdvancedTransitionImage(engine_.command_buffer_,
+		depth_image,
 		VK_IMAGE_LAYOUT_UNDEFINED,
 		VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
 		VK_IMAGE_ASPECT_DEPTH_BIT);
@@ -480,27 +532,32 @@ void LavaDeferredRenderSystem::renderGeometryPass(
 		color_attachments.push_back(attachmentInfo);
 	}
 
-	
+	VkExtent2D window_extent = {
+		engine_.get_session().get_view_configuration_views()[view_index].recommendedImageRectWidth,
+		engine_.get_session().get_view_configuration_views()[view_index].recommendedImageRectHeight,
+	};
+
 
 	VkRenderingAttachmentInfo depth_attachment = vkinit::DepthAttachmentInfo(
-		engine_.swap_chain_->get_depth_image().image_view, 
+		(VkImageView)depth_swapchain_info.imageViews[engine_.depth_image_index_],
 		VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, 
-		VK_ATTACHMENT_LOAD_OP_CLEAR);
+		VK_ATTACHMENT_LOAD_OP_CLEAR,1.0f);
+
 	VkRenderingInfo renderInfo = vkinit::RenderingInfo(
-		engine_.swap_chain_->get_draw_extent(),
+		window_extent,
 		color_attachments.data(),
 		static_cast<uint32_t>(color_attachments.size()),
 		&depth_attachment);
 
 	vkCmdBeginRendering(cmd, &renderInfo);
-	engine_.setDynamicViewportAndScissor(engine_.swap_chain_->get_draw_extent());
+	engine_.setDynamicViewportAndScissor(window_extent);
 	
 
 	vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_geometry_pass_->get_pipeline());
 	//Bind both descriptor sets on the mesh
 	vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
 		pipeline_geometry_pass_->get_layout(),
-		0, 1, &engine_.global_descriptor_set_, 0, nullptr);
+		0, 1, &engine_.global_descriptor_set_vector_[view_index], 0, nullptr);
 
 
 
@@ -547,10 +604,10 @@ void LavaDeferredRenderSystem::renderGeometryPass(
 		//vkCmdPushConstants(cmd, pipeline_geometry_pass_->get_layout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &push_constants);
 		//vkCmdDrawIndexed(cmd, mesh->index_count, 1, 0, 0, 0);
 
-		if (frame_data.last_bound_mesh != lava_mesh) {
-			vkCmdBindIndexBuffer(engine_.commandBuffer, meshBuffers.index_buffer->get_buffer().buffer, 0, VK_INDEX_TYPE_UINT32);
+		//if (frame_data.last_bound_mesh != lava_mesh) {
+			vkCmdBindIndexBuffer(engine_.command_buffer_, meshBuffers.index_buffer->get_buffer().buffer, 0, VK_INDEX_TYPE_UINT32);
 			frame_data.last_bound_mesh = lava_mesh;
-		}
+		//}
 
 		// Dibujar cada superficie con su material correspondiente
 		for (const GeoSurface& surface : mesh->surfaces) {
@@ -566,7 +623,7 @@ void LavaDeferredRenderSystem::renderGeometryPass(
 
 			// Vincular descriptor set del material
 			VkDescriptorSet pbr_descriptor_set = material->get_descriptor_set();
-			vkCmdBindDescriptorSets(engine_.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+			vkCmdBindDescriptorSets(engine_.command_buffer_, VK_PIPELINE_BIND_POINT_GRAPHICS,
 				pipeline_geometry_pass_->get_layout(),
 				1, 1, &pbr_descriptor_set, 0, nullptr);
 
@@ -575,10 +632,10 @@ void LavaDeferredRenderSystem::renderGeometryPass(
 			push_constants.world_matrix = model;
 			push_constants.vertex_buffer = meshBuffers.vertex_buffer_address;
 
-			vkCmdPushConstants(engine_.commandBuffer, pipeline_geometry_pass_->get_layout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &push_constants);
+			vkCmdPushConstants(engine_.command_buffer_, pipeline_geometry_pass_->get_layout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &push_constants);
 
 			// Dibujar la superficie
-			vkCmdDrawIndexed(engine_.commandBuffer, surface.count, 1, surface.start_index, 0, 0);
+			vkCmdDrawIndexed(engine_.command_buffer_, surface.count, 1, surface.start_index, 0, 0);
 		}
 
 		if (frame_data.last_bound_mesh != lava_mesh) {
@@ -591,12 +648,12 @@ void LavaDeferredRenderSystem::renderGeometryPass(
 
 }
 
-LavaDeferredRenderSystem::~LavaDeferredRenderSystem()
+LavaDeferredRenderSystemVR::~LavaDeferredRenderSystemVR()
 {
 }
 
 
-void LavaDeferredRenderSystem::setupGBufferBarriers(VkCommandBuffer cmd, VkImageLayout newLayout) {
+void LavaDeferredRenderSystemVR::setupGBufferBarriers(VkCommandBuffer cmd, VkImageLayout newLayout) {
 	VkImageLayout oldLayout = (newLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL) ?
 		VK_IMAGE_LAYOUT_UNDEFINED : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
@@ -637,7 +694,7 @@ void LavaDeferredRenderSystem::setupGBufferBarriers(VkCommandBuffer cmd, VkImage
 	vkCmdPipelineBarrier2(cmd, &dependencyInfo);
 }
 
-void LavaDeferredRenderSystem::setupShadowMapBarriers(VkCommandBuffer cmd, VkImageLayout newLayout) {
+void LavaDeferredRenderSystemVR::setupShadowMapBarriers(VkCommandBuffer cmd, VkImageLayout newLayout) {
 	std::vector<VkImageMemoryBarrier2> barriers;
 	barriers.reserve(3);
 
@@ -682,7 +739,7 @@ void LavaDeferredRenderSystem::setupShadowMapBarriers(VkCommandBuffer cmd, VkIma
 	vkCmdPipelineBarrier2(cmd, &dependencyInfo);
 }
 
-void LavaDeferredRenderSystem::allocateLights(std::vector<std::optional<struct LightComponent>>& light_component_vector)
+void LavaDeferredRenderSystemVR::allocateLights(std::vector<std::optional<struct LightComponent>>& light_component_vector)
 {
 	auto light_it = light_component_vector.begin();
 	auto light_end = light_component_vector.end();
@@ -738,7 +795,7 @@ void LavaDeferredRenderSystem::allocateLights(std::vector<std::optional<struct L
 	}
 }
 
-void LavaDeferredRenderSystem::updateLights(std::vector<std::optional<struct LightComponent>>& light_component_vector, std::vector<std::optional<struct TransformComponent>>& transform_vector)
+void LavaDeferredRenderSystemVR::updateLights(std::vector<std::optional<struct LightComponent>>& light_component_vector, std::vector<std::optional<struct TransformComponent>>& transform_vector)
 {
 	auto light_transform_it = transform_vector.begin();
 	auto light_transform_end = transform_vector.end();
@@ -790,18 +847,40 @@ void LavaDeferredRenderSystem::updateLights(std::vector<std::optional<struct Lig
 			light_component.light_viewproj_buffer_->updateBufferData(shadowTransforms.data(), sizeof(glm::mat4) * 3);
 		}
 		else if (light_component.type_ == LIGHT_TYPE_SPOT) {
-			glm::mat4 view = GenerateViewMatrix(
-				light_transform_it->value().pos_,
-				light_transform_it->value().rot_
-			);
+			// Obtener la posición y rotación de la luz
+			glm::vec3 pos = light_transform_it->value().pos_;
+			glm::vec3 rot = light_transform_it->value().rot_;
 
-			float fov = 2.0f * light_component.cutoff_;
+			// Calcular la vista usando tu función existente
+			glm::mat4 view = GenerateViewMatrix(pos, rot);
 
-			float near = 10000.0f; // Plano cercano
-			float far = 0.1f; // Plano lejano
-			// Generar la matriz de proyección en perspectiva
-			glm::mat4 proj = glm::perspective(glm::radians(fov), (float)shadowmaps_[2]->get_allocated_image().image_extent.width / (float)shadowmaps_[2]->get_allocated_image().image_extent.height, near, far);
-			proj[1][1] *= -1;
+			// Convertir tu único FOV en los cuatro ángulos que necesita XrFovf
+			float halfFovRadians = glm::radians(light_component.cutoff_);
+
+			// Crear una estructura XrFovf con el mismo ángulo en todas las direcciones
+			XrFovf fov;
+			fov.angleLeft = -halfFovRadians;
+			fov.angleRight = halfFovRadians;
+			fov.angleUp = halfFovRadians;
+			fov.angleDown = -halfFovRadians;
+
+			// Definir planos cercano y lejano
+			float nearZ = 0.05f;
+			float farZ = 10000.0f;
+
+			// Crear la matriz de proyección usando la función de OpenXR
+			XrMatrix4x4f projectionMatrix;
+			XrMatrix4x4f_CreateProjectionFov(&projectionMatrix,VULKAN , // Ajusta según tu API gráfica
+				fov, nearZ, farZ);
+
+			// Convertir la matriz XrMatrix4x4f a glm::mat4 si es necesario
+			glm::mat4 proj = engine_.convertXrToGlm(&projectionMatrix);
+
+
+			// No es necesario invertir Y si ya usas la función de OpenXR correctamente
+			// La función de OpenXR ya debería manejar las diferencias de coordenadas
+
+			// Combinar matrices
 			light_component.viewproj_ = proj * view;
 			light_component.light_viewproj_buffer_->updateBufferData(&light_component.viewproj_, sizeof(glm::mat4));
 		}
@@ -833,3 +912,8 @@ void LavaDeferredRenderSystem::updateLights(std::vector<std::optional<struct Lig
 		}
 	}
 }
+
+
+
+
+

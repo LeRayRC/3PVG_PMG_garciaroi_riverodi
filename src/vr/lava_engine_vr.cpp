@@ -15,6 +15,7 @@
 #include "engine/lava_vulkan_inits.hpp"
 #include "lava/engine/lava_image.hpp"
 #include "vr/xr_linear_algebra.hpp"
+#include "lava/openxr_common/OpenXRHelper.h"
 #include <openxr/openxr.h>
 
 
@@ -202,8 +203,8 @@ void LavaEngineVR::prepareView(uint32_t i) {
     
     const uint32_t& width = session_->get_view_configuration_views()[i].recommendedImageRectWidth;
     const uint32_t& height = session_->get_view_configuration_views()[i].recommendedImageRectHeight;
-    GraphicsAPI::Viewport viewport = { 0.0f, 0.0f, (float)width, (float)height, 0.0f, 1.0f };
-    GraphicsAPI::Rect2D scissor = { {(int32_t)0, (int32_t)0}, {width, height} };
+    Viewport viewport = { 0.0f, 0.0f, (float)width, (float)height, 0.0f, 1.0f };
+    Rect2D scissor = { {(int32_t)0, (int32_t)0}, {width, height} };
     //MAYBE IT IS NECCESARRY TO INVERT DEPTH TEST
     float nearZ = 0.05f;
     float farZ = 100.0f;
@@ -531,7 +532,7 @@ void LavaEngineVR::updateGlobalData(uint32_t view_index) {
   global_scene_data_vector_[view_index].cameraPos = glm::vec3(vector_pos.x, vector_pos.y, vector_pos.z);
 
   global_data_buffer_vector_[view_index]->updateBufferData(&global_scene_data_vector_[view_index], sizeof(GlobalSceneData));
-
+  
 }
 
 void LavaEngineVR::setDynamicViewportAndScissor(const VkExtent2D& extend) {

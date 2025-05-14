@@ -1,5 +1,6 @@
 #include "lava_binding_vr.hpp"
 #include "lava_instance_vr.hpp"
+#include "lava/openxr_common/OpenXRHelper.h"
 
 LavaBindingVR::LavaBindingVR(LavaInstanceVR& instance)
 {

@@ -5,6 +5,7 @@
 #include "engine/lava_vulkan_inits.hpp"
 #include "engine/lava_device.hpp"
 #include "engine/lava_vulkan_helpers.hpp"
+#include "lava/openxr_common/OpenXRHelper.h"
 
 LavaSwapchainVR::LavaSwapchainVR(LavaInstanceVR& instance_vr, LavaSessionVR& session, LavaDevice& device) :
   instance_vr_{instance_vr},

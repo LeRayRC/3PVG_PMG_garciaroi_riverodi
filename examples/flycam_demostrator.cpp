@@ -141,11 +141,11 @@ int main(int argc, char* argv[]) {
 	LavaDeferredRenderSystem deferred_render_system{ engine };
 	LavaUpdateSystem update_system{ engine };
 
-	LavaPBRMaterial basic_material(engine, MaterialPBRProperties());
+	std::shared_ptr<LavaPBRMaterial> basic_material = std::make_shared<LavaPBRMaterial>(engine, MaterialPBRProperties());
 	MeshProperties mesh_properties = {};
 
 	mesh_properties.mesh_path = "../examples/assets/x-wing_cockpit.glb";
-	mesh_properties.material = &basic_material;
+	mesh_properties.material = basic_material;
 
 
 	std::shared_ptr<LavaImage> sun_texture = std::make_shared<LavaImage>(&engine, "../examples/assets/textures/sun.jpg");
@@ -154,20 +154,20 @@ int main(int argc, char* argv[]) {
 
 	std::shared_ptr<LavaMesh> mesh_ = std::make_shared<LavaMesh>(engine, mesh_properties);
 
-	LavaPBRMaterial cube_material(engine, MaterialPBRProperties());
-	std::shared_ptr<LavaMesh> cube_mesh = CreateCube24v(engine, &cube_material);
+	std::shared_ptr<LavaPBRMaterial> cube_material = std::make_shared<LavaPBRMaterial>(engine, MaterialPBRProperties());
+	std::shared_ptr<LavaMesh> cube_mesh = CreateCube24v(engine, cube_material);
 
 
-	LavaPBRMaterial sphere_material(engine, MaterialPBRProperties());
+	std::shared_ptr<LavaPBRMaterial> sphere_material = std::make_shared<LavaPBRMaterial>(engine, MaterialPBRProperties());
 	//sphere_material.UpdateBaseColorImage(sun_texture);
 	//std::shared_ptr<LavaMesh> sphere_mesh = CreateSphere(engine, &sphere_material);
-	std::shared_ptr<LavaMesh> sphere_mesh = CreateCube8v(&sphere_material);
+	std::shared_ptr<LavaMesh> sphere_mesh = CreateCube8v(sphere_material);
 
 
-	LavaPBRMaterial terrain_material(engine, MaterialPBRProperties());
-	terrain_material.UpdateBaseColorImage(forest_texture);
+	std::shared_ptr<LavaPBRMaterial> terrain_material = std::make_shared<LavaPBRMaterial>(engine, MaterialPBRProperties());
+	terrain_material->UpdateBaseColorImage(forest_texture);
 
-	std::shared_ptr<LavaMesh> terrain_mesh = CreateTerrain(&terrain_material, 
+	std::shared_ptr<LavaMesh> terrain_mesh = CreateTerrain(terrain_material, 
 		32,32,8.0f,1.0f, 0.15f, {20,20});
 
 
@@ -268,26 +268,26 @@ int main(int argc, char* argv[]) {
 	//	}
 	//}
 
-	//{
-	//	size_t light_entity = ecs_manager.createEntity();
-	//	ecs_manager.addComponent<TransformComponent>(light_entity);
-	//	ecs_manager.addComponent<LightComponent>(light_entity);
+	{
+		size_t light_entity = ecs_manager.createEntity();
+		ecs_manager.addComponent<TransformComponent>(light_entity);
+		ecs_manager.addComponent<LightComponent>(light_entity);
 
-	//	auto light_component = ecs_manager.getComponent<LightComponent>(light_entity);
-	//	if (light_component) {
-	//		auto& light = light_component->value();
-	//		light.enabled_ = true;
-	//		light.type_ = LIGHT_TYPE_DIRECTIONAL;
-	//		light.base_color_ = glm::vec3(1.0f, 1.0f, 1.0f);
-	//		light.spec_color_ = glm::vec3(0.0f, 0.0f, 0.0f);
-	//	}
-	//	auto tr_component = ecs_manager.getComponent<TransformComponent>(light_entity);
-	//	if (tr_component) {
-	//		auto& tr = tr_component->value();
-	//		tr.rot_ = glm::vec3(0.0f, 0.0f, 0.0f);
-	//		tr.pos_ = glm::vec3(0.0f, 0.0f, 0.0f);
-	//	}
-	//}
+		auto light_component = ecs_manager.getComponent<LightComponent>(light_entity);
+		if (light_component) {
+			auto& light = light_component->value();
+			light.enabled_ = true;
+			light.type_ = LIGHT_TYPE_DIRECTIONAL;
+			light.base_color_ = glm::vec3(1.0f, 1.0f, 1.0f);
+			light.spec_color_ = glm::vec3(0.0f, 0.0f, 0.0f);
+		}
+		auto tr_component = ecs_manager.getComponent<TransformComponent>(light_entity);
+		if (tr_component) {
+			auto& tr = tr_component->value();
+			tr.rot_ = glm::vec3(0.0f, 0.0f, 0.0f);
+			tr.pos_ = glm::vec3(0.0f, 0.0f, 0.0f);
+		}
+	}
 
 
 	{
@@ -302,12 +302,17 @@ int main(int argc, char* argv[]) {
 			light.type_ = LIGHT_TYPE_SPOT;
 			light.base_color_ = glm::vec3(1.0f, 1.0f, 1.0f);
 			light.spec_color_ = glm::vec3(0.0f, 0.0f, 0.0f);
+			light.cutoff_ = 34.0f;
+			light.outer_cutoff_ = 56.410f;
+			light.constant_att_ = 1.0f;
+			light.quad_att_ = 0.112f;
+			light.strength_ = 0.28f;
 		}
 		auto tr_component = ecs_manager.getComponent<TransformComponent>(light_entity);
 		if (tr_component) {
 			auto& tr = tr_component->value();
-			tr.rot_ = glm::vec3(0.0f, 0.0f, 0.0f);
-			tr.pos_ = glm::vec3(0.0f, 0.0f, 0.0f);
+			tr.rot_ = glm::vec3(-110.0f, 0.0f, -0.5f);
+			tr.pos_ = glm::vec3(0.03f, 0.06f, -1.68f);
 		}
 
 	}
@@ -349,10 +354,10 @@ int main(int argc, char* argv[]) {
 		engine.clearWindow();
 
 
-		//pbr_render_system.renderWithShadows(ecs_manager.getComponentList<TransformComponent>(),
-		//	ecs_manager.getComponentList<RenderComponent>(), ecs_manager.getComponentList<LightComponent>());
-		diffuse_render_system.render(ecs_manager.getComponentList<TransformComponent>(),
-			ecs_manager.getComponentList<RenderComponent>());
+		pbr_render_system.renderWithShadows(ecs_manager.getComponentList<TransformComponent>(),
+			ecs_manager.getComponentList<RenderComponent>(), ecs_manager.getComponentList<LightComponent>());
+		//diffuse_render_system.render(ecs_manager.getComponentList<TransformComponent>(),
+		//	ecs_manager.getComponentList<RenderComponent>());
 
 		//deferred_render_system.render(ecs_manager.getComponentList<TransformComponent>(),
 		//	ecs_manager.getComponentList<RenderComponent>(), ecs_manager.getComponentList<LightComponent>());

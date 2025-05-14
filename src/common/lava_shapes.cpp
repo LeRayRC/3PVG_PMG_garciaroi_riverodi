@@ -4,7 +4,7 @@
 #include "PerlinNoise.hpp"
 
 
-std::shared_ptr<LavaMesh> CreateQuad(LavaEngine& engine, std::shared_ptr<LavaPBRMaterial> material, float size) {
+std::shared_ptr<LavaMesh> CreateQuad(std::shared_ptr<LavaPBRMaterial> material, float size) {
 
   std::vector<VertexWithTangents> quad_vertices(4);
 
@@ -44,7 +44,14 @@ std::shared_ptr<LavaMesh> CreateQuad(LavaEngine& engine, std::shared_ptr<LavaPBR
   mesh_properties.index = quad_index;
   mesh_properties.vertex = quad_vertices;
 
-  std::shared_ptr<LavaMesh> quad_mesh = std::make_shared<LavaMesh>(engine, mesh_properties);
+  std::shared_ptr<LavaMesh> quad_mesh;
+  if (material->engine_) {
+    quad_mesh = std::make_shared<LavaMesh>(*material->engine_, mesh_properties);
+  }
+  else {
+    quad_mesh = std::make_shared<LavaMesh>(*material->engine_vr_, mesh_properties);
+
+  }
   return quad_mesh;
 }
 

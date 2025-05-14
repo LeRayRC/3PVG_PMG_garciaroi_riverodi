@@ -37,7 +37,7 @@ public:
 	std::unique_ptr<class LavaDescriptorManager> global_descriptor_allocator_;
 	std::unique_ptr<class LavaBuffer> global_data_buffer_;
 
-	VkDescriptorSet global_descriptor_set_;
+	
 
 	void setMainCamera(struct CameraComponent* camera_component,
 		struct TransformComponent* camera_tr);

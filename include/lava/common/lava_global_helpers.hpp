@@ -16,7 +16,49 @@
 #include "lava/input/lava_input.hpp"
 #include "lava/engine/lava_engine.hpp"
 #include "lava/ecs/lava_ecs_components.hpp"
+#include "lava/openxr_common/HelperFunctions.h"
+#include <openxr/openxr_platform.h>
 
+
+enum GraphicsAPI_Type : uint8_t {
+  UNKNOWN,
+  D3D11,
+  D3D12,
+  OPENGL,
+  OPENGL_ES,
+  VULKAN
+};
+
+static inline const char* GetGraphicsAPIInstanceExtensionString(GraphicsAPI_Type type) {
+#if defined(XR_USE_GRAPHICS_API_D3D11)
+    if (type == D3D11) {
+      return XR_KHR_D3D11_ENABLE_EXTENSION_NAME;
+    }
+#endif
+#if defined(XR_USE_GRAPHICS_API_D3D12)
+    if (type == D3D12) {
+      return XR_KHR_D3D12_ENABLE_EXTENSION_NAME;
+    }
+#endif
+#if defined(XR_USE_GRAPHICS_API_OPENGL)
+    if (type == OPENGL) {
+      return XR_KHR_OPENGL_ENABLE_EXTENSION_NAME;
+    }
+#endif
+#if defined(XR_USE_GRAPHICS_API_OPENGL_ES)
+    if (type == OPENGL_ES) {
+      return XR_KHR_OPENGL_ES_ENABLE_EXTENSION_NAME;
+    }
+#endif
+#if defined(XR_USE_GRAPHICS_API_VULKAN)
+    if (type == VULKAN) {
+      return XR_KHR_VULKAN_ENABLE_EXTENSION_NAME;
+    }
+#endif
+    std::cerr << "ERROR: Unknown Graphics API." << std::endl;
+    DEBUG_BREAK;
+    return nullptr;
+}
 
 static inline glm::mat4 GenerateViewMatrix(glm::vec3& pos, glm::vec3& rot) {
   float pitch = glm::radians(rot.x); // Rotaci�n en el eje X
@@ -106,7 +148,7 @@ static inline void UpdateCameraWithInput(size_t id, LavaECSManager* ecs_manager,
   //Get input from the engine current window
   LavaInput* input = engine.window_.get_input();
 
-  float camera_speed = 7.0f;
+  float camera_speed = 2.0f;
   float alpha = 0.0f;
   float omega = 0.0f;
   glm::vec2 mouse_position;

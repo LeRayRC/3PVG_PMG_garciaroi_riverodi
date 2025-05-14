@@ -1,7 +1,7 @@
 #version 450
 
 #extension GL_GOOGLE_include_directive : require
-#include "input_structures.glsl"
+#include "..\input_structures.glsl"
 
 layout(set = 1, binding = 0) uniform sampler2D baseColorTex;
 layout(set = 1, binding = 1) uniform sampler2D normalTex;
@@ -36,14 +36,12 @@ layout(set = 2, binding = 0) uniform LightProperties{
     float cutoff;
     float outer_cutoff;
 } light;
-layout(set = 2, binding = 1) uniform  LightViewProj{   
-	mat4 viewproj[6];
-} light_viewproj;
+layout(set = 2, binding = 1) uniform LightViewProj{
+  mat4 viewproj[6];
+}light_viewproj;
 layout(set = 2, binding = 2) uniform sampler2D  shadowMap;
 layout(set = 2, binding = 3) uniform samplerCube depthMap;
 layout(set = 2, binding = 4) uniform sampler2DArray directionalShadowMaps;
-
-
 
 
 //shader input
@@ -56,6 +54,7 @@ layout (location = 5) in vec3 TangentViewPos;
 layout (location = 6) in vec3 TangentFragPos;
 layout (location = 7) in vec4 fragPosLightSpace;
 layout (location = 8) in mat4 cameraView;
+
 
 //output write
 layout (location = 0) out vec4 outFragColor;
@@ -121,22 +120,12 @@ vec3 SpotLight() {
     return result;
 }
 
-float ShadowCalculation(vec4 fragPosLightSpace)
-{ 
-  vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+float SpotShadowCalculation(vec4 fragPosLightSpace)
+{
+	vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
   float currentDepth = projCoords.z;
   projCoords = projCoords * 0.5 + 0.5;
-  float closestDepth = texture(shadowMap, projCoords.xy).r;
-  float shadow = currentDepth + 0.005 < closestDepth  ? 1.0 : 0.0;
-  return shadow;
-}
-
-float DirectShadowCalculation(vec4 fragPosLightSpace)
-{ 
-  vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
-  float currentDepth = projCoords.z;
-  projCoords = projCoords * 0.5 + 0.5;
-  float closestDepth = texture(directionalShadowMaps, vec3(projCoords.xy,0.0)).r;
+  float closestDepth = texture(shadowMap, projCoords.xy).r; 
   float shadow = currentDepth + 0.005 < closestDepth  ? 1.0 : 0.0;
   return shadow;
 }
@@ -145,112 +134,39 @@ float PointShadowCalculation(vec3 fragPos)
 {
     // get vector between fragment position and light position
     vec3 fragToLight = fragPos - light.pos;
-    
+
     // use the light to fragment vector to sample from the depth map    
     float closestDepth = texture(depthMap, normalize(fragToLight)).r;
-    
+
     closestDepth = 1.0 - closestDepth;
-    
+
     // it is currently in linear range between [0,1]. Re-transform back to original value
     closestDepth *= 25.0; //Need to be Recive: Far Plane
-    
+
     // now get current linear depth as the length between the fragment and light position
     float currentDepth = length(fragToLight);
     // now test for shadows
     float bias = 0.05; 
     float shadow = currentDepth-bias > closestDepth ? 1.0 : 0.0;
-    
+
     return shadow;
 }  
 
 float DirectionalShadowCalculation(vec3 fragPos){
 
-    vec4 fragPosViewSpace = cameraView * vec4(fragPos, 1.0);
-    float depthValue = abs(fragPosViewSpace.z);
-
-    //vec3 fragPosViewSpace = globalData.cameraPos - fragPos;
-    //float depthValue = length(fragPosViewSpace);
-    
-    int layer = -1;
-    float planeStep = 50.0 / 3.0;
-    for (int i = 0; i < 3; ++i)
-    {
-        float curPlaneStep = (float(i + 1)) * planeStep;
-        if (depthValue < curPlaneStep)
-        {
-            layer = i;
-            break;
-        }
-    }
-    if (layer == -1)
-    {
-        layer = 2;
-    }
-
-    layer = 0;
-        
-    vec4 fragmPosLightSpace = light_viewproj.viewproj[layer] * vec4(fragPos, 1.0);
-
-    // perform perspective divide
-    vec3 projCoords = fragmPosLightSpace.xyz / fragmPosLightSpace.w;
-    // transform to [0,1] range
-    projCoords = (projCoords * 0.5) + 0.5;
-        
-    // get depth of current fragment from light's perspective
+  for(int i = 0; i < 3; i++){
+    vec4 fragPosLight = light_viewproj.viewproj[i] * vec4(fragPos, 1.0);
+    vec3 projCoords = fragPosLight.xyz / fragPosLight.w;
     float currentDepth = projCoords.z;
-    if (currentDepth  > 1.0)
-    {
-        return 0.0;
+    projCoords = projCoords * 0.5 + 0.5;  
+
+    if(projCoords.x > 0.0 && projCoords.x < 1.0 
+      && projCoords.y > 0.0 && projCoords.y < 1.0){
+          return currentDepth + 0.0005 < texture(directionalShadowMaps, vec3(projCoords.xy, i)).r  ? 1.0 : 0.0;
     }
+  }
 
-
-
-
-    // calculate bias (based on depth map resolution and slope)
-    vec3 normal = normalize(inNormal);
-   // float bias = max(0.05 * (1.0 - dot(normal, light.dir)), 0.005);
-   // if (layer == 2)
-   // {
-   //     bias *= 1 / (50.0 * 0.5);
-   // }
-   // else
-   // {
-   //     bias *= 1 / ((planeStep * (float(layer) + 1.0)) * 0.5);
-   // }
-
-    // PCF
-    float shadow = 0.0;
-    vec2 texelSize = 1.0 / vec2(textureSize(directionalShadowMaps, layer));
-    //for(int x = -1; x <= 1; ++x)
-    //{
-    //    for(int y = -1; y <= 1; ++y)
-    //    {
-    //        float pcfDepth = texture(
-    //                    directionalShadowMaps,
-    //                    vec3(projCoords.xy + (vec2(x, y) * texelSize),
-    //                    layer)
-    //                    ).r; 
-    //        shadow += ((currentDepth - bias) > pcfDepth) ? 1.0 : 0.0;        
-    //    }    
-    //}
-    //shadow /= 9.0;
-
-    float pcfDepth = texture(
-                        directionalShadowMaps,
-                        vec3(projCoords.xy,
-                        layer)
-                        ).r; 
-
-
-    shadow = ((currentDepth + 0.005f) > pcfDepth) ? 0.0 : 1.0; 
-        
-    // keep the shadow at 0.0 when outside the far_plane region of the light's frustum.
-    if(projCoords.z > 1.0)
-    {
-        shadow = 0.0;
-    }
-        	
-    return shadow;
+  return 1.0;
 }
 
 
@@ -258,17 +174,10 @@ void main()
 {
 
   if(light.enabled == 1){
-    
-    
-
     switch(light.type){
       case 0: {
-        float shadow_fr = DirectShadowCalculation(fragPosLightSpace); 
-        vec3 lightColor = DirectionalLight();
-        outFragColor = vec4(lightColor * (1.0 - shadow_fr), 1.0);
-
-        //float shadow_fr = 1.0 - DirectionalShadowCalculation(inPos.xyz);
-        //outFragColor = vec4(shadow_fr, shadow_fr, shadow_fr, 1.0);//vec4(DirectionalLight() * (1.0 - shadow_fr),1.0); 
+        float shadow_fr = DirectionalShadowCalculation(inPos.xyz);
+        outFragColor = vec4(DirectionalLight() * (1.0 - shadow_fr),1.0); 
         break;
        }
        case 1: {
@@ -277,7 +186,7 @@ void main()
         break;
        }
        case 2: {
-       float shadow_fr = ShadowCalculation(fragPosLightSpace); 
+        float shadow_fr = SpotShadowCalculation(fragPosLightSpace); 
         vec3 lightColor = SpotLight();
         outFragColor = vec4(lightColor * (1.0 - shadow_fr), 1.0);
         break;
@@ -287,8 +196,5 @@ void main()
        }
     }
   }
-
-
-  vec3 albedo = texture(baseColorTex, inUV).rgb;
-  outFragColor = vec4(globalData.ambientColor * albedo,1.0);
+  outFragColor *= texture(baseColorTex,inUV);
 }

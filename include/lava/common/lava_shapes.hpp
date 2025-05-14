@@ -14,7 +14,7 @@ enum class GeometryShape {
   Default
 };
 
-std::shared_ptr<LavaMesh> CreateQuad(LavaEngine& engine,
+std::shared_ptr<LavaMesh> CreateQuad(
   std::shared_ptr<LavaPBRMaterial> material, float size = 1.0f);
 
 std::shared_ptr<LavaMesh> CreateCube8v(

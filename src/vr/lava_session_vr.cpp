@@ -2,6 +2,7 @@
 #include "engine/lava_instance.hpp"
 #include "engine/lava_device.hpp"
 #include "vr/lava_instance_vr.hpp"
+#include "lava/openxr_common/OpenXRHelper.h"
 #include <openxr/openxr_platform.h>
 
 LavaSessionVR::LavaSessionVR(LavaInstanceVR& instance_vr, 

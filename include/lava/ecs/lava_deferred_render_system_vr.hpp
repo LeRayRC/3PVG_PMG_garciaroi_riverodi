@@ -1,24 +1,26 @@
-#ifndef __LAVA_DEFERRED_RENDER_SYSTEM_H__
-#define __LAVA_DEFERRED_RENDER_SYSTEM_H__ 1
+#ifndef __LAVA_DEFERRED_RENDER_SYSTEM_VR_H__
+#define __LAVA_DEFERRED_RENDER_SYSTEM_VR_H__ 1
 
 //#include "engine/lava_pipeline.hpp"
 #include "lava/engine/lava_pbr_material.hpp"
 #include "lava/ecs/lava_ecs_components.hpp"
 
 
-class LavaDeferredRenderSystem
+class LavaDeferredRenderSystemVR
 {
 public:
-	LavaDeferredRenderSystem(class LavaEngine& engine);
-	~LavaDeferredRenderSystem();
+	LavaDeferredRenderSystemVR(class LavaEngineVR& engine);
+	~LavaDeferredRenderSystemVR();
 
 
-	void render(std::vector<std::optional<TransformComponent>>&,
+	void render(
+		uint32_t view_index,
+		std::vector<std::optional<TransformComponent>>&,
 		std::vector<std::optional<RenderComponent>>&,
 		std::vector<std::optional<LightComponent>>& light_component_vector);
 
 private:
-	class LavaEngine& engine_;
+	class LavaEngineVR& engine_;
 
 	std::unique_ptr<class LavaPipeline> pipeline_geometry_pass_;
 	std::unique_ptr<class LavaPipeline> pipeline_light_pass_first_;
@@ -35,29 +37,35 @@ private:
 	// 1 -> Albedo 
 	// 2 -> Normal
 	static const int gbuffer_count = 3;
-	std::shared_ptr<LavaImage> gbuffers_[gbuffer_count];
+	std::shared_ptr<class LavaImage> gbuffers_[gbuffer_count];
 	// 0 -> DIRECTIONAL
 	// 1 -> POINT 
 	// 2 -> SPOT
-	std::shared_ptr<LavaImage> shadowmaps_[3];
+	std::shared_ptr<class LavaImage> shadowmaps_[3];
 
 	void allocateLights(std::vector<std::optional<struct LightComponent>>& light_component_vector);
 	void updateLights(std::vector<std::optional<struct LightComponent>>& light_component_vector,
 		std::vector<std::optional<struct TransformComponent>>& transform_vector);
 
-	void renderGeometryPass(std::vector<std::optional<TransformComponent>>& transform_vector,
+	void renderGeometryPass(
+		uint32_t view_index,
+		std::vector<std::optional<TransformComponent>>& transform_vector,
 		std::vector<std::optional<RenderComponent>>& render_vector,
 		std::vector<std::optional<LightComponent>>& light_component_vector);
 
-	void renderLightPass(std::vector<std::optional<TransformComponent>>& transform_vector,
+	void renderLightPass(
+		uint32_t view_index,
+		std::vector<std::optional<TransformComponent>>& transform_vector,
 		std::vector<std::optional<RenderComponent>>& render_vector,
 		std::vector<std::optional<LightComponent>>& light_component_vector);
 
-	void renderShadowMaps(std::vector<std::optional<TransformComponent>>& transform_vector,
+	void renderShadowMaps(
+		uint32_t view_index,
+		std::vector<std::optional<TransformComponent>>& transform_vector,
 		std::vector<std::optional<RenderComponent>>& render_vector,
 		std::vector<std::optional<LightComponent>>& light_component_vector);
 
-	void renderAmbient();
+	void renderAmbient(uint32_t view_index);
 
 	void setupGBufferBarriers(VkCommandBuffer cmd, VkImageLayout newLayout);
 	void setupShadowMapBarriers(VkCommandBuffer cmd, VkImageLayout newLayout);
