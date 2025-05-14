@@ -112,24 +112,24 @@ int main(int argc, char* argv[]) {
 	std::shared_ptr<LavaImage> sun_texture = std::make_shared<LavaImage>(&engine, "../examples/assets/textures/sun.jpg");
 
 
-	LavaPBRMaterial basic_material(engine, MaterialPBRProperties());
+	std::shared_ptr<LavaPBRMaterial> basic_material = std::make_shared<LavaPBRMaterial>(engine, MaterialPBRProperties());
 	MeshProperties mesh_properties = {};
 	mesh_properties.mesh_path = "../examples/assets/Avocado.glb";
-	mesh_properties.material = &basic_material;
+	mesh_properties.material = basic_material;
 
 	std::shared_ptr<LavaMesh> mesh_ = std::make_shared<LavaMesh>(engine, mesh_properties);
 
 
 
-	LavaPBRMaterial terrain_material(engine, MaterialPBRProperties());
-	terrain_material.UpdateBaseColorImage(forest_texture);
-	std::shared_ptr<LavaMesh> terrain_mesh = CreateTerrain(engine, &terrain_material,
+	std::shared_ptr<LavaPBRMaterial> terrain_material = std::make_shared<LavaPBRMaterial>(engine, MaterialPBRProperties());
+	terrain_material->UpdateBaseColorImage(forest_texture);
+	std::shared_ptr<LavaMesh> terrain_mesh = CreateTerrain(terrain_material,
 		32, 32, 8.0f, 1.0f, 0.15f, { 20,20 });
 
 
-	LavaPBRMaterial sphere_material(engine, MaterialPBRProperties());
-	sphere_material.UpdateBaseColorImage(sun_texture);
-	std::shared_ptr<LavaMesh> sphere_mesh = CreateSphere(engine, &sphere_material);
+	std::shared_ptr<LavaPBRMaterial> sphere_material = std::make_shared<LavaPBRMaterial>(engine, MaterialPBRProperties());
+	sphere_material->UpdateBaseColorImage(sun_texture);
+	std::shared_ptr<LavaMesh> sphere_mesh = CreateSphere(engine, sphere_material);
 
 	{
 		size_t entity = ecs_manager.createEntity();

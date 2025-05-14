@@ -55,7 +55,7 @@ enum CameraType {
 struct CameraComponent {
   CameraType type_ = CameraType_Perspective;
   float fov_ = 90.0f;
-  float near_ = 10000.0f;
+  float near_ = 50.0f;
   float far_ = 0.1f;
   float size_ = 5;
   glm::mat4 view_ = glm::mat4(1.0f);

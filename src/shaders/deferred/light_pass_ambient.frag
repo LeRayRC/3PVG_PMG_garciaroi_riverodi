@@ -19,10 +19,12 @@ layout(set = 1, binding = 4) uniform LavaPBRMaterialProperties {
 layout(set = 1, binding = 5) uniform sampler2D positionTex;
 
 layout (location = 0) in vec2 inUV;
+layout (location = 1) in mat4 cameraView;
 
 layout (location = 0) out vec4 outFragColor;
 
 void main() {
     vec3 albedo = texture(baseColorTex, inUV).rgb;
     outFragColor = vec4(globalData.ambientColor * albedo,1.0);
+	//outFragColor = vec4(1.0);
 }

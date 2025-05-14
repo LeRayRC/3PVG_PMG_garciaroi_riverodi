@@ -7,6 +7,7 @@
 
 
 layout (location = 0) out vec2 outUV;
+layout (location = 1) out mat4 cameraView;
 
 struct Vertex {
 	vec3 position;
@@ -43,5 +44,5 @@ void main()
 
 	outUV.x = v.uv_x;
 	outUV.y = v.uv_y;
-
+	cameraView = mat4(1.0f);//globalData.view;
 }

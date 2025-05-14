@@ -80,7 +80,7 @@ LavaDeferredRenderSystem::LavaDeferredRenderSystem(LavaEngine& engine) :
 													engine_.global_lights_descriptor_set_layout_,
 													PipelineFlags::PIPELINE_USE_PUSHCONSTANTS | PipelineFlags::PIPELINE_USE_DESCRIPTOR_SET | PipelineFlags::PIPELINE_DONT_USE_COLOR_ATTACHMENT,
 													PipelineBlendMode::PIPELINE_BLEND_ONE_ZERO,
-													"../src/shaders/directional_shadows.geom.spv")),
+													"../src/shaders/directional_shadows.geom.spv", 1, VK_COMPARE_OP_LESS_OR_EQUAL)),
 
 						 std::make_unique<LavaPipeline>(PipelineConfig(
 													PIPELINE_TYPE_SHADOW,
@@ -289,7 +289,7 @@ void LavaDeferredRenderSystem::renderShadowMaps(std::vector<std::optional<Transf
 		current_extent.width = shadowmaps_[light_index]->get_allocated_image().image_extent.width;
 		current_extent.height = shadowmaps_[light_index]->get_allocated_image().image_extent.height;
 
-		VkRenderingAttachmentInfo depth_attachment = vkinit::DepthAttachmentInfo(current_shadowmap_image_view, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
+		VkRenderingAttachmentInfo depth_attachment = vkinit::DepthAttachmentInfo(current_shadowmap_image_view, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR, (light_index == 0) ? 1.0f : 0.0f);
 		int layers = 1;
 		if (light_index == 0) layers = 3;
 		else if (light_index == 1)layers = 6;
@@ -738,6 +738,31 @@ void LavaDeferredRenderSystem::allocateLights(std::vector<std::optional<struct L
 	}
 }
 
+static std::vector<glm::vec4> getFrustumCornersWorldSpace(const glm::mat4& proj, const glm::mat4& view)
+{
+	const auto inv = glm::inverse(proj * view);
+
+	std::vector<glm::vec4> frustumCorners;
+	for (unsigned int x = 0; x < 2; ++x)
+	{
+		for (unsigned int y = 0; y < 2; ++y)
+		{
+			for (unsigned int z = 0; z < 2; ++z)
+			{
+				const glm::vec4 pt =
+					inv * glm::vec4(
+						2.0f * x - 1.0f,
+						2.0f * y - 1.0f,
+						z,
+						1.0f);
+				frustumCorners.push_back(pt / pt.w);
+			}
+		}
+	}
+
+	return frustumCorners;
+}
+
 void LavaDeferredRenderSystem::updateLights(std::vector<std::optional<struct LightComponent>>& light_component_vector, std::vector<std::optional<struct TransformComponent>>& transform_vector)
 {
 	auto light_transform_it = transform_vector.begin();
@@ -763,30 +788,65 @@ void LavaDeferredRenderSystem::updateLights(std::vector<std::optional<struct Lig
 
 
 		if (light_component.type_ == LIGHT_TYPE_DIRECTIONAL) {
-			glm::vec3 opp_light_dir = CalculateForwardVector(light_transform_it->value().rot_) * -1.0f;
-			glm::vec3 pos = engine_.main_camera_transform_->pos_ + (opp_light_dir * 20.0f);
-
-			glm::mat4 view = GenerateViewMatrix(
-				pos,
-				light_transform_it->value().rot_
-			);
-
-			float size = 5.0f; // Tamaño del área visible
-			float left = -size;
-			float right = size;
-			float bottom = -size;
-			float top = size;
-			glm::mat4 proj = glm::ortho(left, right, bottom, top, 50.0f, 0.1f);
-			proj[1][1] *= -1;
-			light_component.viewproj_ = proj * view; // THE VIEW IS WRONG IN THIS TYPE OF LIGHT
+			float planeStep = engine_.main_camera_camera_->near_ * (1.0f / 3.0f);
 			std::vector<glm::mat4> shadowTransforms;
-			shadowTransforms.push_back(light_component.viewproj_);
-			proj = glm::ortho(left * 2.0f, right * 2.0f, bottom * 2.0f, top * 2.0f, 50.0f, 0.1f);
-			proj[1][1] *= -1;
-			shadowTransforms.push_back(proj * view);
-			proj = glm::ortho(left * 3.0f, right * 3.0f, bottom * 3.0f, top * 3.0f, 50.0f, 0.1f);
-			proj[1][1] *= -1;
-			shadowTransforms.push_back(proj * view);
+
+			for (int i = 0; i < 3; i++) {
+				glm::mat4 proj = glm::perspective(glm::radians(engine_.main_camera_camera_->fov_),
+					(float)engine_.window_extent_.width / (float)engine_.window_extent_.height, (((float)i) * planeStep) + 0.1f, ((float)(i + 1)) * planeStep);
+				proj[1][1] *= -1.0f;
+
+				std::vector<glm::vec4> corners = getFrustumCornersWorldSpace(proj, engine_.main_camera_camera_->view_);
+
+				glm::vec3 center = glm::vec3(0, 0, 0);
+				for (const glm::vec4& v : corners)
+				{
+					center += glm::vec3(v);
+				}
+				center /= corners.size();
+
+				glm::mat4 light_view = GenerateViewMatrix(center, light_transform_it->value().rot_);
+
+				float min_x = std::numeric_limits<float>::max();
+				float max_x = std::numeric_limits<float>::lowest();
+				float min_y = std::numeric_limits<float>::max();
+				float max_y = std::numeric_limits<float>::lowest();
+				float min_z = std::numeric_limits<float>::max();
+				float max_z = std::numeric_limits<float>::lowest();
+				for (const glm::vec4& v : corners)
+				{
+					const glm::vec4 trf = light_view * v;
+					min_x = std::min(min_x, trf.x);
+					max_x = std::max(max_x, trf.x);
+					min_y = std::min(min_y, trf.y);
+					max_y = std::max(max_y, trf.y);
+					min_z = std::min(min_z, trf.z);
+					max_z = std::max(max_z, trf.z);
+				}
+
+				constexpr float z_mult = 100.0f;
+				if (min_z < 0)
+				{
+					min_z *= z_mult;
+				}
+				else
+				{
+					min_z /= z_mult;
+				}
+				if (max_z < 0)
+				{
+					max_z /= z_mult;
+				}
+				else
+				{
+					max_z *= z_mult;
+				}
+
+				glm::mat4 light_projection = glm::ortho(min_x, max_x, max_y, min_y, min_z, max_z);
+				proj[1][1] *= -1;
+				light_component.viewproj_ = light_projection * light_view;
+				shadowTransforms.push_back(light_component.viewproj_);
+			}
 			light_component.light_viewproj_buffer_->updateBufferData(shadowTransforms.data(), sizeof(glm::mat4) * 3);
 		}
 		else if (light_component.type_ == LIGHT_TYPE_SPOT) {

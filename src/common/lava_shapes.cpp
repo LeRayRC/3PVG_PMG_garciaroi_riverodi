@@ -33,8 +33,8 @@ std::shared_ptr<LavaMesh> CreateQuad(std::shared_ptr<LavaPBRMaterial> material, 
   }
 
   std::vector<uint32_t> quad_index = {
-      0, 1, 3,  
-      1, 2, 3   
+      3, 2, 0,  
+      2, 1, 0   
   };
 
   MeshProperties mesh_properties = {};

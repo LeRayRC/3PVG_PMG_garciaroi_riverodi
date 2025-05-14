@@ -302,7 +302,7 @@ void LavaImage::allocate(VkExtent3D size, VkFormat format, VkImageUsageFlags usa
 	}
 
 	// build a image-view for the image
-	VkImageViewCreateInfo view_info = vkinit::ImageViewCreateInfo(format, image_.image, aspectFlag);
+	VkImageViewCreateInfo view_info = vkinit::ImageViewCreateInfo(format, image_.image, aspectFlag, layers);
 	view_info.subresourceRange.levelCount = img_info.mipLevels;
 
 	if (engine_) {

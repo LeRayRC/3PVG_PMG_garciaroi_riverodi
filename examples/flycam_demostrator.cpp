@@ -133,7 +133,7 @@ void DeferredRenderMode(LavaEngine& engine) {
 
 int main(int argc, char* argv[]) {
 	std::shared_ptr<LavaWindowSystem>  lava_system = LavaWindowSystem::Get();
-	LavaEngine engine(1280,720);
+	LavaEngine engine(1920,1080);
 	LavaECSManager ecs_manager;
 	LavaPBRRenderSystem pbr_render_system{ engine };
 	LavaNormalRenderSystem normal_render_system{ engine };
@@ -144,7 +144,7 @@ int main(int argc, char* argv[]) {
 	std::shared_ptr<LavaPBRMaterial> basic_material = std::make_shared<LavaPBRMaterial>(engine, MaterialPBRProperties());
 	MeshProperties mesh_properties = {};
 
-	mesh_properties.mesh_path = "../examples/assets/Avocado.glb";
+	mesh_properties.mesh_path = "../examples/assets/x-wing_cockpit.glb";
 	mesh_properties.material = basic_material;
 
 
@@ -272,7 +272,7 @@ int main(int argc, char* argv[]) {
 		size_t light_entity = ecs_manager.createEntity();
 		ecs_manager.addComponent<TransformComponent>(light_entity);
 		ecs_manager.addComponent<LightComponent>(light_entity);
-
+	
 		auto light_component = ecs_manager.getComponent<LightComponent>(light_entity);
 		if (light_component) {
 			auto& light = light_component->value();
@@ -290,32 +290,32 @@ int main(int argc, char* argv[]) {
 	}
 
 
-	{
-		size_t light_entity = ecs_manager.createEntity();
-		ecs_manager.addComponent<TransformComponent>(light_entity);
-		ecs_manager.addComponent<LightComponent>(light_entity);
-
-		auto light_component = ecs_manager.getComponent<LightComponent>(light_entity);
-		if (light_component) {
-			auto& light = light_component->value();
-			light.enabled_ = true;
-			light.type_ = LIGHT_TYPE_SPOT;
-			light.base_color_ = glm::vec3(1.0f, 1.0f, 1.0f);
-			light.spec_color_ = glm::vec3(0.0f, 0.0f, 0.0f);
-			light.cutoff_ = 34.0f;
-			light.outer_cutoff_ = 56.410f;
-			light.constant_att_ = 1.0f;
-			light.quad_att_ = 0.112f;
-			light.strength_ = 0.28f;
-		}
-		auto tr_component = ecs_manager.getComponent<TransformComponent>(light_entity);
-		if (tr_component) {
-			auto& tr = tr_component->value();
-			tr.rot_ = glm::vec3(-110.0f, 0.0f, -0.5f);
-			tr.pos_ = glm::vec3(0.03f, 0.06f, -1.68f);
-		}
-
-	}
+	//{
+	//	size_t light_entity = ecs_manager.createEntity();
+	//	ecs_manager.addComponent<TransformComponent>(light_entity);
+	//	ecs_manager.addComponent<LightComponent>(light_entity);
+	//
+	//	auto light_component = ecs_manager.getComponent<LightComponent>(light_entity);
+	//	if (light_component) {
+	//		auto& light = light_component->value();
+	//		light.enabled_ = true;
+	//		light.type_ = LIGHT_TYPE_SPOT;
+	//		light.base_color_ = glm::vec3(1.0f, 1.0f, 1.0f);
+	//		light.spec_color_ = glm::vec3(0.0f, 0.0f, 0.0f);
+	//		light.cutoff_ = 34.0f;
+	//		light.outer_cutoff_ = 56.410f;
+	//		light.constant_att_ = 1.0f;
+	//		light.quad_att_ = 0.112f;
+	//		light.strength_ = 0.28f;
+	//	}
+	//	auto tr_component = ecs_manager.getComponent<TransformComponent>(light_entity);
+	//	if (tr_component) {
+	//		auto& tr = tr_component->value();
+	//		tr.rot_ = glm::vec3(-110.0f, 0.0f, -0.5f);
+	//		tr.pos_ = glm::vec3(0.03f, 0.06f, -1.68f);
+	//	}
+	//
+	//}
 	
 	//Create Camera entity
 	size_t camera_entity = ecs_manager.createEntity();
@@ -327,7 +327,7 @@ int main(int argc, char* argv[]) {
 
 		auto& camera_tr = ecs_manager.getComponent<TransformComponent>(camera_entity)->value();
 		camera_tr.rot_ = glm::vec3(-45.0f, 0.0f, 0.0f);
-		camera_tr.pos_ = glm::vec3(0.0f, 12.0f, 15.0f);
+		camera_tr.pos_ = glm::vec3(0.0f, 0.0f, -2.0f);
 		auto& camera_component = ecs_manager.getComponent<CameraComponent>(camera_entity)->value();
 
 		auto update_component = ecs_manager.getComponent<UpdateComponent>(camera_entity);

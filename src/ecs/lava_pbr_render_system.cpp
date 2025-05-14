@@ -737,13 +737,7 @@ void LavaPBRRenderSystem::update_lights(std::vector<std::optional<struct LightCo
 				}
 				center /= corners.size();
 
-				glm::mat4 light_view = GenerateViewMatrix(center, light_transform_it->value().rot_); //Tengo dudas (dir o -dir)
-
-				//glm::mat4 light_view = glm::lookAt(
-				//	center - CalculateForwardVector(light_transform_it->value().rot_),
-				//	center,
-				//	glm::vec3(0.0f, 1.0f, 0.0f)
-				//);
+				glm::mat4 light_view = GenerateViewMatrix(center, light_transform_it->value().rot_);
 
 				float min_x = std::numeric_limits<float>::max();
 				float max_x = std::numeric_limits<float>::lowest();

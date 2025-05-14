@@ -76,7 +76,7 @@ LavaPipeline::LavaPipeline(PipelineConfig config){
 	//filled triangles
 	pipeline_builder.SetPolygonMode(VK_POLYGON_MODE_FILL);
 	//no backface culling
-	pipeline_builder.SetCullMode(VK_CULL_MODE_FRONT_BIT, VK_FRONT_FACE_CLOCKWISE);
+	pipeline_builder.SetCullMode(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE);
 	//no multisampling
 	pipeline_builder.SetMultisamplingNone();
 	//no blending
