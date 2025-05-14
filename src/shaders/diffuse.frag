@@ -19,4 +19,5 @@ layout (location = 0) out vec4 outFragColor;
 void main() 
 {
 		outFragColor = texture(diffuseText,inUV);
+		//outFragColor = vec4(inNormal,1.0f);
 }

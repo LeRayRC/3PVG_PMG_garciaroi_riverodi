@@ -26,6 +26,7 @@ struct GPUMeshBuffers {
 struct GeoSurface {
 	uint32_t start_index;
 	uint32_t count;
+	uint32_t material_index;
 };
 
 struct MeshAsset {
@@ -33,6 +34,7 @@ struct MeshAsset {
 	std::string name;
 	uint16_t count_surfaces;
 	uint32_t index_count;
+	std::vector<GeoSurface> surfaces;
 	//GeoSurface surfaces[5];
 	GPUMeshBuffers meshBuffers;
 };
@@ -48,7 +50,7 @@ struct MeshProperties {
 	std::string name = "Generic Mesh";
 	MeshType type = MESH_GLTF;
 	std::filesystem::path mesh_path;
-	class LavaPBRMaterial* material;
+	std::shared_ptr<class LavaPBRMaterial>  material;
 	std::vector<VertexWithTangents> vertex;
 	std::vector<uint32_t> index;
 };
@@ -58,28 +60,46 @@ class LavaMesh
 {
 public:
 	LavaMesh(class LavaEngine& engine, MeshProperties prop);
+	LavaMesh(class LavaEngineVR& engine, MeshProperties prop);
 	~LavaMesh();
 
 	template<typename t>
-	GPUMeshBuffers upload(std::span<uint32_t> indices, std::span<t> vertices);
+	GPUMeshBuffers upload(class LavaEngine* engine, std::span<uint32_t> indices, std::span<t> vertices);
+	template<typename t>
+	GPUMeshBuffers upload(class LavaEngineVR* engine, std::span<uint32_t> indices, std::span<t> vertices);
 
-	template<typename t = Vertex>
+	template<typename t>
 	bool loadAsGLTF(std::filesystem::path file_path);
+
+	template<typename t>
+	bool loadAsGLTFWithNodes(std::filesystem::path file_path);
+
+	template<typename t>
+	void processNode(const fastgltf::Asset& gltf,
+		const fastgltf::Node& node,
+		const glm::mat4& parentTransform,
+		std::vector<t>& combinedVertices,
+		std::vector<uint32_t>& combinedIndices,
+		std::vector<GeoSurface>& surfaces,
+		uint32_t& index_count,
+		uint16_t& count_surfaces);
 
 	bool loadCustomMesh(MeshProperties prop);
 
-	LavaPBRMaterial* get_material() { return material_; };
+	LavaPBRMaterial* get_material() { return material_.get(); };
 	bool isLoaded() const { return is_loaded_; }
 	std::shared_ptr<MeshAsset> mesh_;
-	std::shared_ptr<class LavaImage> loadImage(LavaEngine* engine, fastgltf::Asset& asset, fastgltf::Image& image, std::filesystem::path);
+	std::shared_ptr<class LavaImage> loadImage(fastgltf::Asset& asset, fastgltf::Image& image, std::filesystem::path);
 
+	std::vector<std::shared_ptr<LavaPBRMaterial>> materials_;
 
 private:
 	std::string name_;
 	MeshType type_;
 	bool is_loaded_; 
-	class LavaPBRMaterial* material_;
+	std::shared_ptr<LavaPBRMaterial> material_;
 	class LavaEngine* engine_;
+	class LavaEngineVR* engine_vr_;
 
 };
 

@@ -2,6 +2,7 @@
 #include "vr/lava_instance_vr.hpp"
 #include "vr/lava_session_vr.hpp"
 #include "lava/openxr_common/DebugOutput.h"
+#include "lava/openxr_common/OpenXRHelper.h"
 
 LavaBlendSpaceVR::LavaBlendSpaceVR(LavaInstanceVR& instance_vr,
   LavaSessionVR& session,

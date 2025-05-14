@@ -48,7 +48,7 @@ void LavaDiffuseRenderSystemVR::render(uint32_t view_index,
 
 	//begin a render pass  connected to our draw image
 	VkRenderingAttachmentInfo color_attachment = vkinit::AttachmentInfo((VkImageView)color_swapchain_info.imageViews[engine_.color_image_index_], nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-	VkRenderingAttachmentInfo depth_attachment = vkinit::DepthAttachmentInfo((VkImageView)depth_swapchain_info.imageViews[engine_.depth_image_index_], VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
+	VkRenderingAttachmentInfo depth_attachment = vkinit::DepthAttachmentInfo((VkImageView)depth_swapchain_info.imageViews[engine_.depth_image_index_], VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR,1.0f);
 	//
 
 	//engine_.get_session().get_view_configuration_views()[view_index].
@@ -66,7 +66,7 @@ void LavaDiffuseRenderSystemVR::render(uint32_t view_index,
 	//Bind both descriptor sets on the mesh
 	vkCmdBindDescriptorSets(engine_.command_buffer_, VK_PIPELINE_BIND_POINT_GRAPHICS,
 		pipeline_->get_layout(),
-		0, 1, &engine_.global_descriptor_set_, 0, nullptr);
+		0, 1, &engine_.global_descriptor_set_vector_[view_index], 0, nullptr);
 
 
 	FrameData& frame_data = engine_.frame_data_[view_index]->getCurrentFrame();
@@ -103,15 +103,45 @@ void LavaDiffuseRenderSystemVR::render(uint32_t view_index,
 		// Vincular los Vertex y Index Buffers
 		GPUMeshBuffers& meshBuffers = mesh->meshBuffers;
 		VkDeviceSize offsets[] = { 0 };
-		if (frame_data.last_bound_mesh != lava_mesh) {
+		//if (frame_data.last_bound_mesh != lava_mesh) {
 			vkCmdBindIndexBuffer(engine_.command_buffer_, meshBuffers.index_buffer->get_buffer().buffer, 0, VK_INDEX_TYPE_UINT32);
-		}
+		//}
+
+
+				// Dibujar cada superficie con su material correspondiente
+			for (const GeoSurface& surface : mesh->surfaces) {
+				// Obtener el material para esta superficie
+				std::shared_ptr<LavaPBRMaterial> material;
+
+				if (surface.material_index < lava_mesh->materials_.size()) {
+					material = lava_mesh->materials_[surface.material_index];
+				}
+				else {
+					//material = lava_mesh->get_material(); // Material por defecto
+				}
+
+				// Vincular descriptor set del material
+				VkDescriptorSet pbr_descriptor_set = material->get_descriptor_set();
+				vkCmdBindDescriptorSets(engine_.command_buffer_, VK_PIPELINE_BIND_POINT_GRAPHICS,
+					pipeline_->get_layout(),
+					1, 1, &pbr_descriptor_set, 0, nullptr);
+
+				// Configurar push constants
+				GPUDrawPushConstants push_constants;
+				push_constants.world_matrix = model;
+				push_constants.vertex_buffer = meshBuffers.vertex_buffer_address;
+
+				vkCmdPushConstants(engine_.command_buffer_, pipeline_->get_layout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &push_constants);
+
+				// Dibujar la superficie
+				vkCmdDrawIndexed(engine_.command_buffer_, surface.count, 1, surface.start_index, 0, 0);
+			}
 		
-		push_constants.world_matrix = model; 
-		push_constants.vertex_buffer = meshBuffers.vertex_buffer_address;
-		
-		vkCmdPushConstants(engine_.command_buffer_, pipeline_->get_layout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &push_constants);
-		vkCmdDrawIndexed(engine_.command_buffer_, mesh->index_count, 1, 0, 0, 0);
+		//push_constants.world_matrix = model; 
+		//push_constants.vertex_buffer = meshBuffers.vertex_buffer_address;
+		//
+		//vkCmdPushConstants(engine_.command_buffer_, pipeline_->get_layout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &push_constants);
+		//vkCmdDrawIndexed(engine_.command_buffer_, mesh->index_count, 1, 0, 0, 0);
 
 		if (frame_data.last_bound_mesh != lava_mesh) {
 			frame_data.last_bound_mesh = lava_mesh;

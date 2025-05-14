@@ -24,6 +24,7 @@ class LavaPBRMaterial
 {
 public:
 	LavaPBRMaterial(class LavaEngine& engine, MaterialPBRProperties prop);
+	LavaPBRMaterial(class LavaEngineVR& engine, MaterialPBRProperties prop);
 	~LavaPBRMaterial();
 
 	std::string get_name() { return name_; }
@@ -58,7 +59,8 @@ public:
 	}
 
 	
-
+	LavaEngine* engine_;
+	class LavaEngineVR* engine_vr_;
 	void UpdateDescriptorSet();
 
 private:
@@ -78,9 +80,10 @@ private:
 	
 	VkDescriptorSet descriptor_set_;
 	std::unique_ptr<class LavaBuffer> pbr_data_buffer_;
+	class LavaDescriptorManager& global_descriptor_allocator_;
 
 
-	LavaEngine *engine_;
+
 
 	friend class LavaMesh;
 };

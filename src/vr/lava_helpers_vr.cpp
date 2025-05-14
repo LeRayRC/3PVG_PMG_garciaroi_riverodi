@@ -1,6 +1,7 @@
 #include "vr/lava_helpers_vr.hpp"
 #include "vr/lava_instance_vr.hpp"
 #include "vr/lava_binding_vr.hpp"
+#include "lava/openxr_common/OpenXRHelper.h"
 
 std::vector<std::string> GetInstanceExtensionsForOpenXR(LavaInstanceVR& instance, LavaBindingVR& binding) {
   uint32_t extension_names_size = 0;
@@ -66,8 +67,8 @@ int64_t SelectDepthSwapchainFormat(const std::vector<int64_t>& formats) {
 
 const std::vector<int64_t> GetSupportedDepthSwapchainFormats() {
   return {
-      VK_FORMAT_D32_SFLOAT,
-      VK_FORMAT_D16_UNORM };
+      VK_FORMAT_D32_SFLOAT };//,
+      //VK_FORMAT_D16_UNORM };
 }
 
 int64_t SelectColorSwapchainFormat(const std::vector<int64_t>& formats) {

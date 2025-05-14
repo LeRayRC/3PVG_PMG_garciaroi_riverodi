@@ -11,8 +11,11 @@
 #include "lava/openxr_common/DebugOutput.h"
 #include "engine/lava_vulkan_helpers.hpp"
 #include "lava/common/lava_global_helpers.hpp"
+#include "engine/lava_inmediate_communication.hpp"
 #include "engine/lava_vulkan_inits.hpp"
+#include "lava/engine/lava_image.hpp"
 #include "vr/xr_linear_algebra.hpp"
+#include "lava/openxr_common/OpenXRHelper.h"
 #include <openxr/openxr.h>
 
 
@@ -40,12 +43,29 @@ LavaEngineVR::LavaEngineVR(XrPosef reference_pose) {
   blend_space_ = std::make_unique<LavaBlendSpaceVR>(*instance_vr_.get(),
     *session_.get(), XR_ENVIRONMENT_BLEND_MODE_OPAQUE, reference_pose);
   
+  inmediate_communication = std::make_unique<LavaInmediateCommunication>(*device_);
+
   allocator_ = std::make_unique<LavaAllocator>(*device_, *instance_vulkan_);
   for (int i = 0; i < FRAME_OVERLAP; i++) {
     frame_data_[i] = std::make_unique<LavaFrameData>(*device_, *allocator_);
   }
   
   global_descriptor_allocator_ = std::make_unique<LavaDescriptorManager>(device_->get_device(), LavaDescriptorManager::initial_sets, LavaDescriptorManager::pool_ratios);
+
+
+  //Default data
+  uint32_t pink_color_ = glm::packUnorm4x8(glm::vec4(1, 0, 1, 1));
+  default_texture_image_pink = std::make_shared<LavaImage>(this, (void*)&pink_color_, VkExtent3D{ 1, 1, 1 }, VK_FORMAT_R8G8B8A8_UNORM,
+    VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+
+  uint32_t white_color_ = glm::packUnorm4x8(glm::vec4(1, 1, 1, 1));
+  default_texture_image_white = std::make_shared<LavaImage>(this, (void*)&white_color_, VkExtent3D{ 1, 1, 1 }, VK_FORMAT_R8G8B8A8_UNORM,
+    VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+
+  uint32_t black_color_ = glm::packUnorm4x8(glm::vec4(0, 0, 0, 1));
+  default_texture_image_black = std::make_shared<LavaImage>(this, (void*)&black_color_, VkExtent3D{ 1, 1, 1 }, VK_FORMAT_R8G8B8A8_UNORM,
+    VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+
 
 
   initGlobalData();
@@ -183,8 +203,8 @@ void LavaEngineVR::prepareView(uint32_t i) {
     
     const uint32_t& width = session_->get_view_configuration_views()[i].recommendedImageRectWidth;
     const uint32_t& height = session_->get_view_configuration_views()[i].recommendedImageRectHeight;
-    GraphicsAPI::Viewport viewport = { 0.0f, 0.0f, (float)width, (float)height, 0.0f, 1.0f };
-    GraphicsAPI::Rect2D scissor = { {(int32_t)0, (int32_t)0}, {width, height} };
+    Viewport viewport = { 0.0f, 0.0f, (float)width, (float)height, 0.0f, 1.0f };
+    Rect2D scissor = { {(int32_t)0, (int32_t)0}, {width, height} };
     //MAYBE IT IS NECCESARRY TO INVERT DEPTH TEST
     float nearZ = 0.05f;
     float farZ = 100.0f;
@@ -295,7 +315,7 @@ void LavaEngineVR::clearWindow(uint32_t i) {
 
   //Limpiamos la imagen con un clear color
   VkClearColorValue clearValue;
-  clearValue = { {1.0f,1.0f,1.0f,0.0f} };
+  clearValue = { {0.0f,0.0f,0.0f,0.0f} };
 
   //Seleccionamos un rango de la imagen sobre la que actuar
   VkImageSubresourceRange clearRange = ImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT);
@@ -453,19 +473,26 @@ void LavaEngineVR::updateMainCamera() {
 }
 
 void LavaEngineVR::initGlobalData() {
+  int amount = session_->get_view_configuration_views().size();
+  global_scene_data_vector_.resize(amount);
+  global_descriptor_set_vector_.resize(amount);
+  global_data_buffer_vector_.resize(amount);
+
   global_descriptor_allocator_->clear();
   DescriptorLayoutBuilder builder;
   builder.addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
   global_descriptor_set_layout_ = builder.build(device_->get_device(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
 
-  global_descriptor_set_ = global_descriptor_allocator_->allocate(global_descriptor_set_layout_);
-  global_data_buffer_ = std::make_unique<LavaBuffer>(*allocator_, sizeof(GlobalSceneData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
-  global_data_buffer_->setMappedData();
-  global_descriptor_allocator_->clear();
+  for (int i = 0; i < amount; i++) {
+    global_descriptor_set_vector_[i] = global_descriptor_allocator_->allocate(global_descriptor_set_layout_);
+    global_data_buffer_vector_[i] = std::make_unique<LavaBuffer>(*allocator_, sizeof(GlobalSceneData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
+    global_data_buffer_vector_[i]->setMappedData();
+    global_descriptor_allocator_->clear();
 
-  global_descriptor_allocator_->writeBuffer(0, global_data_buffer_->buffer_.buffer, sizeof(GlobalSceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-  global_descriptor_allocator_->updateSet(global_descriptor_set_);
-  global_descriptor_allocator_->clear();
+    global_descriptor_allocator_->writeBuffer(0, global_data_buffer_vector_[i]->buffer_.buffer, sizeof(GlobalSceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+    global_descriptor_allocator_->updateSet(global_descriptor_set_vector_[i]);
+    global_descriptor_allocator_->clear();
+  }
 
   //Descriptor set layout of every light
   builder.clear();
@@ -490,7 +517,7 @@ void LavaEngineVR::updateGlobalData(uint32_t view_index) {
   //Detect input
   XrMatrix4x4f viewProj;
   XrMatrix4x4f proj;
-  XrMatrix4x4f_CreateProjectionFov(&proj, VULKAN, views_[view_index].fov, 50 , 0.1f);
+  XrMatrix4x4f_CreateProjectionFov(&proj, VULKAN, views_[view_index].fov, 0.05f, 10000.0f );
   XrMatrix4x4f toView;
   XrVector3f scale1m{ 1.0f, 1.0f, 1.0f };
   XrMatrix4x4f_CreateTranslationRotationScale(&toView, &views_[view_index].pose.position, &views_[view_index].pose.orientation, &scale1m);
@@ -498,25 +525,14 @@ void LavaEngineVR::updateGlobalData(uint32_t view_index) {
   XrMatrix4x4f_InvertRigidBody(&view, &toView);
   XrMatrix4x4f_Multiply(&viewProj, &proj, &view);
   
-  global_scene_data_.viewproj = reinterpret_cast<glm::mat4&>(viewProj);
-  global_scene_data_.proj = reinterpret_cast<glm::mat4&>(proj);
-  global_scene_data_.view = reinterpret_cast<glm::mat4&>(view);
+  global_scene_data_vector_[view_index].viewproj = convertXrToGlm(&viewProj);
+  global_scene_data_vector_[view_index].proj = convertXrToGlm(&proj);
+  global_scene_data_vector_[view_index].view = convertXrToGlm(&view);
+  XrVector3f vector_pos = views_[view_index].pose.position;
+  global_scene_data_vector_[view_index].cameraPos = glm::vec3(vector_pos.x, vector_pos.y, vector_pos.z);
 
-  global_scene_data_.cameraPos = reinterpret_cast<glm::vec3&>(views_[view_index].pose.position);
-
-
-  //global_scene_data_.view = main_camera_camera_->view_;
-
-  //global_scene_data_.proj = glm::perspective(glm::radians(views_[view_index].fov),
-  //    (float)window_extent_.width / (float)window_extent_.height,
-  //    10000f, 0.05f);
-  //
-
-  global_scene_data_.proj[1][1] *= -1;
-  //global_scene_data_.viewproj = global_scene_data_.proj * global_scene_data_.view;
-
-  global_data_buffer_->updateBufferData(&global_scene_data_, sizeof(GlobalSceneData));
-
+  global_data_buffer_vector_[view_index]->updateBufferData(&global_scene_data_vector_[view_index], sizeof(GlobalSceneData));
+  
 }
 
 void LavaEngineVR::setDynamicViewportAndScissor(const VkExtent2D& extend) {
@@ -536,4 +552,45 @@ void LavaEngineVR::setDynamicViewportAndScissor(const VkExtent2D& extend) {
   scissor.extent.width = (uint32_t)extend.width;//swap_chain_.get_draw_extent().width;
   scissor.extent.height = (uint32_t)extend.height;//swap_chain_.get_draw_extent().height;
   vkCmdSetScissor(command_buffer_, 0, 1, &scissor);
+}
+
+
+
+void LavaEngineVR::immediate_submit(std::function<void(VkCommandBuffer)>&& function) {
+  VkFence aux_inmediate_fence = inmediate_communication->get_inmediate_fence();
+  if (vkResetFences(device_->get_device(), 1, &aux_inmediate_fence) != VK_SUCCESS) {
+    exit(-1);
+  }
+
+  VkCommandBuffer aux_immediate_command_buffer = inmediate_communication->get_immediate_command_buffer();
+  if (vkResetCommandBuffer(aux_immediate_command_buffer, 0) != VK_SUCCESS) {
+    exit(-1);
+  }
+
+  VkCommandBuffer command_buffer = aux_immediate_command_buffer;
+  VkCommandBufferBeginInfo command_buffer_begin_info =
+    vkinit::CommandBufferBeginInfo(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+
+  vkBeginCommandBuffer(command_buffer, &command_buffer_begin_info);
+
+  function(command_buffer);
+
+  vkEndCommandBuffer(command_buffer);
+
+  VkCommandBufferSubmitInfo command_submit_info = vkinit::CommandBufferSubmitInfo(command_buffer);
+  VkSubmitInfo2 submit = vkinit::SubmitInfo(&command_submit_info, nullptr, nullptr);
+
+  vkQueueSubmit2(device_->get_graphics_queue(), 1, &submit, aux_inmediate_fence);
+
+
+  vkWaitForFences(device_->get_device(), 1, &aux_inmediate_fence, true, 9999999999);
+}
+
+glm::mat4 LavaEngineVR::convertXrToGlm(const XrMatrix4x4f* xrMat) {
+  return glm::mat4(
+    xrMat->m[0], xrMat->m[1],   xrMat->m[2],  xrMat->m[3],
+    xrMat->m[4], xrMat->m[5],   xrMat->m[6],  xrMat->m[7],
+    xrMat->m[8], xrMat->m[9],   xrMat->m[10], xrMat->m[11],
+    xrMat->m[12], xrMat->m[13], xrMat->m[14], xrMat->m[15]
+  );
 }

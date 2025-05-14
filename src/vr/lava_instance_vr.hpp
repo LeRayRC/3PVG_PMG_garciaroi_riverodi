@@ -2,7 +2,8 @@
 #define __LAVA_INSTANCE_VR_H__ 1
 
 #include "openxr/openxr.h"
-#include "lava/openxr_common/GraphicsAPI.h"
+#include "lava/common/lava_global_helpers.hpp"
+//#include "lava/openxr_common/GraphicsAPI.h"
 
 class LavaInstanceVR
 {

@@ -12,12 +12,14 @@ public:
 	LavaDeferredRenderSystem(class LavaEngine& engine);
 	~LavaDeferredRenderSystem();
 
+
 	void render(std::vector<std::optional<TransformComponent>>&,
 		std::vector<std::optional<RenderComponent>>&,
 		std::vector<std::optional<LightComponent>>& light_component_vector);
 
 private:
 	class LavaEngine& engine_;
+
 	std::unique_ptr<class LavaPipeline> pipeline_geometry_pass_;
 	std::unique_ptr<class LavaPipeline> pipeline_light_pass_first_;
 	std::unique_ptr<class LavaPipeline> pipeline_light_pass_additive_;
@@ -25,7 +27,7 @@ private:
 	std::unique_ptr<class LavaPipeline> pipeline_shadows_[3];
 
 
-	LavaPBRMaterial light_pass_material;
+	std::shared_ptr<LavaPBRMaterial> light_pass_material;
 	std::shared_ptr<class LavaMesh> light_pass_quad_;
 
 	//Gbuffer mapping

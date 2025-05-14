@@ -8,6 +8,28 @@
 #include "lava/common/lava_engine_base.hpp"
 #include "lava/vr/lava_data_structures_vr.hpp"
 
+
+struct Viewport {
+	float x;
+	float y;
+	float width;
+	float height;
+	float minDepth;
+	float maxDepth;
+};
+struct Offset2D {
+	int32_t x;
+	int32_t y;
+};
+struct Extent2D {
+	uint32_t width;
+	uint32_t height;
+};
+struct Rect2D {
+	Offset2D offset;
+	Extent2D extent;
+};
+
 class LavaEngineVR : public LavaEngineBase
 {
 public:
@@ -21,16 +43,22 @@ public:
 	std::unique_ptr<class LavaSessionVR> session_;
 	std::unique_ptr<class LavaSwapchainVR> swapchain_;
 	std::unique_ptr<class LavaBlendSpaceVR> blend_space_;
+	std::unique_ptr<class LavaInmediateCommunication> inmediate_communication;
 
 	std::unique_ptr<class LavaAllocator> allocator_;
 	std::unique_ptr<class LavaFrameData> frame_data_[2];
 
 	std::unique_ptr<class LavaDescriptorManager> global_descriptor_allocator_;
-	std::unique_ptr<class LavaBuffer> global_data_buffer_;
 	VkDescriptorSetLayout global_descriptor_set_layout_;
 	VkDescriptorSetLayout global_lights_descriptor_set_layout_;
 	VkDescriptorSetLayout global_pbr_descriptor_set_layout_;
-	VkDescriptorSet global_descriptor_set_;
+
+	std::shared_ptr<class LavaImage> default_texture_image_pink;
+	std::shared_ptr<class LavaImage> default_texture_image_white;
+	std::shared_ptr<class LavaImage> default_texture_image_black;
+	std::vector<GlobalSceneData> global_scene_data_vector_;
+	std::vector<VkDescriptorSet> global_descriptor_set_vector_;
+	std::vector<std::unique_ptr<class LavaBuffer>> global_data_buffer_vector_;
 	
 	void initGlobalData();
 	virtual bool shouldClose() override;
@@ -46,6 +74,8 @@ public:
 
 	void prepareView(uint32_t i);
 	void releaseView(uint32_t i);
+
+	void immediate_submit(std::function<void(VkCommandBuffer)>&& function);
 
 	LavaSessionVR& get_session() {
 		return *session_.get();
@@ -66,6 +96,8 @@ public:
 	LavaSwapchainVR& get_swapchain() {
 		return *swapchain_.get();
 	}
+
+	glm::mat4 convertXrToGlm(const struct XrMatrix4x4f* xrMat);
 
 
 	uint32_t color_image_index_ = 0;

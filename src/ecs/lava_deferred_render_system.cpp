@@ -108,7 +108,7 @@ LavaDeferredRenderSystem::LavaDeferredRenderSystem(LavaEngine& engine) :
 													engine_.global_lights_descriptor_set_layout_,
 													PipelineFlags::PIPELINE_USE_PUSHCONSTANTS | PipelineFlags::PIPELINE_USE_DESCRIPTOR_SET | PipelineFlags::PIPELINE_DONT_USE_COLOR_ATTACHMENT,
 													PipelineBlendMode::PIPELINE_BLEND_ONE_ZERO)), },
-	light_pass_material{ engine_, MaterialPBRProperties()}
+	light_pass_material{std::make_shared<LavaPBRMaterial>(engine_, MaterialPBRProperties())}
 {
 
 	VkExtent3D shadowmap_image_extent = {4096,4096,1};
@@ -171,10 +171,10 @@ LavaDeferredRenderSystem::LavaDeferredRenderSystem(LavaEngine& engine) :
 	}
 
 	//Create Quad
-	light_pass_quad_ = CreateQuad(engine_, &light_pass_material);
-	light_pass_material.UpdatePositionImage(gbuffers_[0]);
-	light_pass_material.UpdateBaseColorImage(gbuffers_[1]);
-	light_pass_material.UpdateNormalImage(gbuffers_[2]);
+	light_pass_quad_ = CreateQuad(light_pass_material);
+	light_pass_material->UpdatePositionImage(gbuffers_[0]);
+	light_pass_material->UpdateBaseColorImage(gbuffers_[1]);
+	light_pass_material->UpdateNormalImage(gbuffers_[2]);
 
 }
 
@@ -536,16 +536,50 @@ void LavaDeferredRenderSystem::renderGeometryPass(
 
 		// Vincular los Vertex y Index Buffers
 		GPUMeshBuffers& meshBuffers = mesh->meshBuffers;
-		VkDeviceSize offsets[] = { 0 };
+		//VkDeviceSize offsets[] = { 0 };
+		//if (frame_data.last_bound_mesh != lava_mesh) {
+		//	vkCmdBindIndexBuffer(cmd, meshBuffers.index_buffer->get_buffer().buffer, 0, VK_INDEX_TYPE_UINT32);
+		//}
+
+		//push_constants.world_matrix = model;
+		//push_constants.vertex_buffer = meshBuffers.vertex_buffer_address;
+
+		//vkCmdPushConstants(cmd, pipeline_geometry_pass_->get_layout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &push_constants);
+		//vkCmdDrawIndexed(cmd, mesh->index_count, 1, 0, 0, 0);
+
 		if (frame_data.last_bound_mesh != lava_mesh) {
-			vkCmdBindIndexBuffer(cmd, meshBuffers.index_buffer->get_buffer().buffer, 0, VK_INDEX_TYPE_UINT32);
+			vkCmdBindIndexBuffer(engine_.commandBuffer, meshBuffers.index_buffer->get_buffer().buffer, 0, VK_INDEX_TYPE_UINT32);
+			frame_data.last_bound_mesh = lava_mesh;
 		}
 
-		push_constants.world_matrix = model;
-		push_constants.vertex_buffer = meshBuffers.vertex_buffer_address;
+		// Dibujar cada superficie con su material correspondiente
+		for (const GeoSurface& surface : mesh->surfaces) {
+			// Obtener el material para esta superficie
+			std::shared_ptr<LavaPBRMaterial> material;
 
-		vkCmdPushConstants(cmd, pipeline_geometry_pass_->get_layout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &push_constants);
-		vkCmdDrawIndexed(cmd, mesh->index_count, 1, 0, 0, 0);
+			if (surface.material_index < lava_mesh->materials_.size()) {
+				material = lava_mesh->materials_[surface.material_index];
+			}
+			else {
+				//material = lava_mesh->get_material(); // Material por defecto
+			}
+
+			// Vincular descriptor set del material
+			VkDescriptorSet pbr_descriptor_set = material->get_descriptor_set();
+			vkCmdBindDescriptorSets(engine_.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+				pipeline_geometry_pass_->get_layout(),
+				1, 1, &pbr_descriptor_set, 0, nullptr);
+
+			// Configurar push constants
+			GPUDrawPushConstants push_constants;
+			push_constants.world_matrix = model;
+			push_constants.vertex_buffer = meshBuffers.vertex_buffer_address;
+
+			vkCmdPushConstants(engine_.commandBuffer, pipeline_geometry_pass_->get_layout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &push_constants);
+
+			// Dibujar la superficie
+			vkCmdDrawIndexed(engine_.commandBuffer, surface.count, 1, surface.start_index, 0, 0);
+		}
 
 		if (frame_data.last_bound_mesh != lava_mesh) {
 			frame_data.last_bound_mesh = lava_mesh;

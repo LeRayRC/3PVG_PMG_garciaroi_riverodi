@@ -19,6 +19,8 @@ class LavaInmediateCommunication {
 
 public:
 	LavaInmediateCommunication(class LavaDevice& use_device, class LavaSurface& use_surface);
+	LavaInmediateCommunication(LavaDevice& use_device);
+
 	~LavaInmediateCommunication();
 
 	VkFence get_inmediate_fence() { return immediate_fence; }

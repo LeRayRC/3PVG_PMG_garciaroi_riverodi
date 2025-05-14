@@ -15,7 +15,8 @@ LavaBuffer::LavaBuffer() {
 
 
 
-LavaBuffer::LavaBuffer(LavaAllocator& allocator, size_t alloc_size, VkBufferUsageFlags usage, VmaMemoryUsage memory_usage, LavaDevice* device)
+LavaBuffer::LavaBuffer(LavaAllocator& allocator, size_t alloc_size, 
+	VkBufferUsageFlags usage, VmaMemoryUsage memory_usage, LavaDevice* device)
 {
 	device_ = device;
 	allocator_ = &allocator;

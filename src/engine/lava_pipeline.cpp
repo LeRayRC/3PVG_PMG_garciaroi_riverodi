@@ -201,7 +201,7 @@ LavaPipeline::LavaPipeline(PipelineConfigVR config) {
 	//filled triangles
 	pipeline_builder.SetPolygonMode(VK_POLYGON_MODE_FILL);
 	//no backface culling
-	pipeline_builder.SetCullMode(VK_CULL_MODE_NONE, VK_FRONT_FACE_CLOCKWISE);
+	pipeline_builder.SetCullMode(VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE);
 	//no multisampling
 	pipeline_builder.SetMultisamplingNone();
 	//no blending
@@ -224,8 +224,8 @@ LavaPipeline::LavaPipeline(PipelineConfigVR config) {
 	}
 	//pipeline_builder.DisableBlending();
 
-	pipeline_builder.EnableDepthTest(true, VK_COMPARE_OP_GREATER_OR_EQUAL);
-
+	pipeline_builder.EnableDepthTest(true, VK_COMPARE_OP_LESS_OR_EQUAL);
+	//pipeline_builder.DisableDepthtest();
 	std::vector<LavaSwapchainVR::SwapchainInfo>& color_swapchain_info_vector = config.swap_chain->get_color_swapchain_infos();
 	std::vector<LavaSwapchainVR::SwapchainInfo>& depth_swapchain_info_vector = config.swap_chain->get_depth_swapchain_infos();
 	// Per view in the view configuration:

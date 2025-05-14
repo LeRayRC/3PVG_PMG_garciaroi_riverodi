@@ -4,7 +4,7 @@
 #include "PerlinNoise.hpp"
 
 
-std::shared_ptr<LavaMesh> CreateQuad(LavaEngine& engine, LavaPBRMaterial* material, float size) {
+std::shared_ptr<LavaMesh> CreateQuad(std::shared_ptr<LavaPBRMaterial> material, float size) {
 
   std::vector<VertexWithTangents> quad_vertices(4);
 
@@ -44,11 +44,18 @@ std::shared_ptr<LavaMesh> CreateQuad(LavaEngine& engine, LavaPBRMaterial* materi
   mesh_properties.index = quad_index;
   mesh_properties.vertex = quad_vertices;
 
-  std::shared_ptr<LavaMesh> quad_mesh = std::make_shared<LavaMesh>(engine, mesh_properties);
+  std::shared_ptr<LavaMesh> quad_mesh;
+  if (material->engine_) {
+    quad_mesh = std::make_shared<LavaMesh>(*material->engine_, mesh_properties);
+  }
+  else {
+    quad_mesh = std::make_shared<LavaMesh>(*material->engine_vr_, mesh_properties);
+
+  }
   return quad_mesh;
 }
 
-std::shared_ptr<LavaMesh> CreateCube24v(LavaEngine& engine, LavaPBRMaterial* material, float size) {
+std::shared_ptr<LavaMesh> CreateCube24v(LavaEngine& engine, std::shared_ptr<LavaPBRMaterial> material, float size) {
 
   
   std::vector<VertexWithTangents> cube_vertices(24);
@@ -152,7 +159,7 @@ std::shared_ptr<LavaMesh> CreateCube24v(LavaEngine& engine, LavaPBRMaterial* mat
   return cube_mesh;
 }
 
-std::shared_ptr<LavaMesh> CreateCube8v(LavaEngine& engine, LavaPBRMaterial* material, float size) {
+std::shared_ptr<LavaMesh> CreateCube8v(std::shared_ptr<LavaPBRMaterial> material, float size) {
   float cube_size = size;
 
   std::vector<VertexWithTangents> cube_vertices(8); // 8 vértices para el cubo
@@ -236,13 +243,19 @@ std::shared_ptr<LavaMesh> CreateCube8v(LavaEngine& engine, LavaPBRMaterial* mate
   mesh_properties.vertex = cube_vertices;
 
   // Crear y devolver la malla del cubo
-  std::shared_ptr<LavaMesh> cube_mesh = std::make_shared<LavaMesh>(engine, mesh_properties);
+  std::shared_ptr<LavaMesh> cube_mesh;
+  if (material->engine_) {
+    cube_mesh = std::make_shared<LavaMesh>(*material->engine_, mesh_properties);
+  }
+  else {
+    cube_mesh = std::make_shared<LavaMesh>(*material->engine_vr_, mesh_properties);
+  }
   return cube_mesh;
 }
 
 
 std::shared_ptr<LavaMesh> CreateSphere(LavaEngine& engine, 
-  LavaPBRMaterial* material, 
+  std::shared_ptr<LavaPBRMaterial> material,
   float sphere_size, 
   int num_heights, 
   int num_revs) 
@@ -320,8 +333,7 @@ std::shared_ptr<LavaMesh> CreateSphere(LavaEngine& engine,
 
 
 std::shared_ptr<LavaMesh> CreateTerrain(
-  LavaEngine& engine,
-  LavaPBRMaterial* material,
+  std::shared_ptr<LavaPBRMaterial> material,
   int num_cols,                // Número de columnas (por defecto: 64)
   int num_rows,                // Número de filas (por defecto: 64)
   float height_mult,        // Multiplicador de altura (por defecto: 10.0)
@@ -438,6 +450,12 @@ std::shared_ptr<LavaMesh> CreateTerrain(
   mesh_properties.index = terrain_indices;
 
   // Crear y devolver la malla del terreno
-  std::shared_ptr<LavaMesh> terrain_mesh = std::make_shared<LavaMesh>(engine, mesh_properties);
+  std::shared_ptr<LavaMesh> terrain_mesh;
+  if (material->engine_) {
+    terrain_mesh = std::make_shared<LavaMesh>(*material->engine_, mesh_properties);
+  }
+  else {
+    terrain_mesh = std::make_shared<LavaMesh>(*material->engine_vr_, mesh_properties);
+  }
   return terrain_mesh;
 }

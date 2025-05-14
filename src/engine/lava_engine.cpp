@@ -91,7 +91,7 @@ LavaEngine::LavaEngine(unsigned int window_width, unsigned int window_height) :
 		VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
 
 	uint32_t black_color_ = glm::packUnorm4x8(glm::vec4(0, 0, 0, 1));
-	default_texture_image_white = std::make_shared<LavaImage>(this, (void*)&black_color_, VkExtent3D{ 1, 1, 1 }, VK_FORMAT_R8G8B8A8_UNORM,
+	default_texture_image_black = std::make_shared<LavaImage>(this, (void*)&black_color_, VkExtent3D{ 1, 1, 1 }, VK_FORMAT_R8G8B8A8_UNORM,
 		VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
 
 
@@ -316,7 +316,7 @@ void LavaEngine::clearWindow() {
 
 	//Limpiamos la imagen con un clear color
 	VkClearColorValue clearValue;
-	clearValue = { {0.0f,0.0f,0.0f,0.0f} };
+	clearValue = { {1.0f,1.0f,1.0f,1.0f} };
 
 	//Seleccionamos un rango de la imagen sobre la que actuar
 	VkImageSubresourceRange clearRange = ImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT);

@@ -270,6 +270,8 @@ void main()
        }
     }
   }
-  outFragColor *= texture(baseColorTex,inUV);
-  outFragColor.xyz += globalData.ambientColor;
+
+
+  vec3 albedo = texture(baseColorTex, inUV).rgb;
+  outFragColor = vec4(globalData.ambientColor * albedo,1.0);
 }
