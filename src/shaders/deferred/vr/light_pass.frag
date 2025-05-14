@@ -91,7 +91,7 @@ vec3 SpotLight(vec3 position, vec3 normal) {
     float theta = dot(lightDir, normalize(light.dir));
     vec3 result = vec3(0.0, 0.0, 0.0);
 
-    float directionalIncidence = max(dot(normal, lightDir), 0.0);
+    float directionalIncidence = max(dot(normal, -lightDir), 0.0);
     // Specular
     vec3 viewDirection = normalize(globalData.cameraPos - position);
     vec3 reflectDirection = reflect(-lightDir, normal);
@@ -223,19 +223,12 @@ void main() {
             case 2: // Spot
                 shadow = SpotShadowCalculation(position);
                 lightColor = SpotLight(position, normal);
-                lighting += lightColor * (1.0 - shadow);
+                lighting += lightColor; // * (1.0 - shadow);
                 break;
             default:
                 break;
         }
     }
-    
     outFragColor = vec4(albedo*lighting, 1.0);
-    //outFragColor = vec4(1.0);
 
-		//if((globalData.gbuffer_render_selected & (1<<2)) == (1<<2)){
-		//	outFragColor = texture(baseColorTex,inUV);
-		//}else if((globalData.gbuffer_render_selected & (1 << 1)) == (1 << 1)){
-		//	outFragColor = texture(normalTex,inUV);
-		//}
 }

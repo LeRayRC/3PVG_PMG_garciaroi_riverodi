@@ -57,6 +57,7 @@ public:
 	PipelineBlendMode blend_mode;
 	const char* geometry_shader_path = nullptr;
 	int color_attachments_count = 1;
+	VkCompareOp compare_op = VK_COMPARE_OP_LESS_OR_EQUAL;
 };
 
 class LavaPipeline

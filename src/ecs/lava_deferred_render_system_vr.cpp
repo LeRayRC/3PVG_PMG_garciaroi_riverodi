@@ -200,7 +200,7 @@ void LavaDeferredRenderSystemVR::render(
 
 
 	allocateLights(light_component_vector);
-	updateLights(light_component_vector, transform_vector);
+	updateLights(view_index,light_component_vector, transform_vector);
 
 	renderGeometryPass(view_index,transform_vector, render_vector, light_component_vector);
 	renderShadowMaps(view_index,transform_vector, render_vector, light_component_vector);
@@ -794,7 +794,34 @@ void LavaDeferredRenderSystemVR::allocateLights(std::vector<std::optional<struct
 	}
 }
 
-void LavaDeferredRenderSystemVR::updateLights(std::vector<std::optional<struct LightComponent>>& light_component_vector, std::vector<std::optional<struct TransformComponent>>& transform_vector)
+static std::vector<glm::vec4> getFrustumCornersWorldSpace(const glm::mat4& proj, const glm::mat4& view)
+{
+	const auto inv = glm::inverse(proj * view);
+
+	std::vector<glm::vec4> frustumCorners;
+	for (unsigned int x = 0; x < 2; ++x)
+	{
+		for (unsigned int y = 0; y < 2; ++y)
+		{
+			for (unsigned int z = 0; z < 2; ++z)
+			{
+				const glm::vec4 pt =
+					inv * glm::vec4(
+						2.0f * x - 1.0f,
+						2.0f * y - 1.0f,
+						z,
+						1.0f);
+				frustumCorners.push_back(pt / pt.w);
+			}
+		}
+	}
+
+	return frustumCorners;
+}
+
+void LavaDeferredRenderSystemVR::updateLights(
+	uint32_t view_index,
+	std::vector<std::optional<struct LightComponent>>& light_component_vector, std::vector<std::optional<struct TransformComponent>>& transform_vector)
 {
 	auto light_transform_it = transform_vector.begin();
 	auto light_transform_end = transform_vector.end();
@@ -812,37 +839,96 @@ void LavaDeferredRenderSystemVR::updateLights(std::vector<std::optional<struct L
 
 		LightShaderStruct light_shader_struct = {};
 		light_shader_struct.config(light_it->value(), light_transform_it->value());
+
+
+		//XrMatrix4x4f rotationMatrix;
+		//XrMatrix4x4f_CreateRotation(&rotationMatrix,
+		//	light_transform_it->value().rot_.x,
+		//	light_transform_it->value().rot_.y,
+		//	light_transform_it->value().rot_.z);
+		//
+		//XrVector3f forwardVector = { rotationMatrix.m[8], rotationMatrix.m[9], rotationMatrix.m[10] };
+		//XrVector3f_Normalize(&forwardVector);
+		//
+		//
+		//light_shader_struct.dir[0] = forwardVector.x;
+		//light_shader_struct.dir[1] = forwardVector.y;
+		//light_shader_struct.dir[2] = forwardVector.z;
+
+
 		light_component.light_data_buffer_->updateBufferData(&light_shader_struct, sizeof(LightShaderStruct));
 
 
 		//glm::vec3 forward = CalculateForwardVector(light_transform_it->value().rot_);
 
+		//views_[view_index].fov, 0.05f, 10000.0f
 
 		if (light_component.type_ == LIGHT_TYPE_DIRECTIONAL) {
-			glm::vec3 opp_light_dir = CalculateForwardVector(light_transform_it->value().rot_) * -1.0f;
-			glm::vec3 pos = engine_.main_camera_transform_->pos_ + (opp_light_dir * 20.0f);
-
-			glm::mat4 view = GenerateViewMatrix(
-				pos,
-				light_transform_it->value().rot_
-			);
-
-			float size = 5.0f; // Tamaño del área visible
-			float left = -size;
-			float right = size;
-			float bottom = -size;
-			float top = size;
-			glm::mat4 proj = glm::ortho(left, right, bottom, top, 50.0f, 0.1f);
-			proj[1][1] *= -1;
-			light_component.viewproj_ = proj * view; // THE VIEW IS WRONG IN THIS TYPE OF LIGHT
+			float planeStep = 50.0f * (1.0f / 3.0f);
 			std::vector<glm::mat4> shadowTransforms;
-			shadowTransforms.push_back(light_component.viewproj_);
-			proj = glm::ortho(left * 2.0f, right * 2.0f, bottom * 2.0f, top * 2.0f, 50.0f, 0.1f);
-			proj[1][1] *= -1;
-			shadowTransforms.push_back(proj * view);
-			proj = glm::ortho(left * 3.0f, right * 3.0f, bottom * 3.0f, top * 3.0f, 50.0f, 0.1f);
-			proj[1][1] *= -1;
-			shadowTransforms.push_back(proj * view);
+			
+			VkExtent2D window_extent = {
+				engine_.get_session().get_view_configuration_views()[view_index].recommendedImageRectWidth,
+				engine_.get_session().get_view_configuration_views()[view_index].recommendedImageRectHeight,
+			};
+
+
+			for (int i = 0; i < 3; i++) {
+				glm::mat4 proj = glm::perspective(glm::radians(engine_.views_[view_index].fov.angleDown * 2.0f),
+					static_cast<float>(window_extent.width) / static_cast<float>(window_extent.height), (((float)i) * planeStep) + 0.1f, ((float)(i + 1)) * planeStep);
+				proj[1][1] *= -1.0f;
+
+				std::vector<glm::vec4> corners = getFrustumCornersWorldSpace(proj, engine_.global_scene_data_vector_[view_index].view);
+
+				glm::vec3 center = glm::vec3(0, 0, 0);
+				for (const glm::vec4& v : corners)
+				{
+					center += glm::vec3(v);
+				}
+				center /= corners.size();
+
+				glm::mat4 light_view = GenerateViewMatrix(center, light_transform_it->value().rot_);
+
+				float min_x = std::numeric_limits<float>::max();
+				float max_x = std::numeric_limits<float>::lowest();
+				float min_y = std::numeric_limits<float>::max();
+				float max_y = std::numeric_limits<float>::lowest();
+				float min_z = std::numeric_limits<float>::max();
+				float max_z = std::numeric_limits<float>::lowest();
+				for (const glm::vec4& v : corners)
+				{
+					const glm::vec4 trf = light_view * v;
+					min_x = std::min(min_x, trf.x);
+					max_x = std::max(max_x, trf.x);
+					min_y = std::min(min_y, trf.y);
+					max_y = std::max(max_y, trf.y);
+					min_z = std::min(min_z, trf.z);
+					max_z = std::max(max_z, trf.z);
+				}
+
+				constexpr float z_mult = 100.0f;
+				if (min_z < 0)
+				{
+					min_z *= z_mult;
+				}
+				else
+				{
+					min_z /= z_mult;
+				}
+				if (max_z < 0)
+				{
+					max_z /= z_mult;
+				}
+				else
+				{
+					max_z *= z_mult;
+				}
+
+				glm::mat4 light_projection = glm::ortho(min_x, max_x, max_y, min_y, min_z, max_z);
+				proj[1][1] *= -1;
+				light_component.viewproj_ = light_projection * light_view;
+				shadowTransforms.push_back(light_component.viewproj_);
+			}
 			light_component.light_viewproj_buffer_->updateBufferData(shadowTransforms.data(), sizeof(glm::mat4) * 3);
 		}
 		else if (light_component.type_ == LIGHT_TYPE_SPOT) {
@@ -911,6 +997,9 @@ void LavaDeferredRenderSystemVR::updateLights(std::vector<std::optional<struct L
 		}
 	}
 }
+
+
+
 
 
 

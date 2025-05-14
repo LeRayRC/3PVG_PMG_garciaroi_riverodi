@@ -43,7 +43,7 @@ int main(int argc, char** argv) {
     32, 32, 8.0f, 1.0f, 0.15f, { 20,20 });
 
   for (auto& data : engine.global_scene_data_vector_) {
-    data.ambientColor = glm::vec3(0.2f, 0.2f, 0.2f);
+    data.ambientColor = glm::vec3(0.1f, 0.1f, 0.1f);
   }
 
   size_t avocado_entity;
@@ -67,8 +67,8 @@ int main(int argc, char** argv) {
   }
 
 
+   size_t light_entity = ecs_manager.createEntity();
   {
-    size_t light_entity = ecs_manager.createEntity();
     ecs_manager.addComponent<TransformComponent>(light_entity);
     ecs_manager.addComponent<LightComponent>(light_entity);
 
@@ -77,10 +77,10 @@ int main(int argc, char** argv) {
       auto& light = light_component->value();
       light.enabled_ = true;
       light.type_ = LIGHT_TYPE_SPOT;
-      light.base_color_ = glm::vec3(1.0f, 1.0f, 1.0f);
+      light.base_color_ = glm::vec3(0.6f, 0.6f, 0.6f);
       light.spec_color_ = glm::vec3(0.0f, 0.0f, 0.0f);
-      light.cutoff_ = 34.0f;
-      light.outer_cutoff_ = 56.410f;
+      light.cutoff_ = 85.0f;
+      light.outer_cutoff_ = 90.0f;
       light.constant_att_ = 1.0f;
       light.quad_att_ = 0.112f;
       light.strength_ = 0.28f;
@@ -88,7 +88,7 @@ int main(int argc, char** argv) {
     auto tr_component = ecs_manager.getComponent<TransformComponent>(light_entity);
     if (tr_component) {
       auto& tr = tr_component->value();
-      tr.rot_ = glm::vec3(-110.0f, 0.0f, -0.5f);
+      tr.rot_ = glm::vec3(-110.05f, 0.00f, -0.5f);
       tr.pos_ = glm::vec3(0.03f, 0.06f, -1.68f);
     }
   }
@@ -138,8 +138,14 @@ int main(int argc, char** argv) {
 
   int count = 0;
   while (!engine.shouldClose()) {
-
-
+    auto tr_component = ecs_manager.getComponent<LightComponent>(light_entity);
+    if (tr_component) {
+      auto& tr = tr_component->value();
+      //tr.base_color_.r = 0.2f + ((cosf(count * 0.01f) * 0.5f) + 0.5f);
+      //tr.cutoff_ = ((sinf(count*0.01f) * 0.5f) + 0.5f) * 90.0f;
+      //tr.outer_cutoff_ = tr.cutoff_;
+    }
+    count++;
 
     engine.pollEvents();
     if (engine.is_session_running()) {
