@@ -473,7 +473,7 @@ void LavaEngineVR::updateMainCamera() {
 }
 
 void LavaEngineVR::initGlobalData() {
-  int amount = session_->get_view_configuration_views().size();
+  size_t amount = session_->get_view_configuration_views().size();
   global_scene_data_vector_.resize(amount);
   global_descriptor_set_vector_.resize(amount);
   global_data_buffer_vector_.resize(amount);

@@ -526,7 +526,6 @@ void LavaDeferredRenderSystem::renderGeometryPass(
 			pipeline_geometry_pass_->get_layout(),
 			1, 1, &pbr_descriptor_set, 0, nullptr);
 
-		GPUDrawPushConstants push_constants;
 		glm::mat4 model = glm::mat4(1.0f);
 		model = glm::translate(model, transform_it->value().pos_);
 		model = glm::rotate(model, glm::radians(transform_it->value().rot_.x), glm::vec3(1.0f, 0.0f, 0.0f));
