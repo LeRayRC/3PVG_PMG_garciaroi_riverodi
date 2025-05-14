@@ -24,7 +24,7 @@ struct TransformComponent {
   glm::vec3 pos_ = glm::vec3(0.0f);
   glm::vec3 rot_ = glm::vec3(0.0f);
   glm::vec3 scale_ = glm::vec3(1.0f);
-};
+}; 
 
 struct LuaScriptComponent {
   std::unique_ptr<LavaLuaScript> script_;

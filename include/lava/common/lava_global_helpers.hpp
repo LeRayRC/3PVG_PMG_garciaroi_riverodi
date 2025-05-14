@@ -17,7 +17,7 @@
 #include "lava/engine/lava_engine.hpp"
 #include "lava/ecs/lava_ecs_components.hpp"
 
-static inline glm::mat4 GenerateViewMatrix(glm::vec3& pos, glm::vec3& rot) {
+static inline glm::mat4 GenerateViewMatrix(const glm::vec3& pos, const glm::vec3& rot) {
   float pitch = glm::radians(rot.x); // Rotaci�n en el eje X
   float yaw = glm::radians(rot.y);   // Rotaci�n en el eje Y
   float roll = glm::radians(rot.z);
@@ -46,7 +46,7 @@ static inline glm::vec3 CalculateForwardVector(const glm::vec3& rotation_degrees
 
   //forward = glm::normalize(forward);
 
-  // Crear la matriz de rotación
+  // Crear la matriz de rotación (Creo que esta de reves, por lo menos con respecto a GenerateViewMatrix)
   glm::mat4 rotationMatrix = glm::rotate(glm::mat4(1.0f), yaw, glm::vec3(0, -1, 0)); // Rotación en Y
   rotationMatrix = glm::rotate(rotationMatrix, pitch, glm::vec3(1, 0, 0));         // Rotación en X
 
@@ -150,5 +150,9 @@ static inline void UpdateCameraWithInput(size_t id, LavaECSManager* ecs_manager,
     }
   }
 }
+
+void allocate_lights(std::vector<std::optional<struct LightComponent>>& light_component_vector);
+void update_lights(std::vector<std::optional<struct LightComponent>>& light_component_vector,
+  std::vector<std::optional<struct TransformComponent>>& transform_vector);
 
 #endif // !__LAVA_GLOBAL_HELPERS_H__

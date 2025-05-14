@@ -5,6 +5,7 @@
 #include "lava/ecs/lava_ecs_components.hpp"
 #include "lava/engine/lava_engine.hpp"
 
+
 struct MaterialPBRProperties {
 	std::string name = "PBR_MATERIAL";
 };
@@ -15,7 +16,7 @@ struct LavaPBRMaterialProperties {
 	float roughness_factor_; //Determines the roughness value of the metallic parts of the texture Default value 0.5f
 	float specular_factor_;
 	float opacity_mask_;
-	float use_normal_; //Determines to use 
+	float use_normal_; //Determines to use
 };
 
 
@@ -51,6 +52,13 @@ public:
 		UpdateDescriptorSet();
 	}
 
+	void UpdatePositionImage(std::shared_ptr<class LavaImage> image) {
+		position_ = image;
+		UpdateDescriptorSet();
+	}
+
+	
+
 	void UpdateDescriptorSet();
 
 private:
@@ -63,6 +71,8 @@ private:
 	std::shared_ptr<class LavaImage> opacity_; // If null pick the global opacity mask completely white
 	
 	std::shared_ptr<class LavaImage> normal_; // If null pick the global normal texture
+
+	std::shared_ptr<class LavaImage> position_; // If null doesnt matter, only used in deferred rendering
 
 	LavaPBRMaterialProperties uniform_properties;
 	

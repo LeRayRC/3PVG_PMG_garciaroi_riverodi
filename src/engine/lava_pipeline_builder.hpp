@@ -16,13 +16,13 @@ public:
     VkPipelineLayout _pipeline_layout;
     VkPipelineDepthStencilStateCreateInfo _depth_stencil;
     VkPipelineRenderingCreateInfo _render_info;
-    VkFormat _color_attachmentformat;
+    std::vector<VkFormat> _color_attachmentformat;
 
     PipelineBuilder() { Clear(); }
 
     void Clear();
 
-    VkPipeline BuildPipeline(VkDevice device);
+    VkPipeline BuildPipeline(VkDevice device, int color_attachment_counts);
 
     void SetShaders(VkShaderModule vertex_shader, VkShaderModule fragment_shader);
 
@@ -40,7 +40,7 @@ public:
 
     void EnableBlending(PipelineBlendMode blend_mode);
 
-    void SetColorAttachmentFormat(VkFormat format);
+    void SetColorAttachmentFormat(VkFormat format, int color_attachments_count = 1);
     void DisableColorAttachment(VkFormat format);
 
     void SetDepthFormat(VkFormat format);

@@ -2,10 +2,19 @@
 #include "engine/lava_instance.hpp"
 #include "engine/lava_surface.hpp"
 #include "lava_vulkan_helpers.hpp"
+#include "lava/openxr_common/OpenXRHelper.h"
+#include "vr/lava_instance_vr.hpp"
+#include "vr/lava_binding_vr.hpp"
+#include "vr/lava_helpers_vr.hpp"
 
 LavaDevice::LavaDevice(LavaInstance& instance, LavaSurface& surface){
 	pickPhysicalDevice(instance, surface);
 	createLogicalDevice(surface);
+}
+
+LavaDevice::LavaDevice(LavaInstance& instance, LavaInstanceVR& instance_vr, LavaBindingVR& binding) {
+	pickPhysicalDevice(instance, instance_vr, binding);
+	createLogicalDevice(instance_vr, binding);
 }
 
 LavaDevice::~LavaDevice(){
@@ -39,6 +48,42 @@ void LavaDevice::pickPhysicalDevice(LavaInstance& instance, LavaSurface& surface
 		printf("Physical device is NULL");
 #endif // !NDEBUG
 		exit(-1);
+	}
+}
+
+void LavaDevice::pickPhysicalDevice(LavaInstance& instance, 
+	LavaInstanceVR& instance_vr, LavaBindingVR& binding) {
+	// Physical Device
+	uint32_t physicalDeviceCount = 0;
+	std::vector<VkPhysicalDevice> physicalDevices;
+	std::vector<VkPhysicalDeviceProperties> physicalDevicesProperties;
+
+	VULKAN_CHECK(vkEnumeratePhysicalDevices(instance.get_instance(), &physicalDeviceCount, nullptr), "Failed to enumerate PhysicalDevices.");
+	physicalDevices.resize(physicalDeviceCount);
+	physicalDevicesProperties.resize(physicalDeviceCount);
+	VULKAN_CHECK(vkEnumeratePhysicalDevices(instance.get_instance(), &physicalDeviceCount, physicalDevices.data()), "Failed to enumerate PhysicalDevices.");
+
+	for (int i = 0; i < physicalDevices.size(); i++) {
+		vkGetPhysicalDeviceProperties(physicalDevices[i], &physicalDevicesProperties[i]);
+	}
+
+
+	VkPhysicalDevice physicalDeviceFromXR;
+
+	OPENXR_CHECK_INSTANCE(
+		binding.get_vulkan_graphics_device_binding()(instance_vr.get_instance(), instance_vr.get_system_id(), instance.get_instance(), &physicalDeviceFromXR),
+		"Failed to get Graphics Device for Vulkan.",
+		instance_vr.get_instance()
+		);
+
+	auto physicalDeviceFromXR_it = std::find(physicalDevices.begin(), physicalDevices.end(), physicalDeviceFromXR);
+	if (physicalDeviceFromXR_it != physicalDevices.end()) {
+		physical_device_ = *physicalDeviceFromXR_it;
+	}
+	else {
+		std::cout << "ERROR: Vulkan: Failed to find PhysicalDevice for OpenXR." << std::endl;
+		// Select the first available device.
+		physical_device_ = physicalDevices[0];
 	}
 }
 
@@ -82,9 +127,9 @@ void LavaDevice::createLogicalDevice(LavaSurface& surface) {
 	buffer_device_address_feature_info.pNext = &dynamic_rendering_feature;
 
 	//Habilitar indexacion de descriptores
-	VkPhysicalDeviceDescriptorIndexingFeatures indexing_features = {};
-	indexing_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES;
-	indexing_features.pNext = &buffer_device_address_feature_info;
+	//VkPhysicalDeviceDescriptorIndexingFeatures indexing_features = {};
+	//indexing_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES;
+	//indexing_features.pNext = &buffer_device_address_feature_info;
 
 	VkPhysicalDeviceFeatures2 device_features{};
 	device_features.sType =
@@ -94,13 +139,6 @@ void LavaDevice::createLogicalDevice(LavaSurface& surface) {
 	vkGetPhysicalDeviceFeatures2(physical_device_, &device_features);
 
 
-
-	// 2. Verificar si la característica está soportada
-	//if (!indexing_features.descriptorBindingSampledImageUpdateAfterBind) {
-	//	throw std::runtime_error("descriptorBindingSampledImageUpdateAfterBind not supported.");
-	//}
-
-	
 
 	/*
 	* Ahora se rellena la estructura para crear el dispositivo logico
@@ -117,10 +155,6 @@ void LavaDevice::createLogicalDevice(LavaSurface& surface) {
 	sync2Info.sType =
 		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES;
 	sync2Info.synchronization2 = VK_TRUE;
-
-	VkPhysicalDeviceDescriptorIndexingFeatures enabled_indexing_features = {};
-	enabled_indexing_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES;
-	enabled_indexing_features.descriptorBindingSampledImageUpdateAfterBind = VK_TRUE;
 
 	createInfo.pNext = &sync2Info;
 	sync2Info.pNext = &device_features;
@@ -139,4 +173,110 @@ void LavaDevice::createLogicalDevice(LavaSurface& surface) {
 	vkGetDeviceQueue(device_, indices.graphicsFamily.value(), 0, &graphics_queue_);
 	vkGetDeviceQueue(device_, indices.presentFamily.value(), 0, &present_queue_);
 	vkGetDeviceQueue(device_, indices.graphicsFamily.value(), 1, &transfer_queue_);
+}
+
+void LavaDevice::createLogicalDevice(LavaInstanceVR& instance_vr,LavaBindingVR& binding) {
+	// Device
+	std::vector<VkQueueFamilyProperties> queueFamilyProperties;
+	uint32_t queueFamilyPropertiesCount = 0;
+	vkGetPhysicalDeviceQueueFamilyProperties(physical_device_, &queueFamilyPropertiesCount, nullptr);
+	queueFamilyProperties.resize(queueFamilyPropertiesCount);
+	vkGetPhysicalDeviceQueueFamilyProperties(physical_device_, &queueFamilyPropertiesCount, queueFamilyProperties.data());
+
+	std::vector<VkDeviceQueueCreateInfo> deviceQueueCIs;
+	std::vector<std::vector<float>> queuePriorities;
+	queuePriorities.resize(queueFamilyProperties.size());
+	deviceQueueCIs.resize(queueFamilyProperties.size());
+	for (size_t i = 0; i < deviceQueueCIs.size(); i++) {
+		for (size_t j = 0; j < queueFamilyProperties[i].queueCount; j++)
+			queuePriorities[i].push_back(1.0f);
+
+		deviceQueueCIs[i].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+		deviceQueueCIs[i].pNext = nullptr;
+		deviceQueueCIs[i].flags = 0;
+		deviceQueueCIs[i].queueFamilyIndex = static_cast<uint32_t>(i);
+		deviceQueueCIs[i].queueCount = queueFamilyProperties[i].queueCount;
+		deviceQueueCIs[i].pQueuePriorities = queuePriorities[i].data();
+
+		if (BitwiseCheck(queueFamilyProperties[i].queueFlags, VkQueueFlags(VK_QUEUE_GRAPHICS_BIT)) && queue_family_index_ == 0xFFFFFFFF && queue_index_ == 0xFFFFFFFF) {
+			queue_family_index_ = static_cast<uint32_t>(i);
+			queue_index_ = 0;
+		}
+	}
+
+	std::vector<const char*> activeDeviceExtensions{};
+
+
+	uint32_t device_extension_count = 0;
+	VULKAN_CHECK(vkEnumerateDeviceExtensionProperties(physical_device_, 0, &device_extension_count, 0), "Failed to enumerate DeviceExtensionProperties.");
+	std::vector<VkExtensionProperties> device_extension_properties;
+	device_extension_properties.resize(device_extension_count);
+
+	//VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+	//	VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
+	//	VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME,
+
+
+	VULKAN_CHECK(vkEnumerateDeviceExtensionProperties(physical_device_, 0, &device_extension_count, device_extension_properties.data()), "Failed to enumerate DeviceExtensionProperties.");
+	const std::vector<std::string>& openXrDeviceExtensionNames = GetDeviceExtensionsForOpenXR(instance_vr, binding);
+	for (const std::string& requestExtension : openXrDeviceExtensionNames) {
+		for (const VkExtensionProperties& extensionProperty : device_extension_properties) {
+			if (strcmp(requestExtension.c_str(), extensionProperty.extensionName))
+				continue;
+			else
+				activeDeviceExtensions.push_back(requestExtension.c_str());
+			break;
+		}
+	}
+
+	for (auto extension : required_device_extensions_) {
+		activeDeviceExtensions.push_back(extension);
+	}
+
+
+	VkPhysicalDeviceDynamicRenderingFeaturesKHR dynamic_rendering_feature{
+		.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES_KHR,
+		.dynamicRendering = VK_TRUE,
+	};
+
+	VkPhysicalDeviceBufferDeviceAddressFeatures buffer_device_address_feature_info;
+	buffer_device_address_feature_info.bufferDeviceAddress = VK_TRUE;
+	buffer_device_address_feature_info.bufferDeviceAddressCaptureReplay = VK_FALSE;
+	buffer_device_address_feature_info.bufferDeviceAddressMultiDevice = VK_FALSE;
+	buffer_device_address_feature_info.sType =
+		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES;
+	buffer_device_address_feature_info.pNext = &dynamic_rendering_feature;
+
+	VkPhysicalDeviceFeatures2 device_features{};
+	device_features.sType =
+		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+	device_features.pNext = &buffer_device_address_feature_info;
+
+	vkGetPhysicalDeviceFeatures2(physical_device_, &device_features);
+
+
+	VkDeviceCreateInfo deviceCI = {};
+	deviceCI.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+	deviceCI.pNext = nullptr;
+	deviceCI.flags = 0;
+	deviceCI.queueCreateInfoCount = static_cast<uint32_t>(deviceQueueCIs.size());
+	deviceCI.pQueueCreateInfos = deviceQueueCIs.data();
+	deviceCI.enabledLayerCount = 0;
+	deviceCI.ppEnabledLayerNames = nullptr;
+	deviceCI.enabledExtensionCount = static_cast<uint32_t>(activeDeviceExtensions.size());
+	deviceCI.ppEnabledExtensionNames = activeDeviceExtensions.data();
+
+
+	VkPhysicalDeviceSynchronization2Features sync2Info{};
+	sync2Info.sType =
+		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES;
+	sync2Info.synchronization2 = VK_TRUE;
+
+	deviceCI.pNext = &sync2Info;
+	sync2Info.pNext = &device_features;
+
+	VULKAN_CHECK(vkCreateDevice(physical_device_, &deviceCI, nullptr, &device_), "Failed to create Device.");
+
+	vkGetDeviceQueue(device_, queue_family_index_, queue_index_, &graphics_queue_);
+
 }

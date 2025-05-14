@@ -22,7 +22,7 @@ void PipelineBuilder::Clear()
     _shader_stages.clear();
 }
 
-VkPipeline PipelineBuilder::BuildPipeline(VkDevice device)
+VkPipeline PipelineBuilder::BuildPipeline(VkDevice device, int color_attachments_count)
 {
     // make viewport state from our stored viewport and scissor.
     // at the moment we wont support multiple viewports or scissors
@@ -41,8 +41,12 @@ VkPipeline PipelineBuilder::BuildPipeline(VkDevice device)
 
     color_blending.logicOpEnable = VK_FALSE;
     color_blending.logicOp = VK_LOGIC_OP_COPY;
-    color_blending.attachmentCount = 1;
-    color_blending.pAttachments = &_color_blend_attachment;
+    color_blending.attachmentCount = color_attachments_count;
+    std::vector<VkPipelineColorBlendAttachmentState> color_blend_attachments;
+    for (int i = 0; i < color_attachments_count; i++) {
+      color_blend_attachments.push_back(_color_blend_attachment);
+    }
+    color_blending.pAttachments = color_blend_attachments.data();
 
     // completely clear VertexInputStateCreateInfo, as we have no need for it
     VkPipelineVertexInputStateCreateInfo _vertex_input_info = { .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO };
@@ -211,16 +215,19 @@ void PipelineBuilder::EnableBlending(PipelineBlendMode blend_mode){
 
 }
 
-void PipelineBuilder::SetColorAttachmentFormat(VkFormat format)
+void PipelineBuilder::SetColorAttachmentFormat(VkFormat format, int color_attachments_count)
 {
-    _color_attachmentformat = format;
+    _color_attachmentformat.clear();
+    for (int i = 0; i < color_attachments_count; i++) {
+      _color_attachmentformat.push_back(format);
+    }
     // connect the format to the renderInfo  structure
-    _render_info.colorAttachmentCount = 1;
-    _render_info.pColorAttachmentFormats = &_color_attachmentformat;
+    _render_info.colorAttachmentCount = color_attachments_count;
+    _render_info.pColorAttachmentFormats = _color_attachmentformat.data();
 }
 
 void PipelineBuilder::DisableColorAttachment(VkFormat format) {
-  _color_attachmentformat = format;
+  //_color_attachmentformat = format;
   // connect the format to the renderInfo  structure
   _render_info.colorAttachmentCount = 0;
   _render_info.pColorAttachmentFormats = nullptr;

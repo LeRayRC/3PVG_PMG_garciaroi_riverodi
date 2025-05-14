@@ -3,6 +3,16 @@
 
 #include "lava/common/lava_types.hpp"
 
+
+#define VULKAN_CHECK(x, y)                                                                         \
+    {                                                                                              \
+        VkResult result = (x);                                                                     \
+        if (result != VK_SUCCESS) {                                                                \
+            std::cout << "ERROR: VULKAN: " << std::hex << "0x" << result << std::dec << std::endl; \
+            std::cout << "ERROR: VULKAN: " << y << std::endl;                                      \
+        }                                                                                          \
+    }
+
 struct QueueFamilyIndices {
 	//Familia para lanzar comandos de graficos
 	std::optional<uint32_t> graphicsFamily;
@@ -82,5 +92,13 @@ std::vector<char> ReadFile(const std::string& filename);
 
 bool IsDeviceSuitable(VkPhysicalDevice device, VkSurfaceKHR surface, 
 	const std::vector<const char*> required_device_extensions);
+
+void AdvancedTransitionImage(VkCommandBuffer cmd, VkImage image,
+	VkImageLayout oldLayout, VkImageLayout newLayout,
+	VkImageAspectFlags aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+	uint32_t baseMipLevel = 0, uint32_t mipLevelCount = 1,
+	uint32_t baseArrayLayer = 0, uint32_t layerCount = 1);
+
+
 
 #endif // !__CUSTOM_VULKAN_HELPERS_H

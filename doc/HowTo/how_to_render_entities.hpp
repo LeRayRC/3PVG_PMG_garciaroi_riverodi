@@ -68,5 +68,26 @@
  * @endcode
  * 
  * 
+ * @section section_render_entities_call_diffuse_system Diffuse Render System
+ * 
+ * There is also a render system that only renders the diffuse texture of every entity with transform and render components
+ *  
+ * @code {.cpp}
+ * 
+ * LavaEngine engine;
+ * LavaDiffuseRenderSystem diffuse_render_system{engine};
+ * while (!engine.shouldClose()) {
+ *
+ *	engine.beginFrame();
+ *	engine.clearWindow();
+ *
+ *	diffuse_render_system.render(ecs_manager.getComponentList<TransformComponent>(),
+ *		ecs_manager.getComponentList<RenderComponent>());
+ *
+ *	ecs_render_imgui(ecs_manager, camera_entity);
+ *
+ *	engine.endFrame();
+ * }
+ * @endcode
  * 
  */

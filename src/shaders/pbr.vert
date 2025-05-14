@@ -74,9 +74,6 @@ void main()
 	outUV.y = v.uv_y;
 	outNormal = normalize(PushConstants.render_matrix * vec4(v.normal,0.0)).xyz;
 
-	//Light pos space 
-	fragPosLightSpace = light_viewproj.viewproj[0] * pos;
-
 	//Normal Mapping Calculations
     vec3 T = normalize(vec3(PushConstants.render_matrix * vec4(v.tangent,   0.0)));
     vec3 B = normalize(vec3(PushConstants.render_matrix * vec4(v.bitangent, 0.0)));

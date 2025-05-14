@@ -1,0 +1,178 @@
+{
+    "asset" : {
+        "generator" : "Khronos glTF Blender I/O v3.4.50",
+        "version" : "2.0"
+    },
+    "scene" : 0,
+    "scenes" : [
+        {
+            "name" : "Scene",
+            "nodes" : [
+                1
+            ]
+        }
+    ],
+    "nodes" : [
+        {
+            "mesh" : 0,
+            "name" : "itf_body",
+            "translation" : [
+                8.741135388845578e-05,
+                0.042525891214609146,
+                0.00017013403703458607
+            ]
+        },
+        {
+            "children" : [
+                0
+            ],
+            "name" : "itfigurine_grp",
+            "scale" : [
+                100,
+                100,
+                100
+            ]
+        }
+    ],
+    "materials" : [
+        {
+            "doubleSided" : true,
+            "name" : "itfbody_mat.001",
+            "normalTexture" : {
+                "index" : 0
+            },
+            "occlusionTexture" : {
+                "index" : 1
+            },
+            "pbrMetallicRoughness" : {
+                "baseColorTexture" : {
+                    "index" : 2
+                },
+                "metallicRoughnessTexture" : {
+                    "index" : 1
+                }
+            }
+        }
+    ],
+    "meshes" : [
+        {
+            "name" : "Mesh",
+            "primitives" : [
+                {
+                    "attributes" : {
+                        "POSITION" : 0,
+                        "TEXCOORD_0" : 1,
+                        "NORMAL" : 2
+                    },
+                    "indices" : 3,
+                    "material" : 0
+                }
+            ]
+        }
+    ],
+    "textures" : [
+        {
+            "sampler" : 0,
+            "source" : 0
+        },
+        {
+            "sampler" : 0,
+            "source" : 1
+        },
+        {
+            "sampler" : 0,
+            "source" : 2
+        }
+    ],
+    "images" : [
+        {
+            "mimeType" : "image/png",
+            "name" : "itfigurine_itfbody_Mat_Normal",
+            "uri" : "itfigurine_itfbody_Mat_Normal.png"
+        },
+        {
+            "mimeType" : "image/png",
+            "name" : "itfigurine_itfbody_Mat_AO-itfigurine_itfbody_Mat_Roughness-itfigurine_itfbody_Mat_Metallic",
+            "uri" : "itfigurine_itfbody_Mat_AO-itfigurine_itfbody_Mat_Roughness-itfigurine_itfbody_Mat_Metallic.png"
+        },
+        {
+            "mimeType" : "image/png",
+            "name" : "itfigurine_itfbody_Mat_BaseColor",
+            "uri" : "itfigurine_itfbody_Mat_BaseColor.png"
+        }
+    ],
+    "accessors" : [
+        {
+            "bufferView" : 0,
+            "componentType" : 5126,
+            "count" : 3005,
+            "max" : [
+                0.0239089522510767,
+                0.04243583604693413,
+                0.028380583971738815
+            ],
+            "min" : [
+                -0.0239089522510767,
+                -0.04243583604693413,
+                -0.028380583971738815
+            ],
+            "type" : "VEC3"
+        },
+        {
+            "bufferView" : 1,
+            "componentType" : 5126,
+            "count" : 3005,
+            "type" : "VEC2"
+        },
+        {
+            "bufferView" : 2,
+            "componentType" : 5126,
+            "count" : 3005,
+            "type" : "VEC3"
+        },
+        {
+            "bufferView" : 3,
+            "componentType" : 5123,
+            "count" : 16944,
+            "type" : "SCALAR"
+        }
+    ],
+    "bufferViews" : [
+        {
+            "buffer" : 0,
+            "byteLength" : 36060,
+            "byteOffset" : 0,
+            "target" : 34962
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 24040,
+            "byteOffset" : 36060,
+            "target" : 34962
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 36060,
+            "byteOffset" : 60100,
+            "target" : 34962
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 33888,
+            "byteOffset" : 96160,
+            "target" : 34963
+        }
+    ],
+    "samplers" : [
+        {
+            "magFilter" : 9729,
+            "minFilter" : 9987
+        }
+    ],
+    "buffers" : [
+        {
+            "byteLength" : 130048,
+            "uri" : "itfigurine_v3.bin"
+        }
+    ]
+}

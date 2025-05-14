@@ -8,6 +8,7 @@
 #include "lava/ecs/lava_update_system.hpp"
 #include "lava/ecs/lava_normal_render_system.hpp"
 #include "lava/ecs/lava_diffuse_render_system.hpp"
+#include "lava/ecs/lava_deferred_render_system.hpp"
 #include "lava/common/lava_shapes.hpp"
 #include "lava/engine/lava_image.hpp"
 #include "imgui.h"
@@ -101,31 +102,64 @@ void ecs_light_imgui(std::vector<std::optional<TransformComponent>>& transform_v
 }
 
 
+void DeferredRenderMode(LavaEngine& engine) {
+	ImGui::Begin("Deferred Render Selector");
+
+	static bool albedo, normal;
+	if(ImGui::Checkbox("Albedo", &albedo)){
+		if (albedo) {
+			engine.global_scene_data_.gbuffer_render_selected = GBUFFER_ALBEDO;
+		}
+		else {
+			engine.global_scene_data_.gbuffer_render_selected = GBUFFER_NORMAL;
+		}
+		normal = !albedo;
+	}
+	if(ImGui::Checkbox("Normal", &normal)){
+		if (normal) {
+			engine.global_scene_data_.gbuffer_render_selected = GBUFFER_NORMAL;
+		}
+		else {
+			engine.global_scene_data_.gbuffer_render_selected = GBUFFER_ALBEDO;
+		}
+		albedo = !normal;
+	}
+
+	ImGui::ColorEdit3("Ambient color", &engine.global_scene_data_.ambientColor.x);
+
+	ImGui::End();
+}
+
+
 int main(int argc, char* argv[]) {
 	std::shared_ptr<LavaWindowSystem>  lava_system = LavaWindowSystem::Get();
-	LavaEngine engine(1920,1080);
+	LavaEngine engine(1280,720);
 	LavaECSManager ecs_manager;
 	LavaPBRRenderSystem pbr_render_system{ engine };
 	LavaNormalRenderSystem normal_render_system{ engine };
 	LavaDiffuseRenderSystem diffuse_render_system{ engine };
+	LavaDeferredRenderSystem deferred_render_system{ engine };
 	LavaUpdateSystem update_system{ engine };
 
 	LavaPBRMaterial basic_material(engine, MaterialPBRProperties());
 	MeshProperties mesh_properties = {};
+
 	mesh_properties.mesh_path = "../examples/assets/Avocado.glb";
 	mesh_properties.material = &basic_material;
 
-	std::shared_ptr<LavaMesh> mesh_ = std::make_shared<LavaMesh>(engine, mesh_properties);
 
 	std::shared_ptr<LavaImage> sun_texture = std::make_shared<LavaImage>(&engine, "../examples/assets/textures/sun.jpg");
 	std::shared_ptr<LavaImage> forest_texture = std::make_shared<LavaImage>(&engine, "../examples/assets/textures/forest.png");
+
+
+	std::shared_ptr<LavaMesh> mesh_ = std::make_shared<LavaMesh>(engine, mesh_properties);
 
 	LavaPBRMaterial cube_material(engine, MaterialPBRProperties());
 	std::shared_ptr<LavaMesh> cube_mesh = CreateCube24v(engine, &cube_material);
 
 
 	LavaPBRMaterial sphere_material(engine, MaterialPBRProperties());
-	sphere_material.UpdateBaseColorImage(sun_texture);
+	//sphere_material.UpdateBaseColorImage(sun_texture);
 	std::shared_ptr<LavaMesh> sphere_mesh = CreateSphere(engine, &sphere_material);
 
 	LavaPBRMaterial terrain_material(engine, MaterialPBRProperties());
@@ -134,8 +168,7 @@ int main(int argc, char* argv[]) {
 	std::shared_ptr<LavaMesh> terrain_mesh = CreateTerrain(engine, &terrain_material, 
 		32,32,8.0f,1.0f, 0.15f, {20,20});
 
-	//Needs to be call every time an image or property is updated and before rendering begins
-	basic_material.UpdateDescriptorSet();
+
 
 	{
 		size_t entity = ecs_manager.createEntity();
@@ -167,7 +200,7 @@ int main(int argc, char* argv[]) {
 		if (transform_component) {
 			auto& transform = transform_component->value();
 			transform.pos_ = glm::vec3(0.0f, 0.0f, -2.0f);
-			transform.scale_ = glm::vec3(10.0f, 10.0f, 10.0f);
+			transform.scale_ = glm::vec3(20.0f, 20.0f, 20.0f);
 		}
 
 		auto render_component = ecs_manager.getComponent<RenderComponent>(entity);
@@ -241,7 +274,7 @@ int main(int argc, char* argv[]) {
 	//	if (light_component) {
 	//		auto& light = light_component->value();
 	//		light.enabled_ = true;
-	//		light.type_ = LIGHT_TYPE_SPOT;
+	//		light.type_ = LIGHT_TYPE_DIRECTIONAL;
 	//		light.base_color_ = glm::vec3(1.0f, 1.0f, 1.0f);
 	//		light.spec_color_ = glm::vec3(0.0f, 0.0f, 0.0f);
 	//	}
@@ -251,29 +284,30 @@ int main(int argc, char* argv[]) {
 	//		tr.rot_ = glm::vec3(0.0f, 0.0f, 0.0f);
 	//		tr.pos_ = glm::vec3(0.0f, 0.0f, 0.0f);
 	//	}
-
 	//}
-	//{
-	//	size_t light_entity = ecs_manager.createEntity();
-	//	ecs_manager.addComponent<TransformComponent>(light_entity);
-	//	ecs_manager.addComponent<LightComponent>(light_entity);
 
-	//	auto light_component = ecs_manager.getComponent<LightComponent>(light_entity);
-	//	if (light_component) {
-	//		auto& light = light_component->value();
-	//		light.enabled_ = true;
-	//		light.type_ = LIGHT_TYPE_SPOT;
-	//		light.base_color_ = glm::vec3(1.0f, 1.0f, 1.0f);
-	//		light.spec_color_ = glm::vec3(0.0f, 0.0f, 0.0f);
-	//	}
-	//	auto tr_component = ecs_manager.getComponent<TransformComponent>(light_entity);
-	//	if (tr_component) {
-	//		auto& tr = tr_component->value();
-	//		tr.rot_ = glm::vec3(0.0f, 0.0f, 0.0f);
-	//		tr.pos_ = glm::vec3(0.0f, 0.0f, 0.0f);
-	//	}
 
-	//}
+	{
+		size_t light_entity = ecs_manager.createEntity();
+		ecs_manager.addComponent<TransformComponent>(light_entity);
+		ecs_manager.addComponent<LightComponent>(light_entity);
+
+		auto light_component = ecs_manager.getComponent<LightComponent>(light_entity);
+		if (light_component) {
+			auto& light = light_component->value();
+			light.enabled_ = true;
+			light.type_ = LIGHT_TYPE_SPOT;
+			light.base_color_ = glm::vec3(1.0f, 1.0f, 1.0f);
+			light.spec_color_ = glm::vec3(0.0f, 0.0f, 0.0f);
+		}
+		auto tr_component = ecs_manager.getComponent<TransformComponent>(light_entity);
+		if (tr_component) {
+			auto& tr = tr_component->value();
+			tr.rot_ = glm::vec3(0.0f, 0.0f, 0.0f);
+			tr.pos_ = glm::vec3(0.0f, 0.0f, 0.0f);
+		}
+
+	}
 	
 	//Create Camera entity
 	size_t camera_entity = ecs_manager.createEntity();
@@ -314,10 +348,16 @@ int main(int argc, char* argv[]) {
 
 		//pbr_render_system.renderWithShadows(ecs_manager.getComponentList<TransformComponent>(),
 		//	ecs_manager.getComponentList<RenderComponent>(), ecs_manager.getComponentList<LightComponent>());
-		diffuse_render_system.render(ecs_manager.getComponentList<TransformComponent>(),
-			ecs_manager.getComponentList<RenderComponent>());
+		//diffuse_render_system.render(ecs_manager.getComponentList<TransformComponent>(),
+		//	ecs_manager.getComponentList<RenderComponent>());
+
+		deferred_render_system.render(ecs_manager.getComponentList<TransformComponent>(),
+			ecs_manager.getComponentList<RenderComponent>(), ecs_manager.getComponentList<LightComponent>());
 
 		ecs_render_imgui(ecs_manager, camera_entity);
+		ecs_light_imgui(ecs_manager.getComponentList<TransformComponent>(),
+			ecs_manager.getComponentList<LightComponent>());
+		DeferredRenderMode(engine);
 
 		engine.endFrame();
 	}

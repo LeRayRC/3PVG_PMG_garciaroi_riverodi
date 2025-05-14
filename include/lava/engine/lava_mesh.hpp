@@ -71,7 +71,7 @@ public:
 	LavaPBRMaterial* get_material() { return material_; };
 	bool isLoaded() const { return is_loaded_; }
 	std::shared_ptr<MeshAsset> mesh_;
-	std::shared_ptr<class LavaImage> loadImage(LavaEngine* engine, fastgltf::Asset& asset, fastgltf::Image& image);
+	std::shared_ptr<class LavaImage> loadImage(LavaEngine* engine, fastgltf::Asset& asset, fastgltf::Image& image, std::filesystem::path);
 
 
 private:

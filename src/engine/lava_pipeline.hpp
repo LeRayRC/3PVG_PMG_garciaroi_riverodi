@@ -38,12 +38,31 @@ public:
 	int pipeline_flags;
 	PipelineBlendMode blend_mode;
 	const char* geometry_shader_path = nullptr;
+	int color_attachments_count = 1;
+	VkCompareOp compare_op = VK_COMPARE_OP_GREATER_OR_EQUAL;
+};
+
+struct PipelineConfigVR {
+public:
+	PipelineType type;
+	const char* vertex_shader_path;
+	const char* fragment_shader_path;
+	class LavaDevice* device;
+	class LavaSwapchainVR* swap_chain;
+	class LavaDescriptorManager* descriptor_manager;
+	VkDescriptorSetLayout global_descriptor_set_layout;
+	VkDescriptorSetLayout global_pbr_descriptor_set_layout;
+	VkDescriptorSetLayout global_lights_descriptor_set_layout;
+	int pipeline_flags;
+	PipelineBlendMode blend_mode;
+	const char* geometry_shader_path = nullptr;
+	int color_attachments_count = 1;
 };
 
 class LavaPipeline
 {
 public:
-
+	LavaPipeline(PipelineConfigVR config);
 	LavaPipeline(PipelineConfig config);
 	~LavaPipeline();
 

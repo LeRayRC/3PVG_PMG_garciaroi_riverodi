@@ -1,4 +1,4 @@
-#include "lava/ecs/lava_pbr_render_system.hpp"
+ #include "lava/ecs/lava_pbr_render_system.hpp"
 
 #include "lava/engine/lava_engine.hpp"
 #include "engine/lava_vulkan_inits.hpp"
@@ -50,7 +50,7 @@ LavaPBRRenderSystem::LavaPBRRenderSystem(LavaEngine &engine) :
 													engine_.global_lights_descriptor_set_layout_,
 													PipelineFlags::PIPELINE_USE_PUSHCONSTANTS | PipelineFlags::PIPELINE_USE_DESCRIPTOR_SET | PipelineFlags::PIPELINE_DONT_USE_COLOR_ATTACHMENT,
 													PipelineBlendMode::PIPELINE_BLEND_ONE_ZERO,
-													"../src/shaders/directional_shadows.geom.spv")), 
+													"../src/shaders/directional_shadows.geom.spv", 1, VK_COMPARE_OP_LESS_OR_EQUAL)),
 
 					   std::make_unique<LavaPipeline>(PipelineConfig(
 													PIPELINE_TYPE_SHADOW,
@@ -81,8 +81,8 @@ LavaPBRRenderSystem::LavaPBRRenderSystem(LavaEngine &engine) :
 
 {
 	VkExtent3D draw_image_extent = {
-		4096,
-		4096,
+		2048*2,
+		2048*2,
 		1
 	};
 
@@ -323,7 +323,7 @@ void LavaPBRRenderSystem::renderWithShadows(
 			VkClearValue clear_value;
 			clear_value.color = { 0.0f,0.0f,0.0f,0.0f };
 			VkRenderingAttachmentInfo color_attachment = vkinit::AttachmentInfo(engine_.swap_chain_->get_draw_image().image_view, NULL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-			VkRenderingAttachmentInfo depth_attachment = vkinit::DepthAttachmentInfo(current_shadowmap_image_view, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
+			VkRenderingAttachmentInfo depth_attachment = vkinit::DepthAttachmentInfo(current_shadowmap_image_view, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR, (light_index == 0) ? 1.0f : 0.0f);
 			int layers = 1;
 			if (light_index == 0) layers = 3;
 			else if (light_index == 1)layers = 6;
@@ -419,7 +419,7 @@ void LavaPBRRenderSystem::renderWithShadows(
 			VkRenderingAttachmentInfo depth_attachment;
 			if (lights_rendered < 1) {
 				VkClearValue clear_value;
-				clear_value.color = { 1.0f,1.0f,1.0f,1.0f };
+				clear_value.color = { 0.0f,0.0f,0.0f,0.0f };
 				color_attachment = vkinit::AttachmentInfo(engine_.swap_chain_->get_draw_image().image_view, &clear_value, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 				depth_attachment = vkinit::DepthAttachmentInfo(engine_.swap_chain_->get_depth_image().image_view, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
 			}
@@ -439,6 +439,7 @@ void LavaPBRRenderSystem::renderWithShadows(
 		else {
 			active_pipeline = pipeline_first_light_.get();
 		}
+
 		vkCmdBindPipeline(engine_.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, active_pipeline->get_pipeline());
 
 		vkCmdBindDescriptorSets(engine_.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -596,7 +597,7 @@ static std::vector<glm::vec4> getFrustumCornersWorldSpace(const glm::mat4& proj,
 					inv * glm::vec4(
 						2.0f * x - 1.0f,
 						2.0f * y - 1.0f,
-						2.0f * z - 1.0f,
+						z,
 						1.0f);
 				frustumCorners.push_back(pt / pt.w);
 			}
@@ -605,6 +606,7 @@ static std::vector<glm::vec4> getFrustumCornersWorldSpace(const glm::mat4& proj,
 
 	return frustumCorners;
 }
+
 
 void LavaPBRRenderSystem::update_lights(std::vector<std::optional<struct LightComponent>>& light_component_vector, std::vector<std::optional<struct TransformComponent>>& transform_vector)
 {
@@ -633,12 +635,12 @@ void LavaPBRRenderSystem::update_lights(std::vector<std::optional<struct LightCo
 		if (light_component.type_ == LIGHT_TYPE_DIRECTIONAL) {
 
 			float planeStep = engine_.main_camera_camera_->near_ * (1.0f / 3.0f);
-			glm::vec3 light_dir = CalculateForwardVector(light_transform_it->value().rot_);
 			std::vector<glm::mat4> shadowTransforms;
 			
 			for (int i = 0; i < 3; i++) {
 				glm::mat4 proj = glm::perspective(glm::radians(engine_.main_camera_camera_->fov_),
 					(float)engine_.window_extent_.width / (float)engine_.window_extent_.height, (((float)i) * planeStep) + 0.1f, ((float)(i + 1)) * planeStep);
+				proj[1][1] *= -1.0f;
 
 				std::vector<glm::vec4> corners = getFrustumCornersWorldSpace(proj, engine_.main_camera_camera_->view_);
 
@@ -649,11 +651,13 @@ void LavaPBRRenderSystem::update_lights(std::vector<std::optional<struct LightCo
 				}
 				center /= corners.size();
 
-				glm::mat4 light_view = glm::lookAt(
-					center + light_dir,
-					center,
-					glm::vec3(0.0f, 1.0f, 0.0f)
-				);
+				glm::mat4 light_view = GenerateViewMatrix(center, light_transform_it->value().rot_); //Tengo dudas (dir o -dir)
+
+				//glm::mat4 light_view = glm::lookAt(
+				//	center - CalculateForwardVector(light_transform_it->value().rot_),
+				//	center,
+				//	glm::vec3(0.0f, 1.0f, 0.0f)
+				//);
 
 				float min_x = std::numeric_limits<float>::max();
 				float max_x = std::numeric_limits<float>::lowest();
@@ -690,11 +694,11 @@ void LavaPBRRenderSystem::update_lights(std::vector<std::optional<struct LightCo
 					max_z *= z_mult;
 				}
 
-				const glm::mat4 light_projection = glm::ortho(min_x, max_x, min_y, max_y, min_z, max_z);
-
-				shadowTransforms.push_back(light_projection * light_view);
+				glm::mat4 light_projection = glm::ortho(min_x, max_x, max_y, min_y, min_z, max_z);
+				proj[1][1] *= -1;
+				light_component.viewproj_ = light_projection * light_view;
+				shadowTransforms.push_back(light_component.viewproj_);
 			}
-
 			light_component.light_viewproj_buffer_->updateBufferData(shadowTransforms.data(), sizeof(glm::mat4) * 3);
 		}
 		else if (light_component.type_ == LIGHT_TYPE_SPOT) {

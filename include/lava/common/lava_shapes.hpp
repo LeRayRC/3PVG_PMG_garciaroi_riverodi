@@ -5,6 +5,9 @@
 #include "lava/engine/lava_engine.hpp"
 #include "lava/engine/lava_mesh.hpp"
 
+std::shared_ptr<LavaMesh> CreateQuad(LavaEngine& engine,
+  class LavaPBRMaterial* material, float size = 1.0f);
+
 std::shared_ptr<LavaMesh> CreateCube8v(LavaEngine& engine, 
   class LavaPBRMaterial* material , float size = 0.1f);
 

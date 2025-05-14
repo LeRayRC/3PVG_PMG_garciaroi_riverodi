@@ -14,6 +14,9 @@ namespace vkinit {
 
   VkImageCreateInfo ImageCreateInfo(VkFormat format, VkImageUsageFlags usageFlags, VkExtent3D extent, int layers = 1);
   VkImageViewCreateInfo ImageViewCreateInfo(VkFormat format, VkImage image, VkImageAspectFlags aspectFlags, int layers = 1);
+  VkImageViewCreateInfo ImageViewCreateInfo(VkImageViewType view_type, VkFormat format, VkImage image, VkImageAspectFlags aspectFlags, int layers = 1);
+
+
 
   VkCommandBufferBeginInfo CommandBufferBeginInfo(VkCommandBufferUsageFlags flags = 0);
   VkRenderingAttachmentInfo AttachmentInfo(
@@ -23,7 +26,13 @@ namespace vkinit {
     VkRenderingAttachmentInfo* depth_attachment, int layers = 1);
 
   VkRenderingAttachmentInfo DepthAttachmentInfo(
-    VkImageView view, VkImageLayout layout , VkAttachmentLoadOp loadOp);
+    VkImageView view, VkImageLayout layout , VkAttachmentLoadOp loadOp, float clear_value = 0.0f);
+
+  VkRenderingInfo RenderingInfo(VkExtent2D render_extent,
+    VkRenderingAttachmentInfo* color_attachment,
+    uint32_t color_attachment_count,
+    VkRenderingAttachmentInfo* depth_attachment,
+    int layers = 1);
 
 }
 
