@@ -144,7 +144,7 @@ int main(int argc, char* argv[]) {
 	std::shared_ptr<LavaPBRMaterial> basic_material = std::make_shared<LavaPBRMaterial>(engine, MaterialPBRProperties());
 	MeshProperties mesh_properties = {};
 
-	mesh_properties.mesh_path = "../examples/assets/x-wing_cockpit.glb";
+	mesh_properties.mesh_path = "../examples/assets/Avocado.glb";
 	mesh_properties.material = basic_material;
 
 
@@ -354,13 +354,13 @@ int main(int argc, char* argv[]) {
 		engine.clearWindow();
 
 
-		pbr_render_system.renderWithShadows(ecs_manager.getComponentList<TransformComponent>(),
-			ecs_manager.getComponentList<RenderComponent>(), ecs_manager.getComponentList<LightComponent>());
+		//pbr_render_system.renderWithShadows(ecs_manager.getComponentList<TransformComponent>(),
+		//	ecs_manager.getComponentList<RenderComponent>(), ecs_manager.getComponentList<LightComponent>());
 		//diffuse_render_system.render(ecs_manager.getComponentList<TransformComponent>(),
 		//	ecs_manager.getComponentList<RenderComponent>());
 
-		//deferred_render_system.render(ecs_manager.getComponentList<TransformComponent>(),
-		//	ecs_manager.getComponentList<RenderComponent>(), ecs_manager.getComponentList<LightComponent>());
+		deferred_render_system.render(ecs_manager.getComponentList<TransformComponent>(),
+			ecs_manager.getComponentList<RenderComponent>(), ecs_manager.getComponentList<LightComponent>());
 
 		ecs_render_imgui(ecs_manager, camera_entity);
 		ecs_light_imgui(ecs_manager.getComponentList<TransformComponent>(),
