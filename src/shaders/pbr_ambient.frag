@@ -69,7 +69,7 @@ vec3 DirectionalLight(){
   float directionalIncidence = max(dot(normal_norm, light.dir), 0.0);
   //Specular
   vec3 viewDirection = normalize(globalData.cameraPos - inPos.xyz);
-  vec3 reflectDirection = reflect(-light.dir, normal_norm);
+  vec3 reflectDirection = reflect(light.dir, normal_norm);
 
   float specularValue = pow(max(dot(viewDirection, reflectDirection), 0.0), light.shininess);
 
@@ -167,9 +167,6 @@ float DirectionalShadowCalculation(vec3 fragPos){
 
     vec4 fragPosViewSpace = cameraView * vec4(fragPos, 1.0);
     float depthValue = abs(fragPosViewSpace.z);
-
-    //vec3 fragPosViewSpace = globalData.cameraPos - fragPos;
-    //float depthValue = length(fragPosViewSpace);
     
     int layer = -1;
     float planeStep = 50.0 / 3.0;
@@ -186,21 +183,18 @@ float DirectionalShadowCalculation(vec3 fragPos){
     {
         layer = 2;
     }
-
-    layer = 0;
         
     vec4 fragmPosLightSpace = light_viewproj.viewproj[layer] * vec4(fragPos, 1.0);
-
-    // perform perspective divide
-    vec3 projCoords = fragmPosLightSpace.xyz / fragmPosLightSpace.w;
-    
         
     // get depth of current fragment from light's perspective
-    float currentDepth = projCoords.z;
+    float currentDepth = fragmPosLightSpace.z;
     if (currentDepth  > 1.0)
     {
         return 0.0;
     }
+
+    // perform perspective divide
+    vec3 projCoords = fragmPosLightSpace.xyz / fragmPosLightSpace.w;
 
     // transform to [0,1] range
     projCoords = (projCoords * 0.5) + 0.5;
@@ -215,35 +209,26 @@ float DirectionalShadowCalculation(vec3 fragPos){
     }
     else
     {
-        bias *= 1 / (50.0 * 0.5);
-        //bias *= 1 / ((planeStep * (float(layer) + 1.0)) * 0.5);
+        float planeDistance = planeStep * (float(layer+1));
+        bias *= 1 / (0.5 * planeDistance);
     }
 
     // PCF
     float shadow = 0.0;
-    vec2 texelSize = 1.0 / vec2(textureSize(directionalShadowMaps, layer));
-    //for(int x = -1; x <= 1; ++x)
-    //{
-    //    for(int y = -1; y <= 1; ++y)
-    //    {
-    //        float pcfDepth = texture(
-    //                    directionalShadowMaps,
-    //                    vec3(projCoords.xy + (vec2(x, y) * texelSize),
-    //                    layer)
-    //                    ).r; 
-    //        shadow += ((currentDepth - bias) > pcfDepth) ? 1.0 : 0.0;        
-    //    }    
-    //}
-    //shadow /= 9.0;
-
-    float pcfDepth = texture(
+    vec2 texelSize = 1.0 / vec2(textureSize(directionalShadowMaps, 0));
+    for(int x = -1; x <= 1; ++x)
+    {
+        for(int y = -1; y <= 1; ++y)
+        {
+            float pcfDepth = texture(
                         directionalShadowMaps,
-                        vec3(projCoords.xy,
+                        vec3(projCoords.xy + (vec2(x, y) * texelSize),
                         layer)
                         ).r; 
-
-
-    shadow = (currentDepth - bias) > pcfDepth ? 1.0 : 0.0; 
+            shadow += ((currentDepth - bias) > pcfDepth) ? 1.0 : 0.0;        
+        }    
+    }
+    shadow /= 9.0;
         
     // keep the shadow at 0.0 when outside the far_plane region of the light's frustum.
     if(projCoords.z > 1.0)
@@ -264,13 +249,9 @@ void main()
 
     switch(light.type){
       case 0: {
-        float shadow_fr = DirectionalShadowCalculation(inPos.xyz); 
+        float shadow_fr = 1.0 - DirectionalShadowCalculation(inPos.xyz);
         vec3 lightColor = DirectionalLight();
-        outFragColor = vec4(shadow_fr, shadow_fr, shadow_fr, shadow_fr);
-        //outFragColor = vec4(lightColor * (1.0 - shadow_fr), 1.0);
-
-        //float shadow_fr = 1.0 - DirectionalShadowCalculation(inPos.xyz);
-        //outFragColor = vec4(shadow_fr, shadow_fr, shadow_fr, 1.0);//vec4(DirectionalLight() * (1.0 - shadow_fr),1.0); 
+        outFragColor = vec4(lightColor * shadow_fr,1.0); 
         break;
        }
        case 1: {
@@ -289,6 +270,6 @@ void main()
        }
     }
   }
-  //outFragColor *= texture(baseColorTex,inUV);
-  //outFragColor.xyz += globalData.ambientColor;
+  outFragColor *= texture(baseColorTex,inUV);
+  outFragColor.xyz += globalData.ambientColor;
 }

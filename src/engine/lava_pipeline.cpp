@@ -75,7 +75,7 @@ LavaPipeline::LavaPipeline(PipelineConfig config){
 	//filled triangles
 	pipeline_builder.SetPolygonMode(VK_POLYGON_MODE_FILL);
 	//no backface culling
-	pipeline_builder.SetCullMode(VK_CULL_MODE_NONE, VK_FRONT_FACE_CLOCKWISE);
+	pipeline_builder.SetCullMode(VK_CULL_MODE_FRONT_BIT, VK_FRONT_FACE_CLOCKWISE);
 	//no multisampling
 	pipeline_builder.SetMultisamplingNone();
 	//no blending
@@ -98,7 +98,7 @@ LavaPipeline::LavaPipeline(PipelineConfig config){
 	}
 	//pipeline_builder.DisableBlending();
 	
-			pipeline_builder.EnableDepthTest(true, VK_COMPARE_OP_GREATER_OR_EQUAL);
+	pipeline_builder.EnableDepthTest(true, config.compare_op);
 
 	pipeline_builder.SetDepthFormat(config.swap_chain->get_depth_image().image_format);
 	//no depth testing
