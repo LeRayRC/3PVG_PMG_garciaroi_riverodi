@@ -171,7 +171,7 @@ int main(int argc, char** argv) {
     if (transform_component) {
       auto& transform = transform_component->value();
       transform.pos_ = glm::vec3(0.0f, 0.0f, 0.0f);
-      transform.scale_ = glm::vec3(1.5f, 1.5f, 1.5f);
+      transform.scale_ = glm::vec3(1.0f, 1.0f, 1.0f);
       transform.rot_ = glm::vec3(0.0f, 180.0f, 0.0f);
     }
 
