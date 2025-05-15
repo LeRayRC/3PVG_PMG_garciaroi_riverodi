@@ -165,10 +165,10 @@ bool LavaMesh::loadAsGLTFWithNodes(std::filesystem::path file_path) {
       }
       else {
         if (engine_) {
-          mat->base_color_ = engine_->default_texture_image_black;
+          mat->base_color_ = engine_->default_texture_image_white;
         }
         else {
-          mat->base_color_ = engine_vr_->default_texture_image_black;
+          mat->base_color_ = engine_vr_->default_texture_image_white;
         }
       }
 

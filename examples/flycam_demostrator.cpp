@@ -13,6 +13,70 @@
 #include "lava/engine/lava_image.hpp"
 #include "imgui.h"
 
+
+class HyperSpaceEffectLine {
+public:
+	HyperSpaceEffectLine(LavaECSManager& ecs_manager, LavaEngine& engine,
+		glm::vec3 init_pos, float speed) : 
+		ecs_manager_{ ecs_manager },
+		engine_{engine},
+		speed_{speed},
+		init_pos_{init_pos}
+	{
+		std::shared_ptr<LavaPBRMaterial> basic_material = std::make_shared<LavaPBRMaterial>(engine, MaterialPBRProperties());
+		MeshProperties mesh_properties = {};
+
+		mesh_properties.mesh_path = "../examples/assets/hyperspace_star_wars.glb";
+		mesh_properties.material = basic_material;
+		mesh_ = std::make_shared<LavaMesh>(engine, mesh_properties);
+
+		entity_id = ecs_manager.createEntity();
+		ecs_manager.addComponent<TransformComponent>(entity_id);
+		ecs_manager.addComponent<RenderComponent>(entity_id);
+
+		auto transform_component = ecs_manager.getComponent<TransformComponent>(entity_id);
+		if (transform_component) {
+
+			auto& transform = transform_component->value();
+			transform.pos_ = init_pos;
+			transform.scale_ = glm::vec3(0.01f, 0.001f, 0.001f);
+			transform.rot_ = glm::vec3(0.01f, -90.0f, 0.01f);
+		}
+
+		//glm::vec3(cosf(step * i), sin(step * i), 8.0f + rand() % 5);
+
+		auto render_component = ecs_manager.getComponent<RenderComponent>(entity_id);
+		if (render_component) {
+			auto& render = render_component->value();
+			render.mesh_ = mesh_;
+		}
+	}
+	~HyperSpaceEffectLine(){}
+public:
+	void reset() {
+		auto& transform_component = ecs_manager_.getComponent<TransformComponent>(entity_id)->value();
+		transform_component.pos_ = init_pos_;
+
+		speed_ = (float)(1 + rand() % 15);
+	}
+	void update() {
+		auto& transform_component = ecs_manager_.getComponent<TransformComponent>(entity_id)->value();
+		
+		transform_component.pos_.z -= speed_ * engine_.dt_;
+
+		if (transform_component.pos_.z < -10.0f) {
+			reset();
+		}
+	}
+	LavaEngine& engine_;
+	std::shared_ptr<LavaPBRMaterial> basic_material;
+	size_t entity_id;
+	float speed_;
+	glm::vec3 init_pos_;
+	std::shared_ptr<LavaMesh> mesh_;
+	LavaECSManager& ecs_manager_;
+};
+
 void ecs_render_imgui(LavaECSManager& ecs_manager, size_t camera_entity) {
 	auto& camera_tr = ecs_manager.getComponent<TransformComponent>(camera_entity)->value();
 	auto& camera_camera = ecs_manager.getComponent<CameraComponent>(camera_entity)->value();
@@ -102,33 +166,7 @@ void ecs_light_imgui(std::vector<std::optional<TransformComponent>>& transform_v
 }
 
 
-void DeferredRenderMode(LavaEngine& engine) {
-	ImGui::Begin("Deferred Render Selector");
 
-	static bool albedo, normal;
-	if(ImGui::Checkbox("Albedo", &albedo)){
-		if (albedo) {
-			engine.global_scene_data_.gbuffer_render_selected = GBUFFER_ALBEDO;
-		}
-		else {
-			engine.global_scene_data_.gbuffer_render_selected = GBUFFER_NORMAL;
-		}
-		normal = !albedo;
-	}
-	if(ImGui::Checkbox("Normal", &normal)){
-		if (normal) {
-			engine.global_scene_data_.gbuffer_render_selected = GBUFFER_NORMAL;
-		}
-		else {
-			engine.global_scene_data_.gbuffer_render_selected = GBUFFER_ALBEDO;
-		}
-		albedo = !normal;
-	}
-
-	ImGui::ColorEdit3("Ambient color", &engine.global_scene_data_.ambientColor.x);
-
-	ImGui::End();
-}
 
 
 int main(int argc, char* argv[]) {
@@ -144,15 +182,33 @@ int main(int argc, char* argv[]) {
 	std::shared_ptr<LavaPBRMaterial> basic_material = std::make_shared<LavaPBRMaterial>(engine, MaterialPBRProperties());
 	MeshProperties mesh_properties = {};
 
-	mesh_properties.mesh_path = "../examples/assets/x-wing_cockpit.glb";
+	mesh_properties.mesh_path = "../examples/assets/x-wing_cockpit_no_window.glb";
 	mesh_properties.material = basic_material;
+
+	std::shared_ptr<LavaMesh> mesh_ = std::make_shared<LavaMesh>(engine, mesh_properties);
+
 
 
 	std::shared_ptr<LavaImage> sun_texture = std::make_shared<LavaImage>(&engine, "../examples/assets/textures/sun.jpg");
 	std::shared_ptr<LavaImage> forest_texture = std::make_shared<LavaImage>(&engine, "../examples/assets/textures/forest.png");
 
+	
+	int num_lines = 500;
+	std::vector<HyperSpaceEffectLine> hyperspace_lines;
 
-	std::shared_ptr<LavaMesh> mesh_ = std::make_shared<LavaMesh>(engine, mesh_properties);
+	const float MIN_ANGLE_RAD = 0.0f * (3.14159f / 180.0f);  // 30 grados en radianes
+	const float MAX_ANGLE_RAD = 180.0f * (3.14159f / 180.0f); // 150 grados en radianes
+	const float ANGLE_RANGE = MAX_ANGLE_RAD - MIN_ANGLE_RAD;
+
+
+	for (int i = 0; i < num_lines; i++) {
+		float angle = MIN_ANGLE_RAD + (((float)rand() / RAND_MAX) * ANGLE_RANGE);
+		
+		hyperspace_lines.push_back(HyperSpaceEffectLine(ecs_manager, engine,
+			glm::vec3(cosf(angle), sin(angle) - 0.5f, 8.0f + rand() % 5),(float)(1+rand()%15))
+		);
+	}
+
 
 	std::shared_ptr<LavaPBRMaterial> cube_material = std::make_shared<LavaPBRMaterial>(engine, MaterialPBRProperties());
 	std::shared_ptr<LavaMesh> cube_mesh = CreateCube24v(engine, cube_material);
@@ -170,27 +226,6 @@ int main(int argc, char* argv[]) {
 	std::shared_ptr<LavaMesh> terrain_mesh = CreateTerrain(terrain_material, 
 		32,32,8.0f,1.0f, 0.15f, {20,20});
 
-
-
-	//{
-	//	size_t entity = ecs_manager.createEntity();
-	//	ecs_manager.addComponent<TransformComponent>(entity);
-	//	ecs_manager.addComponent<RenderComponent>(entity);
-	//	//ecs_manager.addComponent<UpdateComponent>(entity);
-
-	//	auto transform_component = ecs_manager.getComponent<TransformComponent>(entity);
-	//	if (transform_component) {
-	//		auto& transform = transform_component->value();
-	//		transform.pos_ = glm::vec3(0.0f, 0.0f, -1.0f);
-	//		transform.scale_ = glm::vec3(1.0f, 1.0f, 1.0f);
-	//	}
-
-	//	auto render_component = ecs_manager.getComponent<RenderComponent>(entity);
-	//	if (render_component) {
-	//		auto& render = render_component->value();
-	//		render.mesh_ = terrain_mesh;
-	//	}
-	//}
 
 
 	{
@@ -280,12 +315,15 @@ int main(int argc, char* argv[]) {
 			light.type_ = LIGHT_TYPE_DIRECTIONAL;
 			light.base_color_ = glm::vec3(1.0f, 1.0f, 1.0f);
 			light.spec_color_ = glm::vec3(0.0f, 0.0f, 0.0f);
+			light.cutoff_ = 40.0f;
+			light.outer_cutoff_ = 62.72f;
+
 		}
 		auto tr_component = ecs_manager.getComponent<TransformComponent>(light_entity);
 		if (tr_component) {
 			auto& tr = tr_component->value();
-			tr.rot_ = glm::vec3(0.0f, 0.0f, 0.0f);
-			tr.pos_ = glm::vec3(0.0f, 0.0f, 0.0f);
+			tr.rot_ = glm::vec3(-115.0f, -2.0f, 0.0f);
+			tr.pos_ = glm::vec3(0.0f, 0.0f, 1.6f);
 		}
 	}
 
@@ -326,7 +364,7 @@ int main(int argc, char* argv[]) {
 		ecs_manager.addComponent<UpdateComponent>(camera_entity);
 
 		auto& camera_tr = ecs_manager.getComponent<TransformComponent>(camera_entity)->value();
-		camera_tr.rot_ = glm::vec3(-45.0f, 0.0f, 0.0f);
+		camera_tr.rot_ = glm::vec3(-25.0f, 180.0f, 0.0f);
 		camera_tr.pos_ = glm::vec3(0.0f, 0.0f, -2.0f);
 		auto& camera_component = ecs_manager.getComponent<CameraComponent>(camera_entity)->value();
 
@@ -346,7 +384,16 @@ int main(int argc, char* argv[]) {
 	
 	engine.global_scene_data_.ambientColor = glm::vec3(0.2f, 0.2f, 0.2f);
 
+	int count = 0;
 	while (!engine.shouldClose()) {
+
+		if (count > 2) {
+
+			for (auto& line : hyperspace_lines) {
+				line.update();
+			}
+		}
+
 
 		update_system.update(ecs_manager.getComponentList<UpdateComponent>());
 
@@ -365,9 +412,9 @@ int main(int argc, char* argv[]) {
 		ecs_render_imgui(ecs_manager, camera_entity);
 		ecs_light_imgui(ecs_manager.getComponentList<TransformComponent>(),
 			ecs_manager.getComponentList<LightComponent>());
-		DeferredRenderMode(engine);
 
 		engine.endFrame();
+		count++;
 	}
 
 	return 0;
