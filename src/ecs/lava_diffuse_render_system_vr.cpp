@@ -79,7 +79,7 @@ void LavaDiffuseRenderSystemVR::render(uint32_t view_index,
     if(!transform_it->has_value()) continue;
     if (!render_it->has_value()) continue;
 
-		if (render_it->value().active_ != RenderType_UNLIT) continue;
+		if (!render_it->value().active_) continue;
 
 		//Clean Descriptor sets for current frame
 		frame_data.descriptor_manager.clear();

@@ -60,6 +60,13 @@ public:
     expansion_rate_ = 0.1f + ((float)rand() / RAND_MAX) * 0.3f;
     time_alive_ = 0.0f;
   }
+
+  void hide() {
+    auto& render_component = ecs_manager_.getComponent<RenderComponent>(entity_id)->value();
+    render_component.active_ = false;
+  }
+
+  
   void update() {
     auto& transform_component = ecs_manager_.getComponent<TransformComponent>(entity_id)->value();
 
@@ -140,10 +147,19 @@ int main(int argc, char** argv) {
 
   std::shared_ptr<LavaPBRMaterial> hyper_space_basic_material = std::make_shared<LavaPBRMaterial>(engine, MaterialPBRProperties());
   MeshProperties hyperspace_mesh_properties = {};
-
   hyperspace_mesh_properties.mesh_path = "../examples/assets/hyperspace_star_wars.glb";
   hyperspace_mesh_properties.material = hyper_space_basic_material;
   std::shared_ptr<LavaMesh> hyperspace_mesh_ = std::make_shared<LavaMesh>(engine, hyperspace_mesh_properties);
+
+  std::shared_ptr<LavaPBRMaterial> death_basic_material = std::make_shared<LavaPBRMaterial>(engine, MaterialPBRProperties());
+  MeshProperties death_star_mesh_properties = {};
+  death_star_mesh_properties.mesh_path = "../examples/assets/death_star.glb";
+  death_star_mesh_properties.material = hyper_space_basic_material;
+  std::shared_ptr<LavaMesh> death_mesh_ = std::make_shared<LavaMesh>(engine, death_star_mesh_properties);
+
+
+
+
 
 
   int num_lines = 500;
@@ -182,6 +198,28 @@ int main(int argc, char** argv) {
     }
   }
 
+    size_t death_star_entity;
+  {
+      death_star_entity = ecs_manager.createEntity();
+    ecs_manager.addComponent<TransformComponent>(death_star_entity);
+    ecs_manager.addComponent<RenderComponent>(death_star_entity);
+    auto transform_component = ecs_manager.getComponent<TransformComponent>(death_star_entity);
+    if (transform_component) {
+      auto& transform = transform_component->value();
+      transform.pos_ = glm::vec3(500.0f, 0.0f, -250.0f);
+      transform.scale_ = glm::vec3(50.0f, 50.0f, 50.0f);
+      transform.rot_ = glm::vec3(0.0f, 0.0f, 0.0f);
+    }
+
+    auto render_component = ecs_manager.getComponent<RenderComponent>(death_star_entity);
+    if (render_component) {
+      auto& render = render_component->value();
+      render.mesh_ = death_mesh_;
+      render.active_ = false;
+    }
+  }
+
+
 
    size_t light_entity = ecs_manager.createEntity();
   {
@@ -211,15 +249,35 @@ int main(int argc, char** argv) {
 
 
   int count = 0;
+  float time_hyperspace = 5.0f;
   while (!engine.shouldClose()) {
 
+    
     if (count > 2) {
+      
+      time_hyperspace -= engine.dt_;
+      if (time_hyperspace < 0.0f) {
+        for (auto& line : hyperspace_lines) {
+          line.hide();
+        }
+        auto& transform_component = ecs_manager.getComponent<TransformComponent>(death_star_entity)->value();
+        transform_component.pos_.z += 20.0f * engine.dt_;
+        auto& render_component = ecs_manager.getComponent<RenderComponent>(death_star_entity)->value();
+        render_component.active_ = true;
 
-      for (auto& line : hyperspace_lines) {
-        line.update();
       }
+      else {
+
+
+        for (auto& line : hyperspace_lines) {
+          line.update();
+        }
+      }
+
+
     }
     count++;
+
 
     engine.pollEvents();
     if (engine.is_session_running()) {
