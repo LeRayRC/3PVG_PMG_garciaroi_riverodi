@@ -7,6 +7,13 @@ struct GPUDrawPushConstants {
 	VkDeviceAddress vertex_buffer;
 };
 
+// push constants for our gaussian splatting draws
+struct GPUGSDrawPushConstants {
+	glm::mat4 world_matrix;
+	glm::vec4 gsData;
+	VkDeviceAddress vertex_buffer;
+};
+
 struct GlobalSceneData {
 	glm::mat4 view;
 	glm::mat4 proj;

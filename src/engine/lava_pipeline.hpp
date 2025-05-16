@@ -21,7 +21,8 @@ typedef enum PipelineFlags {
 typedef enum PipelineBlendMode {
 	PIPELINE_BLEND_DISABLE,
 	PIPELINE_BLEND_ONE_ONE,
-	PIPELINE_BLEND_ONE_ZERO
+	PIPELINE_BLEND_ONE_ZERO,
+	PIPELINE_BLEND_PREMULTIPLIED_ALPHA
 } PipelineBlendMode;
 
 struct PipelineConfig {
@@ -59,11 +60,29 @@ public:
 	int color_attachments_count = 1;
 };
 
+struct PipelineConfigGS {
+public:
+	PipelineType type;
+	const char* vertex_shader_path;
+	const char* fragment_shader_path;
+	class LavaDevice* device;
+	class LavaSwapChain* swap_chain;
+	class LavaDescriptorManager* descriptor_manager;
+	VkDescriptorSetLayout global_descriptor_set_layout;
+	VkDescriptorSetLayout global_pbr_descriptor_set_layout;
+	VkDescriptorSetLayout global_lights_descriptor_set_layout;
+	int pipeline_flags;
+	const char* geometry_shader_path;
+	int color_attachments_count = 1;
+	VkCompareOp compare_op = VK_COMPARE_OP_GREATER_OR_EQUAL;
+};
+
 class LavaPipeline
 {
 public:
 	LavaPipeline(PipelineConfigVR config);
 	LavaPipeline(PipelineConfig config);
+	LavaPipeline(PipelineConfigGS config);
 	~LavaPipeline();
 
 	VkPipelineLayout get_layout() { return layout_;}

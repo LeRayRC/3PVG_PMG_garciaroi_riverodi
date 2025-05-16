@@ -209,6 +209,12 @@ void PipelineBuilder::EnableBlending(PipelineBlendMode blend_mode){
       _color_blend_attachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;  // Alpha blending (puede variar)
       _color_blend_attachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO; // Alpha blending (puede variar)
       break;
+    case PIPELINE_BLEND_PREMULTIPLIED_ALPHA:
+        _color_blend_attachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;  // GL_ONE
+        _color_blend_attachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA; // GL_ZERO
+        _color_blend_attachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;  // Alpha blending (puede variar)
+        _color_blend_attachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA; // Alpha blending (puede variar)
+        break;
     default:
       break;
   }
