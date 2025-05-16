@@ -1,5 +1,9 @@
+
 #define GLFW_INCLUDE_VULKAN
+#pragma push_macro("APIENTRY")
+#undef APIENTRY
 #include <GLFW/glfw3.h>
+#pragma pop_macro("APIENTRY")
 
 #include <optional>
 #include <iostream>
@@ -29,4 +33,5 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/mat4x4.hpp>
 #include <glm/gtx/quaternion.hpp>
+
 

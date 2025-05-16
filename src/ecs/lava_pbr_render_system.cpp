@@ -233,7 +233,6 @@ void LavaPBRRenderSystem::render(
 			//	active_pipeline->get_layout(),
 			//	1, 1, &pbr_descriptor_set, 0, nullptr);
 
-			GPUDrawPushConstants push_constants;
 			glm::mat4 model = glm::mat4(1.0f);
 
 			model = glm::translate(model, transform_it->value().pos_);
@@ -399,7 +398,6 @@ void LavaPBRRenderSystem::renderWithShadows(
 				active_pipeline->get_layout(),
 				1, 1, &pbr_descriptor_set, 0, nullptr);
 
-			GPUDrawPushConstants push_constants;
 			glm::mat4 model = glm::mat4(1.0f);
 
 			model = glm::translate(model, transform_it->value().pos_);
@@ -528,7 +526,6 @@ void LavaPBRRenderSystem::renderWithShadows(
 					active_pipeline->get_layout(),
 					1, 1, &pbr_descriptor_set, 0, nullptr);
 
-				GPUDrawPushConstants push_constants;
 				glm::mat4 model = glm::mat4(1.0f);
 
 				model = glm::translate(model, transform_it->value().pos_);

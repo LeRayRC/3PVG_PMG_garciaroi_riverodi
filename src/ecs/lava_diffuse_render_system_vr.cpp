@@ -79,7 +79,7 @@ void LavaDiffuseRenderSystemVR::render(uint32_t view_index,
     if(!transform_it->has_value()) continue;
     if (!render_it->has_value()) continue;
 
-		if (render_it->value().active_ != RenderType_UNLIT) continue;
+		if (!render_it->value().active_) continue;
 
 		//Clean Descriptor sets for current frame
 		frame_data.descriptor_manager.clear();
@@ -92,7 +92,6 @@ void LavaDiffuseRenderSystemVR::render(uint32_t view_index,
 			pipeline_->get_layout(),
 			1, 1, &pbr_descriptor_set, 0, nullptr);
 
-		GPUDrawPushConstants push_constants;
 		glm::mat4 model = glm::mat4(1.0f);
 		model = glm::translate(model, transform_it->value().pos_);
 		model = glm::rotate(model, glm::radians(transform_it->value().rot_.x), glm::vec3(1.0f, 0.0f, 0.0f));

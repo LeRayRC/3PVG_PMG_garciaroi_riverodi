@@ -44,7 +44,9 @@ private:
 	std::shared_ptr<class LavaImage> shadowmaps_[3];
 
 	void allocateLights(std::vector<std::optional<struct LightComponent>>& light_component_vector);
-	void updateLights(std::vector<std::optional<struct LightComponent>>& light_component_vector,
+	void updateLights(
+		uint32_t view_index,
+		std::vector<std::optional<struct LightComponent>>& light_component_vector,
 		std::vector<std::optional<struct TransformComponent>>& transform_vector);
 
 	void renderGeometryPass(

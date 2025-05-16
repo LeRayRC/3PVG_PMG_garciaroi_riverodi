@@ -140,6 +140,7 @@ workspace "Lava"
         files "examples/flycam_demostrator.cpp"
         files "src/shaders/*"
         files "src/shaders/*/*"
+        files "src/shaders/*/*/*"
         files "src/stdafx.cpp"
         files "examples/assets/*"
         common_settings()

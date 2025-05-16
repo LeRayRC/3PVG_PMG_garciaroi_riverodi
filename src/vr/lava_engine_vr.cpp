@@ -473,7 +473,7 @@ void LavaEngineVR::updateMainCamera() {
 }
 
 void LavaEngineVR::initGlobalData() {
-  int amount = session_->get_view_configuration_views().size();
+  size_t amount = session_->get_view_configuration_views().size();
   global_scene_data_vector_.resize(amount);
   global_descriptor_set_vector_.resize(amount);
   global_data_buffer_vector_.resize(amount);
@@ -517,7 +517,7 @@ void LavaEngineVR::updateGlobalData(uint32_t view_index) {
   //Detect input
   XrMatrix4x4f viewProj;
   XrMatrix4x4f proj;
-  XrMatrix4x4f_CreateProjectionFov(&proj, VULKAN, views_[view_index].fov, 0.05f, 10000.0f );
+  XrMatrix4x4f_CreateProjectionFov(&proj, VULKAN, views_[view_index].fov, 0.05f, 1000.0f );
   XrMatrix4x4f toView;
   XrVector3f scale1m{ 1.0f, 1.0f, 1.0f };
   XrMatrix4x4f_CreateTranslationRotationScale(&toView, &views_[view_index].pose.position, &views_[view_index].pose.orientation, &scale1m);

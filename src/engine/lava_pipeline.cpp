@@ -332,7 +332,7 @@ LavaPipeline::LavaPipeline(PipelineConfigVR config) {
 	}
 	//pipeline_builder.DisableBlending();
 
-	pipeline_builder.EnableDepthTest(true, VK_COMPARE_OP_LESS_OR_EQUAL);
+	pipeline_builder.EnableDepthTest(true, config.compare_op);
 	//pipeline_builder.DisableDepthtest();
 	std::vector<LavaSwapchainVR::SwapchainInfo>& color_swapchain_info_vector = config.swap_chain->get_color_swapchain_infos();
 	std::vector<LavaSwapchainVR::SwapchainInfo>& depth_swapchain_info_vector = config.swap_chain->get_depth_swapchain_infos();
