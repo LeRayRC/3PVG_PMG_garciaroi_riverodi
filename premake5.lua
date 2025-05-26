@@ -144,6 +144,27 @@ workspace "Lava"
         files "src/stdafx.cpp"
         files "examples/assets/*"
         common_settings()
+
+    project"Deferred"
+        kind "ConsoleApp" -- This was WindowedApp
+        language "C++"
+        targetdir "build/%{prj.name}/%{cfg.buildcfg}"
+        links { "LavaEngine" }
+        includedirs "include"
+        conan_config_exec("Debug")
+        conan_config_exec("Release")
+        conan_config_exec("RelWithDebInfo")
+        pchheader "stdafx.hpp"
+        pchsource "src/stdafx.cpp"
+        forceincludes { "stdafx.hpp" }
+        debugargs { _MAIN_SCRIPT_DIR .. "/examples/data" }
+        files "examples/deferred_demostrator.cpp"
+        files "src/shaders/*"
+        files "src/shaders/*/*"
+        files "src/shaders/*/*/*"
+        files "src/stdafx.cpp"
+        files "examples/assets/*"
+        common_settings()
 		
 	project"Shadows"
 		kind "ConsoleApp" -- This was WindowedApp

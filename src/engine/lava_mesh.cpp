@@ -89,7 +89,7 @@ LavaMesh::~LavaMesh(){
 
 template<typename t>
 bool LavaMesh::loadAsGLTFWithNodes(std::filesystem::path file_path) {
-  std::cout << "Loading GLTF: " << file_path << std::endl;
+  //std::cout << "Loading GLTF: " << file_path << std::endl;
 
   const auto root_path = file_path.parent_path();
 
