@@ -8,11 +8,14 @@ layout (location = 0) out vec3 outColor;
 layout (location = 1) out vec2 outUV;
 layout (location = 2) out vec3 outNormal;
 layout (location = 3) out vec4 outPos;
-layout (location = 4) out vec3 tangentLightPos;
-layout (location = 5) out vec3 tangentViewPos;
-layout (location = 6) out vec3 tangentFragPos;
+layout (location = 4) out mat3 TBN;
 layout (location = 7) out vec4 fragPosLightSpace;
 layout (location = 8) out mat4 cameraView;
+
+//layout (location = 4) out vec3 tangentLightPos;
+//layout (location = 5) out vec3 tangentViewPos;
+//layout (location = 6) out vec3 tangentFragPos;
+
 
 struct Vertex {
 	vec3 position;
@@ -78,10 +81,7 @@ void main()
     vec3 T = normalize(vec3(PushConstants.render_matrix * vec4(v.tangent,   0.0)));
     vec3 B = normalize(vec3(PushConstants.render_matrix * vec4(v.bitangent, 0.0)));
     vec3 N = normalize(vec3(PushConstants.render_matrix * vec4(v.normal,    0.0)));
-    mat3 TBN = transpose(mat3(T, B, N));
-    //vs_out.TangentLightPos = TBN * lightPos; //TO DO: LIGHTS
-    //tangentViewPos  = TBN * viewPos; //TO DO: LIGHTS
-    tangentFragPos  = TBN * pos.xyz;
+    TBN = mat3(T, B, N);
 
 	
 }

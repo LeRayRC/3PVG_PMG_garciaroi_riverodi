@@ -219,24 +219,10 @@ bool LavaMesh::loadAsGLTFWithNodes(std::filesystem::path file_path) {
     newmesh.surfaces = surfaces;
   }
 
-  // Subir datos combinados al GPU
-  if (engine_) {
-    newmesh.meshBuffers = upload<t>(engine_, combinedIndices, combinedVertices);
-  }
-  else {
-    newmesh.meshBuffers = upload<t>(engine_vr_, combinedIndices, combinedVertices);
-
-  }
-  newmesh.count_surfaces = count_surfaces;
-
-  // Agregar la malla combinada al contenedor
-  //meshes_.emplace_back(std::make_shared<MeshAsset>(std::move(newmesh)));
-  mesh_ = std::make_shared<MeshAsset>(std::move(newmesh));
-
   //Update material
   //int base_color_index = -1;
 
-  /*
+  
   if (gltf.materials.size() > 0) {
     material_->uniform_properties.metallic_factor_ = gltf.materials[0].pbrData.metallicFactor;
     material_->uniform_properties.roughness_factor_ = gltf.materials[0].pbrData.roughnessFactor;
@@ -313,7 +299,20 @@ bool LavaMesh::loadAsGLTFWithNodes(std::filesystem::path file_path) {
     }
   }
 
-  */
+  // Subir datos combinados al GPU
+  if (engine_) {
+      newmesh.meshBuffers = upload<t>(engine_, combinedIndices, combinedVertices);
+  }
+  else {
+      newmesh.meshBuffers = upload<t>(engine_vr_, combinedIndices, combinedVertices);
+
+  }
+  newmesh.count_surfaces = count_surfaces;
+
+  // Agregar la malla combinada al contenedor
+  //meshes_.emplace_back(std::make_shared<MeshAsset>(std::move(newmesh)));
+  mesh_ = std::make_shared<MeshAsset>(std::move(newmesh));
+
   return true;
 }
 

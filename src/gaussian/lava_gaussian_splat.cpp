@@ -292,9 +292,6 @@ bool LavaGaussianSplat::uploadToGPU(LavaEngine* engine)
 
     {
         LavaJobSystem jobSystem;
-        for (i = 0; i < 26; ++i) {
-            
-        }
 
         uint32_t array_size = (uint32_t)numGaussians - 1;
         int32_t j, k, w;
@@ -303,8 +300,8 @@ bool LavaGaussianSplat::uploadToGPU(LavaEngine* engine)
             for (k = -1; k < 2; ++k) {
                 for (w = -1; w < 2; ++w) {
                     if (0 == j && 0 == k && 0 == w) continue;
-                    glm::vec3 refPos = farLength * glm::vec3((float)j, (float)k, (float)w);
                     indices[i].resize(numGaussians);
+                    glm::vec3 refPos = farLength * glm::vec3((float)j, (float)k, (float)w);
                     threadData t_data{ indices[i].data(), refPos, vecPos.data()};
                     jobSystem.add([t_data, array_size]() {
                         
