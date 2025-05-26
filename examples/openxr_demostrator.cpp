@@ -70,32 +70,24 @@ public:
   void update() {
     auto& transform_component = ecs_manager_.getComponent<TransformComponent>(entity_id)->value();
 
-    // Incrementar tiempo vivo
-    time_alive_ += engine_.dt_;
+    float dt = static_cast<float>(engine_.dt_);
 
-    // Factor de expansión (aumenta con el tiempo)
+    time_alive_ += dt;
+
     float expansion_factor = time_alive_ * expansion_rate_;
 
-    // Actualizar posición Z (hacia adelante)
-    transform_component.pos_.z += speed_ * engine_.dt_;
+    transform_component.pos_.z += speed_ * dt;
 
-    // Expandir radialmente (X e Y)
-    // Usamos la dirección inicial para mantener consistencia en la trayectoria
-    transform_component.pos_.x += initial_direction_.x * expansion_rate_ * engine_.dt_ * speed_ * 0.5f;
-    transform_component.pos_.y += initial_direction_.y * expansion_rate_ * engine_.dt_ * speed_ * 0.5f;
 
-    // Aumentar ligeramente la escala con el tiempo para crear sensación de estiramiento
-    //float scale_factor = 1.0f + (time_alive_ * 0.1f);
-    //transform_component.scale_.z = 0.001f + (speed_ * 0.01f * scale_factor);
+    transform_component.pos_.x += initial_direction_.x * expansion_rate_ * dt * speed_ * 0.5f;
+    transform_component.pos_.y += initial_direction_.y * expansion_rate_ * dt * speed_ * 0.5f;
 
-    // Ajustar rotación para mantener la línea orientada en la dirección de movimiento
     glm::vec3 movement_dir = glm::normalize(glm::vec3(
       initial_direction_.x * expansion_rate_,
       initial_direction_.y * expansion_rate_,
       speed_
     ));
 
-    // Si la línea ha avanzado demasiado, reiniciarla
     if (transform_component.pos_.z > 10.0f || glm::length(glm::vec2(transform_component.pos_.x, transform_component.pos_.y)) > 20.0f) {
       reset();
     }
@@ -255,13 +247,13 @@ int main(int argc, char** argv) {
     
     if (count > 2) {
       
-      time_hyperspace -= engine.dt_;
+      time_hyperspace -= static_cast<float>(engine.dt_);
       if (time_hyperspace < 0.0f) {
         for (auto& line : hyperspace_lines) {
           line.hide();
         }
         auto& transform_component = ecs_manager.getComponent<TransformComponent>(death_star_entity)->value();
-        transform_component.pos_.z += 20.0f * engine.dt_;
+        transform_component.pos_.z += 20.0f * static_cast<float>(engine.dt_);
         auto& render_component = ecs_manager.getComponent<RenderComponent>(death_star_entity)->value();
         render_component.active_ = true;
 

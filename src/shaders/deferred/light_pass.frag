@@ -124,6 +124,24 @@ float SpotShadowCalculation(vec3 position)
   return shadow;
 }
 
+float PointShadowCalculation(vec3 fragPos)
+{
+    vec3 fragToLight = fragPos - light.pos;
+
+    float closestDepth = texture(pointShadowMapCube, normalize(fragToLight)).r;
+
+    closestDepth = 1.0 - closestDepth;
+
+    closestDepth *= 25.0; //Need to be Recive: Far Plane
+
+    float currentDepth = length(fragToLight);
+    float bias = 0.05; 
+    float shadow = currentDepth-bias > closestDepth ? 1.0 : 0.0;
+
+    return shadow;
+}  
+
+
 float DirectionalShadowCalculation(vec3 fragPos, vec3 normal){
 
     vec4 fragPosViewSpace = cameraView * vec4(fragPos, 1.0);
@@ -218,7 +236,9 @@ void main() {
                 lighting += lightColor * (1.0 - shadow);
                 break;
             case 1: // Point
-                lighting += PointLight(position, normal);
+                shadow = PointShadowCalculation(position);
+                lightColor = PointLight(position, normal);
+                lighting += lightColor * (1.0 - shadow);
                 break;
             case 2: // Spot
                 shadow = SpotShadowCalculation(position);
@@ -231,11 +251,5 @@ void main() {
     }
     
     outFragColor = vec4(albedo*lighting, 1.0);
-    //outFragColor = vec4(1.0);
 
-		//if((globalData.gbuffer_render_selected & (1<<2)) == (1<<2)){
-		//	outFragColor = texture(baseColorTex,inUV);
-		//}else if((globalData.gbuffer_render_selected & (1 << 1)) == (1 << 1)){
-		//	outFragColor = texture(normalTex,inUV);
-		//}
 }
