@@ -68,7 +68,6 @@ void LavaNormalRenderSystem::render(
 		std::shared_ptr<LavaMesh> lava_mesh = render_it->value().mesh_;
 		std::shared_ptr<MeshAsset> mesh = lava_mesh->mesh_;
 
-		GPUDrawPushConstants push_constants;
 		glm::mat4 model = glm::mat4(1.0f);
 		model = glm::translate(model, transform_it->value().pos_);
 		model = glm::rotate(model, glm::radians(transform_it->value().rot_.x), glm::vec3(1.0f, 0.0f, 0.0f));

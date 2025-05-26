@@ -1,27 +1,21 @@
-#include "examples/hellotriangle.hpp"
 
-#include "lava_types.hpp"
-#include "lava_engine.hpp"
-#include "lava_window_system.hpp"
-#include "engine/lava_pipeline.hpp"
-#include "ecs/lava_ecs.hpp"
-#include "ecs/lava_normal_render_system.hpp"
+#include "lava/engine/lava_engine.hpp"
+#include "lava/window/lava_window_system.hpp"
+#include "lava/window/lava_window.hpp"
+#include "lava/engine/lava_mesh.hpp"
+#include "lava/ecs/lava_ecs.hpp"
+#include "lava/engine/lava_pbr_material.hpp"
+#include "lava/ecs/lava_normal_render_system.hpp"
 
 int main(int argc, char* argv[]) {
 	std::shared_ptr<LavaWindowSystem>  lava_system = LavaWindowSystem::Get();
 	LavaEngine engine;
 	LavaECSManager ecs_manager;
-	LavaNormalRenderSystem normal_render_system{engine};
-	
-	MaterialProperties mat_properties = {};
-	mat_properties.name = "Basic Material";
-	mat_properties.vertex_shader_path = "../src/shaders/normal.vert.spv";
-	mat_properties.fragment_shader_path = "../src/shaders/normal.frag.spv";
-	mat_properties.pipeline_flags = PipelineFlags::PIPELINE_USE_PUSHCONSTANTS | PipelineFlags::PIPELINE_USE_DESCRIPTOR_SET;
+	LavaNormalRenderSystem normal_render_system{ engine };
 
-	LavaMaterial basic_material(engine, mat_properties);
+	std::shared_ptr<LavaPBRMaterial> basic_material = std::make_shared<LavaPBRMaterial>(engine, MaterialPBRProperties());
 
-	std::vector<Vertex> triangle_vertices(3);
+	std::vector<VertexWithTangents> triangle_vertices(3);
 
 	triangle_vertices[0].position = { 0.5,0.5, 0 };
 	triangle_vertices[1].position = { 0.0,-0.5, 0 };
@@ -37,14 +31,14 @@ int main(int argc, char* argv[]) {
 
 	std::vector<uint32_t> triangle_index(3);
 	triangle_index[0] = 0;
-	triangle_index[1] = 1;
-	triangle_index[2] = 2;
+	triangle_index[1] = 2;
+	triangle_index[2] = 1;
 
 
 	MeshProperties mesh_properties = {};
 	mesh_properties.name = "Triangle Mesh";
 	mesh_properties.type = MESH_CUSTOM;
-	mesh_properties.material = &basic_material;
+	mesh_properties.material = basic_material;
 	mesh_properties.index = triangle_index;
 	mesh_properties.vertex = triangle_vertices;
 
@@ -56,11 +50,14 @@ int main(int argc, char* argv[]) {
 	ecs_manager.addComponent<TransformComponent>(entity);
 	ecs_manager.addComponent<RenderComponent>(entity);
 
+	{
+
 	auto transform_component = ecs_manager.getComponent<TransformComponent>(entity);
 	if (transform_component) {
 		auto& transform = transform_component->value();
-		transform.pos_ = glm::vec3(0.0f, 0.0f, -10.0f);
-		transform.scale_ = glm::vec3(1.0f, 1.0f, 1.0f);
+		transform.pos_ = glm::vec3(0.0f, 0.0f, -15.0f);
+		transform.scale_ = glm::vec3(10.0f, 10.0f, 10.0f);
+		transform.rot_ = glm::vec3(0.0f, 0.0f, 0.0f);
 
 	}
 	auto render_component = ecs_manager.getComponent<RenderComponent>(entity);
@@ -68,35 +65,56 @@ int main(int argc, char* argv[]) {
 		auto& render = render_component->value();
 		render.mesh_ = mesh_triangle;
 	}
+	}
 
+
+	size_t camera_entity = ecs_manager.createEntity();
+	{
+
+		ecs_manager.addComponent<TransformComponent>(camera_entity);
+		ecs_manager.addComponent<CameraComponent>(camera_entity);
+
+		auto& camera_tr = ecs_manager.getComponent<TransformComponent>(camera_entity)->value();
+		camera_tr.rot_ = glm::vec3(0.0f, 0.0f, 0.0f);
+		camera_tr.pos_ = glm::vec3(0.0f, 0.0f, 0.0f);
+		auto& camera_component = ecs_manager.getComponent<CameraComponent>(camera_entity)->value();
+		engine.setMainCamera(&camera_component, &camera_tr);
+	}
+	engine.global_scene_data_.ambientColor = glm::vec3(0.2f, 0.2f, 0.2f);
 	LavaInput* input = engine.window_.get_input();
+
+	auto transform_component = ecs_manager.getComponent<TransformComponent>(entity);
 
 	while (!engine.shouldClose()) {
 
+
 		engine.beginFrame();
 		engine.clearWindow();
+
+
 		glm::vec2 mouse_pos = input->getMousePosition();
 
-		// Movement
+		//// Movement
 		float ndc_x = (2.0f * mouse_pos.x) / (float)engine.window_extent_.width - 1.0f;
 		float ndc_y = (2.0f * mouse_pos.y) / (float)engine.window_extent_.height - 1.0f;
 		auto dir = glm::vec3(glm::inverse(engine.global_scene_data_.viewproj) * glm::vec4(ndc_x, ndc_y, 1.0f, 1.0f));
 		dir *= -(transform_component->value().pos_.z);
 		transform_component->value().pos_ = dir;
 
-		// Rotation
+		//// Rotation
 		float rot_act = 0.0f;
-		if(input->isInputDown(KEY_RIGHT)) rot_act = -100.0f ;
+		if (input->isInputDown(KEY_RIGHT)) rot_act = -100.0f;
 		else if (input->isInputDown(KEY_LEFT)) rot_act = 100.0f;
 		transform_component->value().rot_.z += (rot_act * (float)engine.dt_);
-		
-		//Scale
-		glm::vec2 scrooll = input->getScrollOffset();
-		transform_component->value().scale_ += (engine.dt_ * scrooll.y * 100.0f);
+
+		////Scale
+		glm::vec2 scroll = input->getScrollOffset();
+		transform_component->value().scale_ += (engine.dt_ * scroll.y * 100.0f);
 
 		engine.renderImgui();
 		normal_render_system.render(ecs_manager.getComponentList<TransformComponent>(),
 			ecs_manager.getComponentList<RenderComponent>());
+
 		engine.endFrame();
 	}
 

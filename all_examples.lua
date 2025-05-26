@@ -28,7 +28,6 @@ project"HelloTriangle"
     pchheader "stdafx.hpp"
     pchsource "src/stdafx.cpp"
     forceincludes { "stdafx.hpp" }
-    debugargs { _MAIN_SCRIPT_DIR .. "/examples/data" }
     files "src/stdafx.cpp"
     files "examples/assets/*"
     files "examples/hellotriangle.cpp"
@@ -43,9 +42,13 @@ project"HelloTriangleWithInput"
     conan_config_exec("Release")
     conan_config_exec("RelWithDebInfo")
     debugargs { _MAIN_SCRIPT_DIR .. "/examples/data" }
+    pchheader "stdafx.hpp"
+    pchsource "src/stdafx.cpp"
+    forceincludes { "stdafx.hpp" }
+    files "src/stdafx.cpp"
+    files "examples/assets/*"
     files "examples/hellotrianglewithinput.cpp"
-    files "include/custom_vulkan_helpers.hpp"
-    files "src/shaders/*"
+    common_settings()
 project "GLTFLoad"
     kind "ConsoleApp" -- This was WindowedApp
     language "C++"
