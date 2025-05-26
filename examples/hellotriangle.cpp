@@ -13,9 +13,9 @@ int main(int argc, char* argv[]) {
 	LavaECSManager ecs_manager;
 	LavaNormalRenderSystem normal_render_system{engine};
 	
-	LavaPBRMaterial basic_material(engine, MaterialPBRProperties());
+	std::shared_ptr<LavaPBRMaterial> basic_material = std::make_shared<LavaPBRMaterial>(engine, MaterialPBRProperties());
 
-	std::vector<Vertex> triangle_vertices(3);
+	std::vector<VertexWithTangents> triangle_vertices(3);
 
 	triangle_vertices[0].position = { 0.5,0.5, 0 };
 	triangle_vertices[1].position = { 0.0,-0.5, 0 };
@@ -31,14 +31,14 @@ int main(int argc, char* argv[]) {
 
 	std::vector<uint32_t> triangle_index(3);
 	triangle_index[0] = 0;
-	triangle_index[1] = 1;
-	triangle_index[2] = 2;
+	triangle_index[1] = 2;
+	triangle_index[2] = 1;
 
 
 	MeshProperties mesh_properties = {};
 	mesh_properties.name = "Triangle Mesh";
 	mesh_properties.type = MESH_CUSTOM;
-	mesh_properties.material = &basic_material;
+	mesh_properties.material = basic_material;
 	mesh_properties.index = triangle_index;
 	mesh_properties.vertex = triangle_vertices;
 
@@ -55,6 +55,7 @@ int main(int argc, char* argv[]) {
 		auto& transform = transform_component->value();
 		transform.pos_ = glm::vec3(0.0f, 0.0f, -15.0f);
 		transform.scale_ = glm::vec3(10.0f, 10.0f, 10.0f);
+		transform.rot_ = glm::vec3(0.0f, 0.0f, 0.0f);
 
 	}
 	auto render_component = ecs_manager.getComponent<RenderComponent>(entity);
