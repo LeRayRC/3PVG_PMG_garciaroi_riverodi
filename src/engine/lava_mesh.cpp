@@ -137,17 +137,15 @@ bool LavaMesh::loadAsGLTFWithNodes(std::filesystem::path file_path) {
     for (size_t i = 0; i < gltf.materials.size(); ++i) {
       const fastgltf::Material& gltfMat = gltf.materials[i];
 
-      // Crear un nuevo material para cada material GLTF
       std::shared_ptr<LavaPBRMaterial> mat;
       if (engine_) {
-        mat = std::make_shared<LavaPBRMaterial>(*engine_, MaterialPBRProperties()/* o *engine_vr_ según corresponda */);
+        mat = std::make_shared<LavaPBRMaterial>(*engine_, MaterialPBRProperties());
       }
       else {
-        mat = std::make_shared<LavaPBRMaterial>(*engine_vr_, MaterialPBRProperties() /* o *engine_vr_ según corresponda */);
+        mat = std::make_shared<LavaPBRMaterial>(*engine_vr_, MaterialPBRProperties());
 
       }
 
-      // Configurar propiedades básicas
       mat->uniform_properties.metallic_factor_ = gltfMat.pbrData.metallicFactor;
       mat->uniform_properties.roughness_factor_ = gltfMat.pbrData.roughnessFactor;
       mat->uniform_properties.opacity_mask_ = gltfMat.alphaCutoff;
@@ -156,7 +154,6 @@ bool LavaMesh::loadAsGLTFWithNodes(std::filesystem::path file_path) {
         mat->uniform_properties.specular_factor_ = gltfMat.specular->specularFactor;
       }
 
-      // Cargar texturas
       if (gltfMat.pbrData.baseColorTexture.has_value()) {
         int base_color_index = (int)gltfMat.pbrData.baseColorTexture.value().textureIndex;
         if (base_color_index < gltf.images.size()) {
@@ -190,10 +187,8 @@ bool LavaMesh::loadAsGLTFWithNodes(std::filesystem::path file_path) {
         }
       }
 
-      // Actualizar descriptor set para el material
       mat->UpdateDescriptorSet();
 
-      // Agregar a la lista de materiales
       materials_.push_back(mat);
     }
   }
@@ -766,14 +761,11 @@ void LavaMesh::processNode(const fastgltf::Asset& gltf,
   const glm::mat4& parentTransform,
   std::vector<t>& combinedVertices,
   std::vector<uint32_t>& combinedIndices,
-  std::vector<GeoSurface>& surfaces,        // NUEVO: parámetro para almacenar las superficies
+  std::vector<GeoSurface>& surfaces,        
   uint32_t& index_count,
   uint16_t& count_surfaces) {
 
-  // Calcular la transformación de este nodo
   glm::mat4 nodeTransform = parentTransform;
-  printf("%s\n", node.name.c_str());
-  // Verificar qué tipo de transformación está presente
   if (std::holds_alternative<fastgltf::Node::TransformMatrix>(node.transform)) {
     const auto& matrix = std::get<fastgltf::Node::TransformMatrix>(node.transform);
     glm::mat4 localTransform(
@@ -799,7 +791,6 @@ void LavaMesh::processNode(const fastgltf::Asset& gltf,
     nodeTransform = nodeTransform * localTransform;
   }
 
-  // Procesar la malla asociada al nodo actual, si existe
   if (node.meshIndex.has_value()) {
     const fastgltf::Mesh& mesh = gltf.meshes[node.meshIndex.value()];
     size_t initial_vtx = combinedVertices.size();
@@ -809,21 +800,17 @@ void LavaMesh::processNode(const fastgltf::Asset& gltf,
       newSurface.start_index = static_cast<uint32_t>(combinedIndices.size());
       newSurface.count = static_cast<uint32_t>(gltf.accessors[p.indicesAccessor.value()].count);
 
-      // NUEVO: Asignar el material correspondiente a la superficie
       if (p.materialIndex.has_value()) {
         newSurface.material_index = static_cast<uint32_t>(p.materialIndex.value());
       }
       else {
-        newSurface.material_index = 0; // Material por defecto si no se especifica
+        newSurface.material_index = 0;
       }
 
-      // NUEVO: Añadir la superficie al vector de superficies
       surfaces.push_back(newSurface);
 
-      // Actualizar el contador de índices
       index_count += newSurface.count;
 
-      // Cargar índices
       {
         const fastgltf::Accessor& indexAccessor = gltf.accessors[p.indicesAccessor.value()];
         combinedIndices.reserve(combinedIndices.size() + indexAccessor.count);
@@ -834,7 +821,6 @@ void LavaMesh::processNode(const fastgltf::Asset& gltf,
           });
       }
 
-      // Cargar posiciones
       {
         auto posIt = p.findAttribute("POSITION");
         if (posIt != p.attributes.end()) {
@@ -859,7 +845,6 @@ void LavaMesh::processNode(const fastgltf::Asset& gltf,
         }
       }
 
-      // Cargar normales
       auto normals = p.findAttribute("NORMAL");
       if (normals != p.attributes.end()) {
         const fastgltf::Accessor& normalAccessor = gltf.accessors[normals->second];
@@ -873,7 +858,6 @@ void LavaMesh::processNode(const fastgltf::Asset& gltf,
           });
       }
 
-      // Cargar UVs
       auto uv = p.findAttribute("TEXCOORD_0");
       if (uv != p.attributes.end()) {
         const fastgltf::Accessor& uvAccessor = gltf.accessors[uv->second];
@@ -885,7 +869,6 @@ void LavaMesh::processNode(const fastgltf::Asset& gltf,
           });
       }
 
-      // Cargar colores
       auto colors = p.findAttribute("COLOR_0");
       if (colors != p.attributes.end()) {
         const fastgltf::Accessor& colorAccessor = gltf.accessors[colors->second];
@@ -896,12 +879,10 @@ void LavaMesh::processNode(const fastgltf::Asset& gltf,
           });
       }
 
-      // Incrementar contador de superficies
       count_surfaces++;
     }
   }
 
-  // Procesar recursivamente los nodos hijos
   for (const auto& childIndex : node.children) {
     const fastgltf::Node& childNode = gltf.nodes[childIndex];
     processNode(gltf, childNode, nodeTransform, combinedVertices, combinedIndices, surfaces, index_count, count_surfaces);

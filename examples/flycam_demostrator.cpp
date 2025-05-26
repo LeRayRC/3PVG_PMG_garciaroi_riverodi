@@ -328,32 +328,32 @@ int main(int argc, char* argv[]) {
 	}
 
 
-	//{
-	//	size_t light_entity = ecs_manager.createEntity();
-	//	ecs_manager.addComponent<TransformComponent>(light_entity);
-	//	ecs_manager.addComponent<LightComponent>(light_entity);
-	//
-	//	auto light_component = ecs_manager.getComponent<LightComponent>(light_entity);
-	//	if (light_component) {
-	//		auto& light = light_component->value();
-	//		light.enabled_ = true;
-	//		light.type_ = LIGHT_TYPE_SPOT;
-	//		light.base_color_ = glm::vec3(1.0f, 1.0f, 1.0f);
-	//		light.spec_color_ = glm::vec3(0.0f, 0.0f, 0.0f);
-	//		light.cutoff_ = 34.0f;
-	//		light.outer_cutoff_ = 56.410f;
-	//		light.constant_att_ = 1.0f;
-	//		light.quad_att_ = 0.112f;
-	//		light.strength_ = 0.28f;
-	//	}
-	//	auto tr_component = ecs_manager.getComponent<TransformComponent>(light_entity);
-	//	if (tr_component) {
-	//		auto& tr = tr_component->value();
-	//		tr.rot_ = glm::vec3(-110.0f, 0.0f, -0.5f);
-	//		tr.pos_ = glm::vec3(0.03f, 0.06f, -1.68f);
-	//	}
-	//
-	//}
+	{
+		size_t light_entity = ecs_manager.createEntity();
+		ecs_manager.addComponent<TransformComponent>(light_entity);
+		ecs_manager.addComponent<LightComponent>(light_entity);
+	
+		auto light_component = ecs_manager.getComponent<LightComponent>(light_entity);
+		if (light_component) {
+			auto& light = light_component->value();
+			light.enabled_ = true;
+			light.type_ = LIGHT_TYPE_SPOT;
+			light.base_color_ = glm::vec3(1.0f, 1.0f, 1.0f);
+			light.spec_color_ = glm::vec3(0.0f, 0.0f, 0.0f);
+			light.cutoff_ = 34.0f;
+			light.outer_cutoff_ = 56.410f;
+			light.constant_att_ = 1.0f;
+			light.quad_att_ = 0.112f;
+			light.strength_ = 0.28f;
+		}
+		auto tr_component = ecs_manager.getComponent<TransformComponent>(light_entity);
+		if (tr_component) {
+			auto& tr = tr_component->value();
+			tr.rot_ = glm::vec3(-110.0f, 0.0f, -0.5f);
+			tr.pos_ = glm::vec3(0.03f, 0.06f, -1.68f);
+		}
+	
+	}
 	
 	//Create Camera entity
 	size_t camera_entity = ecs_manager.createEntity();
