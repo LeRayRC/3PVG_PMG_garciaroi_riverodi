@@ -40,8 +40,6 @@ private:
 
     size_t numGaussians;
     size_t gaussianSize;
-
-    VkDeviceAddress index_buffer_address[26];
 };
 
 #endif //__LAVA_GAUSSIAN_SPLAT_H__

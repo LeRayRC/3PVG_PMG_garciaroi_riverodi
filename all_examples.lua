@@ -111,9 +111,14 @@ project"PBR"
     conan_config_exec("Debug")
     conan_config_exec("Release")
     conan_config_exec("RelWithDebInfo")
+    pchheader "stdafx.hpp"
+	pchsource "src/stdafx.cpp"
+	forceincludes { "stdafx.hpp" }
     debugargs { _MAIN_SCRIPT_DIR .. "/examples/data" }
     files "examples/pbr_demostrator.cpp"
     files "src/shaders/*"
+    files "src/shaders/*/*"
+    files "src/stdafx.cpp"
     files "examples/assets/*"
     common_settings()
 project"Gaussian"

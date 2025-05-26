@@ -49,11 +49,12 @@ layout (location = 0) in vec3 inColor;
 layout (location = 1) in vec2 inUV;
 layout (location = 2) in vec3 inNormal;
 layout (location = 3) in vec4 inPos;
-layout (location = 4) in vec3 TangentLightPos;
-layout (location = 5) in vec3 TangentViewPos;
-layout (location = 6) in vec3 TangentFragPos;
+layout (location = 4) in mat3 TBN;
 layout (location = 7) in vec4 fragPosLightSpace;
 layout (location = 8) in mat4 cameraView;
+//layout (location = 4) in vec3 TangentLightPos;
+//layout (location = 5) in vec3 TangentViewPos;
+//layout (location = 6) in vec3 TangentFragPos;
 
 
 //output write
@@ -61,10 +62,11 @@ layout (location = 0) out vec4 outFragColor;
 
 
 vec3 final_color = vec3(0.0, 0.0, 0.0);
+vec3 useNormal;
 
 
 vec3 DirectionalLight(){
-  vec3 normal_norm = normalize(inNormal);
+  vec3 normal_norm = normalize(useNormal);
   float directionalIncidence = max(dot(normal_norm, light.dir), 0.0);
   //Specular
   vec3 viewDirection = normalize(globalData.cameraPos - inPos.xyz);
@@ -79,10 +81,10 @@ vec3 DirectionalLight(){
 
 vec3 PointLight() {
     vec3 lightDir = normalize(light.pos - inPos.xyz);
-    float directionalIncidence = max(dot(inNormal, lightDir), 0.0);
+    float directionalIncidence = max(dot(useNormal, lightDir), 0.0);
     // Specular
     vec3 viewDirection = normalize(globalData.cameraPos - inPos.xyz);
-    vec3 reflectDirection = reflect(-lightDir, inNormal);
+    vec3 reflectDirection = reflect(-lightDir, useNormal);
 
     float specularValue = pow(max(dot(viewDirection, reflectDirection), 0.0), light.shininess);
 
@@ -99,10 +101,10 @@ vec3 SpotLight() {
     float theta = dot(lightDir, normalize(light.dir));
     vec3 result = vec3(0.0, 0.0, 0.0);
 
-    float directionalIncidence = max(dot(inNormal, lightDir), 0.0);
+    float directionalIncidence = max(dot(useNormal, lightDir), 0.0);
     // Specular
     vec3 viewDirection = normalize(globalData.cameraPos - inPos.xyz);
-    vec3 reflectDirection = reflect(-lightDir, inNormal);
+    vec3 reflectDirection = reflect(-lightDir, useNormal);
 
     float specularValue = pow(max(dot(viewDirection, reflectDirection), 0.0), light.shininess);
 
@@ -189,7 +191,7 @@ float DirectionalShadowCalculation(vec3 fragPos){
 
 
     // calculate bias (based on depth map resolution and slope)
-    vec3 normal = normalize(inNormal);
+    vec3 normal = normalize(useNormal);
     float bias = max(0.05 * (1.0 - dot(normal, light.dir)), 0.005);
     if (layer == 2)
     {
@@ -230,6 +232,11 @@ float DirectionalShadowCalculation(vec3 fragPos){
 
 void main() 
 {
+
+  vec3 normalMap = texture(normalTex, inUV).rgb;
+  normalMap = normalMap * 2.0 - 1.0;   
+  normalMap = normalize(TBN * normalMap); 
+  useNormal = (properties.use_normal_ == 0.0) ? inNormal : normalMap;
 
   if(light.enabled == 1){
     switch(light.type){
