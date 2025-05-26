@@ -89,7 +89,7 @@ project"ECS"
         files "src/stdafx.cpp"
         files "examples/assets/*"
         common_settings()
-project"JobSystemDemostrator"
+project"JobSystem"
     kind "ConsoleApp" -- This was WindowedApp
     language "C++"
     targetdir "build/%{prj.name}/%{cfg.buildcfg}"
@@ -99,9 +99,13 @@ project"JobSystemDemostrator"
     conan_config_exec("Release")
     conan_config_exec("RelWithDebInfo")
     debugargs { _MAIN_SCRIPT_DIR .. "/examples/data" }
-    files "examples/job_system_demostrator.cpp"
-    files "src/shaders/*"
+    pchheader "stdafx.hpp"
+    pchsource "src/stdafx.cpp"
+    forceincludes { "stdafx.hpp" }
+    files "src/stdafx.cpp"
     files "examples/assets/*"
+    files "examples/job_system_demostrator.cpp"
+    common_settings()
 project"Scripting"
     kind "ConsoleApp" -- This was WindowedApp
     language "C++"
