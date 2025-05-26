@@ -6,7 +6,7 @@
 #include "lava/scripting/lava_lua_script.hpp"
 //#include "lava/common/lava_global_helpers.hpp"
 #include "lava/engine/lava_buffer.hpp"
-#include "lava/ecs/lava_ecs.hpp"
+//#include "lava/ecs/lava_ecs.hpp"
 
 
 enum RenderType {
@@ -38,6 +38,11 @@ struct LuaScriptComponent {
   }
   LuaScriptComponent(size_t entity_id) {
     script_ = std::make_unique<LavaLuaScript>();
+    entity = entity_id;
+    script_->set_int_variable("ENTITY_ID", entity);
+  }
+
+  void set_entity(size_t entity_id) {
     entity = entity_id;
     script_->set_int_variable("ENTITY_ID", entity);
   }

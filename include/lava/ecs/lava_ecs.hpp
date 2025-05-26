@@ -5,7 +5,6 @@
 #include <memory>
 #include <vector>
 #include <optional>
-//#include "ecs/lava_ecs_components.hpp"
 
 //Entity
 //8 bytes -> 64 bits -> 
@@ -82,6 +81,7 @@ public:
 
     if (entity >= cld->getSize()) return ENTITY_NOT_EXIST;
     cld->component_list_[entity] = T();
+    
 
     return ECS_SUCCESS;
   }

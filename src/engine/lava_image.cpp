@@ -318,6 +318,4 @@ void LavaImage::allocate(VkExtent3D size, VkFormat format, VkImageUsageFlags usa
 			exit(-1);
 		}
 	}
-	
-
 }

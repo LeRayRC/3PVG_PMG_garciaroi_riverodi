@@ -116,10 +116,13 @@ project"Scripting"
     conan_config_exec("Release")
     conan_config_exec("RelWithDebInfo")
     debugargs { _MAIN_SCRIPT_DIR .. "/examples/data" }
-    files "examples/scripting_demostrator.cpp"
-    files "examples/scripts/*"
-    files "src/shaders/*"
+    pchheader "stdafx.hpp"
+    pchsource "src/stdafx.cpp"
+    forceincludes { "stdafx.hpp" }
+    files "src/stdafx.cpp"
     files "examples/assets/*"
+    files "examples/scripting_demostrator.cpp"
+    common_settings()
 project"PBR"
     kind "ConsoleApp" -- This was WindowedApp
     language "C++"
