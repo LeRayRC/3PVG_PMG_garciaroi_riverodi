@@ -46,21 +46,26 @@ project"HelloTriangleWithInput"
     files "examples/hellotrianglewithinput.cpp"
     files "include/custom_vulkan_helpers.hpp"
     files "src/shaders/*"
-project"GLTFLoad"
-    kind "ConsoleApp" -- This was WindowedApp
-    language "C++"
-    targetdir "build/%{prj.name}/%{cfg.buildcfg}"
-    includedirs "include"
-    links "LavaEngine"
-    conan_config_exec("Debug")
-    conan_config_exec("Release")
-    conan_config_exec("RelWithDebInfo")
-    debugargs { _MAIN_SCRIPT_DIR .. "/examples/data" }
-    files "examples/gltf_loader.cpp"
-    files "include/examples/gltf_loader.hpp"
-    files "src/shaders/*"
-    files "examples/assets/*"
-
+project "GLTFLoad"
+        kind "ConsoleApp" -- This was WindowedApp
+        language "C++"
+        targetdir "build/%{prj.name}/%{cfg.buildcfg}"
+        links { "LavaEngine" }
+        includedirs "include"
+        conan_config_exec("Debug")
+        conan_config_exec("Release")
+        conan_config_exec("RelWithDebInfo")
+        pchheader "stdafx.hpp"
+        pchsource "src/stdafx.cpp"
+        forceincludes { "stdafx.hpp" }
+        debugargs { _MAIN_SCRIPT_DIR .. "/examples/data" }
+        files "examples/gltf_loader.cpp"
+        files "src/shaders/*"
+        files "src/shaders/*/*"
+        files "src/shaders/*/*/*"
+        files "src/stdafx.cpp"
+        files "examples/assets/*"
+        common_settings()
 project"ECS"
         kind "ConsoleApp" -- This was WindowedApp
         language "C++"

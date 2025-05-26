@@ -62,7 +62,7 @@ public:
 	void update() {
 		auto& transform_component = ecs_manager_.getComponent<TransformComponent>(entity_id)->value();
 		
-		transform_component.pos_.z -= speed_ * engine_.dt_;
+		transform_component.pos_.z -= speed_ * static_cast<float>(engine_.dt_);
 
 		if (transform_component.pos_.z < -10.0f) {
 			reset();
