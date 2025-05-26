@@ -41,7 +41,6 @@ LavaBuffer::LavaBuffer(LavaAllocator& allocator, size_t alloc_size,
 	initialized_ = true;
 	mapped_ = false;
 
-	//setMappedData();
 }
 
 
