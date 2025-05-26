@@ -262,7 +262,7 @@ bool LavaGaussianSplat::uploadToGPU(LavaEngine* engine)
 
     //create vertex buffer
     vertex_buffer = std::make_unique<LavaBuffer>(*engine->allocator_, vertex_buffer_size, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-        VMA_MEMORY_USAGE_GPU_ONLY);
+        VMA_MEMORY_USAGE_GPU_ONLY, engine->device_.get());
 
     //find the adress of the vertex buffer
     VkBufferDeviceAddressInfo deviceAdressInfo{ .sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO,.buffer = vertex_buffer->buffer_.buffer };
@@ -273,7 +273,7 @@ bool LavaGaussianSplat::uploadToGPU(LavaEngine* engine)
     
     for (i = 0; i < 26; ++i) {
         index_buffer[i] = std::make_unique<LavaBuffer>(*engine->allocator_, index_buffer_size, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-            VMA_MEMORY_USAGE_GPU_ONLY);
+            VMA_MEMORY_USAGE_GPU_ONLY, engine->device_.get());
         //find the adress of the index buffer
         VkBufferDeviceAddressInfo deviceAdressInfo{ .sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO,.buffer = index_buffer[i]->buffer_.buffer };
 
