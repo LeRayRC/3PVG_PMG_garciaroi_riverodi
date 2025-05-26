@@ -825,6 +825,7 @@ void LavaPBRRenderSystem::update_lights(std::vector<std::optional<struct LightCo
 
 LavaPBRRenderSystem::~LavaPBRRenderSystem()
 {
+	vkDeviceWaitIdle(engine_.device_->get_device());
 	for (int i = 0; i < 3; i++) {
 		vkDestroySampler(engine_.device_->get_device(), shadowmap_sampler_[i], nullptr);
 		vkDestroyImageView(engine_.device_->get_device(), shadowmap_image_[i].image_view, nullptr);
