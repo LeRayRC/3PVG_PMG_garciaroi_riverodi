@@ -110,9 +110,6 @@ int main(int argc, char* argv[]) {
 	std::shared_ptr<LavaWindowSystem>  lava_system = LavaWindowSystem::Get();
 	LavaEngine engine(1920,1080);
 	LavaECSManager ecs_manager;
-	LavaPBRRenderSystem pbr_render_system{ engine };
-	LavaNormalRenderSystem normal_render_system{ engine };
-	LavaDiffuseRenderSystem diffuse_render_system{ engine };
 	LavaDeferredRenderSystem deferred_render_system{ engine };
 	LavaUpdateSystem update_system{ engine };
 
@@ -233,133 +230,133 @@ int main(int argc, char* argv[]) {
 		}
 	}
 
-	{
-		size_t entity = ecs_manager.createEntity();
-		ecs_manager.addComponent<TransformComponent>(entity);
-		ecs_manager.addComponent<RenderComponent>(entity);
+	//{
+	//	size_t entity = ecs_manager.createEntity();
+	//	ecs_manager.addComponent<TransformComponent>(entity);
+	//	ecs_manager.addComponent<RenderComponent>(entity);
 
-		auto transform_component = ecs_manager.getComponent<TransformComponent>(entity);
-		if (transform_component) {
-			auto& transform = transform_component->value();
-			transform.pos_ = glm::vec3(3.524f, 0.60f, -0.300f);
-			transform.rot_ = glm::vec3(00.0f, -90.0f, 0.0f);
-			transform.scale_ = glm::vec3(0.08f, 0.08f, 0.08f);
-		}
+	//	auto transform_component = ecs_manager.getComponent<TransformComponent>(entity);
+	//	if (transform_component) {
+	//		auto& transform = transform_component->value();
+	//		transform.pos_ = glm::vec3(3.524f, 0.60f, -0.300f);
+	//		transform.rot_ = glm::vec3(00.0f, -90.0f, 0.0f);
+	//		transform.scale_ = glm::vec3(0.08f, 0.08f, 0.08f);
+	//	}
 
-		auto render_component = ecs_manager.getComponent<RenderComponent>(entity);
-		if (render_component) {
-			auto& render = render_component->value();
-			render.mesh_ = horse_mesh_;
-		}
-	}
+	//	auto render_component = ecs_manager.getComponent<RenderComponent>(entity);
+	//	if (render_component) {
+	//		auto& render = render_component->value();
+	//		render.mesh_ = horse_mesh_;
+	//	}
+	//}
 
-	{
-		size_t entity = ecs_manager.createEntity();
-		ecs_manager.addComponent<TransformComponent>(entity);
-		ecs_manager.addComponent<RenderComponent>(entity);
+	//{
+	//	size_t entity = ecs_manager.createEntity();
+	//	ecs_manager.addComponent<TransformComponent>(entity);
+	//	ecs_manager.addComponent<RenderComponent>(entity);
 
-		auto transform_component = ecs_manager.getComponent<TransformComponent>(entity);
-		if (transform_component) {
-			auto& transform = transform_component->value();
-			transform.pos_ = glm::vec3(3.524f, 0.60f, -2.300f);
-			transform.rot_ = glm::vec3(00.0f, -90.0f, 0.0f);
-			transform.scale_ = glm::vec3(0.08f, 0.08f, 0.08f);
-		}
+	//	auto transform_component = ecs_manager.getComponent<TransformComponent>(entity);
+	//	if (transform_component) {
+	//		auto& transform = transform_component->value();
+	//		transform.pos_ = glm::vec3(3.524f, 0.60f, -2.300f);
+	//		transform.rot_ = glm::vec3(00.0f, -90.0f, 0.0f);
+	//		transform.scale_ = glm::vec3(0.08f, 0.08f, 0.08f);
+	//	}
 
-		auto render_component = ecs_manager.getComponent<RenderComponent>(entity);
-		if (render_component) {
-			auto& render = render_component->value();
-			render.mesh_ = horse_mesh_;
-		}
-	}
-
-
-	{
-		size_t entity = ecs_manager.createEntity();
-		ecs_manager.addComponent<TransformComponent>(entity);
-		ecs_manager.addComponent<RenderComponent>(entity);
-
-		auto transform_component = ecs_manager.getComponent<TransformComponent>(entity);
-		if (transform_component) {
-			auto& transform = transform_component->value();
-			transform.pos_ = glm::vec3(3.524f, 0.60f, -4.300f);
-			transform.rot_ = glm::vec3(00.0f, -90.0f, 0.0f);
-			transform.scale_ = glm::vec3(0.08f, 0.08f, 0.08f);
-		}
-
-		auto render_component = ecs_manager.getComponent<RenderComponent>(entity);
-		if (render_component) {
-			auto& render = render_component->value();
-			render.mesh_ = horse_mesh_;
-		}
-	}
+	//	auto render_component = ecs_manager.getComponent<RenderComponent>(entity);
+	//	if (render_component) {
+	//		auto& render = render_component->value();
+	//		render.mesh_ = horse_mesh_;
+	//	}
+	//}
 
 
-	//LEFT THREE SIDE
-	{
-		size_t entity = ecs_manager.createEntity();
-		ecs_manager.addComponent<TransformComponent>(entity);
-		ecs_manager.addComponent<RenderComponent>(entity);
+	//{
+	//	size_t entity = ecs_manager.createEntity();
+	//	ecs_manager.addComponent<TransformComponent>(entity);
+	//	ecs_manager.addComponent<RenderComponent>(entity);
 
-		auto transform_component = ecs_manager.getComponent<TransformComponent>(entity);
-		if (transform_component) {
-			auto& transform = transform_component->value();
-			transform.pos_ = glm::vec3(-2.324f, 0.60f, -0.300f);
-			transform.rot_ = glm::vec3(00.0f, 90.0f, 0.0f);
-			transform.scale_ = glm::vec3(0.08f, 0.08f, 0.08f);
-		}
+	//	auto transform_component = ecs_manager.getComponent<TransformComponent>(entity);
+	//	if (transform_component) {
+	//		auto& transform = transform_component->value();
+	//		transform.pos_ = glm::vec3(3.524f, 0.60f, -4.300f);
+	//		transform.rot_ = glm::vec3(00.0f, -90.0f, 0.0f);
+	//		transform.scale_ = glm::vec3(0.08f, 0.08f, 0.08f);
+	//	}
 
-		auto render_component = ecs_manager.getComponent<RenderComponent>(entity);
-		if (render_component) {
-			auto& render = render_component->value();
-			render.mesh_ = horse_mesh_;
-		}
-	}
-
-	{
-		size_t entity = ecs_manager.createEntity();
-		ecs_manager.addComponent<TransformComponent>(entity);
-		ecs_manager.addComponent<RenderComponent>(entity);
-
-		auto transform_component = ecs_manager.getComponent<TransformComponent>(entity);
-		if (transform_component) {
-			auto& transform = transform_component->value();
-			transform.pos_ = glm::vec3(-2.324f, 0.60f, -2.300f);
-			transform.rot_ = glm::vec3(00.0f, 90.0f, 0.0f);
-			transform.scale_ = glm::vec3(0.08f, 0.08f, 0.08f);
-		}
-
-		auto render_component = ecs_manager.getComponent<RenderComponent>(entity);
-		if (render_component) {
-			auto& render = render_component->value();
-			render.mesh_ = horse_mesh_;
-		}
-	}
+	//	auto render_component = ecs_manager.getComponent<RenderComponent>(entity);
+	//	if (render_component) {
+	//		auto& render = render_component->value();
+	//		render.mesh_ = horse_mesh_;
+	//	}
+	//}
 
 
-	{
-		size_t entity = ecs_manager.createEntity();
-		ecs_manager.addComponent<TransformComponent>(entity);
-		ecs_manager.addComponent<RenderComponent>(entity);
+	////LEFT THREE SIDE
+	//{
+	//	size_t entity = ecs_manager.createEntity();
+	//	ecs_manager.addComponent<TransformComponent>(entity);
+	//	ecs_manager.addComponent<RenderComponent>(entity);
 
-		auto transform_component = ecs_manager.getComponent<TransformComponent>(entity);
-		if (transform_component) {
-			auto& transform = transform_component->value();
-			transform.pos_ = glm::vec3(-2.324f, 0.60f, -4.300f);
-			transform.rot_ = glm::vec3(00.0f, 90.0f, 0.0f);
-			transform.scale_ = glm::vec3(0.08f, 0.08f, 0.08f);
-		}
+	//	auto transform_component = ecs_manager.getComponent<TransformComponent>(entity);
+	//	if (transform_component) {
+	//		auto& transform = transform_component->value();
+	//		transform.pos_ = glm::vec3(-2.324f, 0.60f, -0.300f);
+	//		transform.rot_ = glm::vec3(00.0f, 90.0f, 0.0f);
+	//		transform.scale_ = glm::vec3(0.08f, 0.08f, 0.08f);
+	//	}
 
-		auto render_component = ecs_manager.getComponent<RenderComponent>(entity);
-		if (render_component) {
-			auto& render = render_component->value();
-			render.mesh_ = horse_mesh_;
-		}
-	}
+	//	auto render_component = ecs_manager.getComponent<RenderComponent>(entity);
+	//	if (render_component) {
+	//		auto& render = render_component->value();
+	//		render.mesh_ = horse_mesh_;
+	//	}
+	//}
+
+	//{
+	//	size_t entity = ecs_manager.createEntity();
+	//	ecs_manager.addComponent<TransformComponent>(entity);
+	//	ecs_manager.addComponent<RenderComponent>(entity);
+
+	//	auto transform_component = ecs_manager.getComponent<TransformComponent>(entity);
+	//	if (transform_component) {
+	//		auto& transform = transform_component->value();
+	//		transform.pos_ = glm::vec3(-2.324f, 0.60f, -2.300f);
+	//		transform.rot_ = glm::vec3(00.0f, 90.0f, 0.0f);
+	//		transform.scale_ = glm::vec3(0.08f, 0.08f, 0.08f);
+	//	}
+
+	//	auto render_component = ecs_manager.getComponent<RenderComponent>(entity);
+	//	if (render_component) {
+	//		auto& render = render_component->value();
+	//		render.mesh_ = horse_mesh_;
+	//	}
+	//}
+
+
+	//{
+	//	size_t entity = ecs_manager.createEntity();
+	//	ecs_manager.addComponent<TransformComponent>(entity);
+	//	ecs_manager.addComponent<RenderComponent>(entity);
+
+	//	auto transform_component = ecs_manager.getComponent<TransformComponent>(entity);
+	//	if (transform_component) {
+	//		auto& transform = transform_component->value();
+	//		transform.pos_ = glm::vec3(-2.324f, 0.60f, -4.300f);
+	//		transform.rot_ = glm::vec3(00.0f, 90.0f, 0.0f);
+	//		transform.scale_ = glm::vec3(0.08f, 0.08f, 0.08f);
+	//	}
+
+	//	auto render_component = ecs_manager.getComponent<RenderComponent>(entity);
+	//	if (render_component) {
+	//		auto& render = render_component->value();
+	//		render.mesh_ = horse_mesh_;
+	//	}
+	//}
 
 
 
-	
+	//
 
 
 	//LIGHT OK
