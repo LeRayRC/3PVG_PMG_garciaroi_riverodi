@@ -111,6 +111,7 @@ int main(int argc, char* argv[]) {
 	LavaEngine engine(1920,1080);
 	LavaECSManager ecs_manager;
 	LavaDeferredRenderSystem deferred_render_system{ engine };
+	LavaPBRRenderSystem pbr_render_system{ engine };
 	LavaUpdateSystem update_system{ engine };
 
 	std::vector<size_t> light_entities;
@@ -375,7 +376,7 @@ int main(int argc, char* argv[]) {
 			light.spec_color_ = glm::vec3(0.0f, 0.0f, 0.0f);
 			light.cutoff_ = 27.0f;
 			light.outer_cutoff_ = 36.410f;
-			light.constant_att_ = 0.21f;
+			light.constant_att_ = 1.0f;
 			light.quad_att_ = 0.112f;
 			light.strength_ = 0.28f;
 		}
@@ -402,7 +403,7 @@ int main(int argc, char* argv[]) {
 			light.spec_color_ = glm::vec3(0.0f, 0.0f, 0.0f);
 			light.cutoff_ = 27.0f;
 			light.outer_cutoff_ = 35.0f;
-			light.constant_att_ = 0.21f;
+			light.constant_att_ = 1.0f;
 			light.quad_att_ = 0.112f;
 			light.strength_ = 0.28f;
 		}
@@ -428,7 +429,7 @@ int main(int argc, char* argv[]) {
 			light.spec_color_ = glm::vec3(0.0f, 0.0f, 0.0f);
 			light.cutoff_ = 27.0f;
 			light.outer_cutoff_ = 36.410f;
-			light.constant_att_ = 0.21f;
+			light.constant_att_ = 1.0f;
 			light.quad_att_ = 0.112f;
 			light.strength_ = 0.28f;
 		}
@@ -455,7 +456,7 @@ int main(int argc, char* argv[]) {
 			light.spec_color_ = glm::vec3(0.0f, 0.0f, 0.0f);
 			light.cutoff_ = 27.0f;
 			light.outer_cutoff_ = 36.410f;
-			light.constant_att_ = 0.21f;
+			light.constant_att_ = 1.00f;
 			light.quad_att_ = 0.112f;
 			light.strength_ = 0.28f;
 		}
@@ -540,7 +541,8 @@ int main(int argc, char* argv[]) {
 
 		deferred_render_system.render(ecs_manager.getComponentList<TransformComponent>(),
 			ecs_manager.getComponentList<RenderComponent>(), ecs_manager.getComponentList<LightComponent>());
-
+		//pbr_render_system.render(ecs_manager.getComponentList<TransformComponent>(),
+		//	ecs_manager.getComponentList<RenderComponent>(), ecs_manager.getComponentList<LightComponent>());
 		ecs_render_imgui(ecs_manager, camera_entity);
 		ecs_light_imgui(ecs_manager.getComponentList<TransformComponent>(),
 			ecs_manager.getComponentList<LightComponent>());

@@ -29,6 +29,9 @@ public:
 		mesh_properties.mesh_path = "../examples/assets/hyperspace_star_wars.glb";
 		mesh_properties.material = basic_material;
 		mesh_ = std::make_shared<LavaMesh>(engine, mesh_properties);
+		basic_material->UpdateBaseColorImage(engine.default_texture_image_white);
+		
+
 
 		entity_id = ecs_manager.createEntity();
 		ecs_manager.addComponent<TransformComponent>(entity_id);
@@ -401,13 +404,13 @@ int main(int argc, char* argv[]) {
 		engine.clearWindow();
 
 
-		//pbr_render_system.renderWithShadows(ecs_manager.getComponentList<TransformComponent>(),
-		//	ecs_manager.getComponentList<RenderComponent>(), ecs_manager.getComponentList<LightComponent>());
+		pbr_render_system.render(ecs_manager.getComponentList<TransformComponent>(),
+			ecs_manager.getComponentList<RenderComponent>(), ecs_manager.getComponentList<LightComponent>());
 		//diffuse_render_system.render(ecs_manager.getComponentList<TransformComponent>(),
 		//	ecs_manager.getComponentList<RenderComponent>());
 
-		deferred_render_system.render(ecs_manager.getComponentList<TransformComponent>(),
-			ecs_manager.getComponentList<RenderComponent>(), ecs_manager.getComponentList<LightComponent>());
+		//deferred_render_system.render(ecs_manager.getComponentList<TransformComponent>(),
+		//	ecs_manager.getComponentList<RenderComponent>(), ecs_manager.getComponentList<LightComponent>());
 
 		ecs_render_imgui(ecs_manager, camera_entity);
 		ecs_light_imgui(ecs_manager.getComponentList<TransformComponent>(),
