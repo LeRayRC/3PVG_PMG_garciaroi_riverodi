@@ -54,6 +54,8 @@ layout (location = 3) in vec4 inPos;
 layout (location = 4) in mat3 TBN;
 layout (location = 7) in vec4 fragPosLightSpace;
 layout (location = 8) in mat4 cameraView;
+layout (location = 12) in vec3 inCameraPos;
+layout (location = 13) in vec3 inViewDir;
 //layout (location = 4) in vec3 TangentLightPos;
 //layout (location = 5) in vec3 TangentViewPos;
 //layout (location = 6) in vec3 TangentFragPos;
@@ -71,8 +73,8 @@ vec3 DirectionalLight(){
   vec3 normal_norm = normalize(useNormal);
   float directionalIncidence = max(dot(normal_norm, light.dir), 0.0);
   //Specular
-  vec3 viewDirection = normalize(globalData.cameraPos - inPos.xyz);
-  vec3 reflectDirection = reflect(light.dir, normal_norm);
+  vec3 viewDirection = normalize(inViewDir);
+  vec3 reflectDirection = reflect(-light.dir, normal_norm);
 
   float specularValue = pow(max(dot(viewDirection, reflectDirection), 0.0), light.shininess);
 
@@ -85,7 +87,7 @@ vec3 PointLight() {
     vec3 lightDir = normalize(light.pos - inPos.xyz);
     float directionalIncidence = max(dot(useNormal, lightDir), 0.0);
     // Specular
-    vec3 viewDirection = normalize(globalData.cameraPos - inPos.xyz);
+    vec3 viewDirection = normalize(inViewDir);
     vec3 reflectDirection = reflect(-lightDir, useNormal);
 
     float specularValue = pow(max(dot(viewDirection, reflectDirection), 0.0), light.shininess);
@@ -99,29 +101,51 @@ vec3 PointLight() {
 }
 
 vec3 SpotLight() {
-    vec3 lightDir = normalize(light.pos - inPos.xyz);
-    float theta = dot(lightDir, normalize(light.dir));
-    vec3 result = vec3(0.0, 0.0, 0.0);
-
-    float directionalIncidence = max(dot(useNormal, lightDir), 0.0);
-    // Specular
-    vec3 viewDirection = normalize(globalData.cameraPos - inPos.xyz);
-    vec3 reflectDirection = reflect(-lightDir, useNormal);
-
-    float specularValue = pow(max(dot(viewDirection, reflectDirection), 0.0), light.shininess);
-
-    vec3 diffuse = directionalIncidence * light.diff_color;
-    vec3 specular = light.strength * specularValue * light.spec_color;
-    // Attenuation
+    // Direction from fragment to light
+    vec3 fragToLight = normalize(light.pos - inPos.xyz);
+    
+    // Spotlight direction (already computed in C++)
+    vec3 spotDirection = normalize(-light.dir);
+    
+    // Calculate cosine of angle between light direction and fragment direction
+    float cosTheta = dot(fragToLight, -spotDirection);
+    
+    // Use the PRE-COMPUTED cosine values from C++ (don't convert again!)
+    float innerCutoffCos = light.cutoff;      // Already cosine from C++
+    float outerCutoffCos = light.outer_cutoff; // Already cosine from C++
+    
+    // Calculate spotlight intensity
+    float spotEffect = 0.0;
+    if (cosTheta >= outerCutoffCos) {
+        if (cosTheta >= innerCutoffCos) {
+            spotEffect = 1.0; // Inside inner cone
+        } else {
+            // Smooth falloff between inner and outer
+            float epsilon = innerCutoffCos - outerCutoffCos;
+            spotEffect = (cosTheta - outerCutoffCos) / epsilon;
+        }
+    }
+    
+    // Early exit if outside spotlight cone
+    if (spotEffect <= 0.0) {
+        return vec3(0.0);
+    }
+    
+    // Distance attenuation
     float distance = length(light.pos - inPos.xyz);
     float attenuation = 1.0 / (light.constant_att + light.linear_att * distance + light.quad_att * distance * distance);
-
-    // Intensity
-    float epsilon = light.cutoff - light.outer_cutoff;
-    float intensity = clamp((theta - light.outer_cutoff) / epsilon, 0.0, 1.0);
-
-    result = (diffuse * intensity * attenuation) + (specular * intensity * attenuation);
-    return result;
+    
+    // Diffuse lighting
+    float diff = max(dot(normalize(useNormal), fragToLight), 0.0);
+    vec3 diffuse = diff * light.diff_color;
+    
+    // Specular lighting
+    vec3 viewDir = normalize(inCameraPos - inPos.xyz);
+    vec3 halfwayDir = normalize(fragToLight + viewDir);
+    float spec = pow(max(dot(normalize(useNormal), halfwayDir), 0.0), light.shininess);
+    vec3 specular = light.strength * spec * light.spec_color;
+    
+    return (diffuse + specular) * spotEffect * attenuation;
 }
 
 float ShadowCalculation(vec4 fragPosLightSpace)
@@ -130,7 +154,7 @@ float ShadowCalculation(vec4 fragPosLightSpace)
   float currentDepth = projCoords.z;
   projCoords = projCoords * 0.5 + 0.5;
   float closestDepth = texture(shadowMap, projCoords.xy).r;
-  float shadow = currentDepth + 0.005 < closestDepth  ? 1.0 : 0.0;
+  float shadow = currentDepth + 0.00005 < closestDepth  ? 1.0 : 0.0;
   return shadow;
 }
 
@@ -245,10 +269,14 @@ float DirectionalShadowCalculation(vec3 fragPos){
 
 void main() 
 {
+  vec4 albedo = texture(baseColorTex,inUV);
+  if(albedo.a < properties.opacity_mask_) discard;
+
   vec3 normalMap = texture(normalTex, inUV).rgb;
   normalMap = normalMap * 2.0 - 1.0;   
   normalMap = normalize(TBN * normalMap); 
   useNormal = (properties.use_normal_ == 0.0) ? inNormal : normalMap;
+  useNormal = normalize(useNormal);
 
   if(light.enabled == 1){
     switch(light.type){
@@ -275,9 +303,6 @@ void main()
     }
   }
 
-
-  vec4 albedo = texture(baseColorTex, inUV);
   outFragColor.xyz += globalData.ambientColor;
   outFragColor *= albedo;
-  //outFragColor.xyz += globalData.ambientColor;
 }

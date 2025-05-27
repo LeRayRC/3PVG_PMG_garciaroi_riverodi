@@ -160,9 +160,15 @@ bool LavaMesh::loadAsGLTFWithNodes(std::filesystem::path file_path) {
           mat->base_color_ = loadImage(gltf, gltf.images[base_color_index], root_path);
         }
       }
-      else {
+      else if (gltfMat.emissiveTexture.has_value()) {
+          int base_color_index = (int)gltfMat.emissiveTexture.value().textureIndex;
+          if (base_color_index < gltf.images.size()) {
+              mat->base_color_ = loadImage(gltf, gltf.images[base_color_index], root_path);
+          }
+      }
+      else{
         if (engine_) {
-          mat->base_color_ = engine_->default_texture_image_white;
+          mat->base_color_ = engine_->default_texture_image_black;
         }
         else {
           mat->base_color_ = engine_vr_->default_texture_image_white;

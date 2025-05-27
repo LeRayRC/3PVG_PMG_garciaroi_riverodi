@@ -1,0 +1,11 @@
+Model Information:
+* title:	Pikachu
+* source:	https://sketchfab.com/3d-models/pikachu-c4b9596279a14cbea8b286d246fce887
+* author:	Murky (https://sketchfab.com/Micrk_V)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Pikachu" (https://sketchfab.com/3d-models/pikachu-c4b9596279a14cbea8b286d246fce887) by Murky (https://sketchfab.com/Micrk_V) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

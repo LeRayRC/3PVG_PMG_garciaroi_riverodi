@@ -77,9 +77,10 @@ LavaPBRRenderSystem::LavaPBRRenderSystem(LavaEngine &engine) :
 													engine_.global_pbr_descriptor_set_layout_,
 													engine_.global_lights_descriptor_set_layout_,
 													PipelineFlags::PIPELINE_USE_PUSHCONSTANTS | PipelineFlags::PIPELINE_USE_DESCRIPTOR_SET | PipelineFlags::PIPELINE_DONT_USE_COLOR_ATTACHMENT,
-													PipelineBlendMode::PIPELINE_BLEND_ONE_ZERO)), }
+													PipelineBlendMode::PIPELINE_BLEND_DISABLE)), }
 
 {
+	clear_value_.color = { 0.0f,0.0f,0.0f,0.0f };
 	VkExtent3D draw_image_extent = {
 		2048*2,
 		2048*2,
@@ -299,7 +300,7 @@ void LavaPBRRenderSystem::render(
 
   TransitionImage(engine_.commandBuffer, engine_.swap_chain_->get_draw_image().image,
     VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
-  //Cambiamos la imagen a tipo presentable para enseñarla en la superficie
+  //Cambiamos la imagen a tipo presentable para enseÃ±arla en la superficie
   TransitionImage(engine_.commandBuffer, engine_.swap_chain_->get_swap_chain_images()[engine_.swap_chain_image_index],
     VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
@@ -341,6 +342,8 @@ void LavaPBRRenderSystem::renderWithShadows(
 
 		if (!light_it->value().enabled_) continue;
 
+		update_lights(light_component_vector, transform_vector);
+
 		int light_index = (int)light_it->value().type_;
 		VkImage current_shadowmap = shadowmap_image_[light_index].image;;
 		VkImageView current_shadowmap_image_view = shadowmap_image_[light_index].image_view;
@@ -353,8 +356,6 @@ void LavaPBRRenderSystem::renderWithShadows(
 
 
 		{
-			VkClearValue clear_value;
-			clear_value.color = { 0.0f,0.0f,0.0f,0.0f };
 			VkRenderingAttachmentInfo color_attachment = vkinit::AttachmentInfo(engine_.swap_chain_->get_draw_image().image_view, NULL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 			VkRenderingAttachmentInfo depth_attachment = vkinit::DepthAttachmentInfo(current_shadowmap_image_view, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR, (light_index == 0) ? 1.0f : 0.0f);
 			int layers = 1;
@@ -473,9 +474,7 @@ void LavaPBRRenderSystem::renderWithShadows(
 			VkRenderingAttachmentInfo color_attachment;
 			VkRenderingAttachmentInfo depth_attachment;
 			if (lights_rendered < 1) {
-				VkClearValue clear_value;
-				clear_value.color = { 0.0f,0.0f,0.0f,0.0f };
-				color_attachment = vkinit::AttachmentInfo(engine_.swap_chain_->get_draw_image().image_view, &clear_value, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+				color_attachment = vkinit::AttachmentInfo(engine_.swap_chain_->get_draw_image().image_view, &clear_value_, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 				depth_attachment = vkinit::DepthAttachmentInfo(engine_.swap_chain_->get_depth_image().image_view, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
 			}
 			else {
@@ -595,7 +594,7 @@ void LavaPBRRenderSystem::renderWithShadows(
 
 	TransitionImage(engine_.commandBuffer, engine_.swap_chain_->get_draw_image().image,
 		VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
-	//Cambiamos la imagen a tipo presentable para enseñarla en la superficie
+	//Cambiamos la imagen a tipo presentable para enseÃ±arla en la superficie
 	TransitionImage(engine_.commandBuffer, engine_.swap_chain_->get_swap_chain_images()[engine_.swap_chain_image_index],
 		VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
@@ -603,6 +602,11 @@ void LavaPBRRenderSystem::renderWithShadows(
 	CopyImageToImage(engine_.commandBuffer, engine_.swap_chain_->get_draw_image().image,
 		engine_.swap_chain_->get_swap_chain_images()[engine_.swap_chain_image_index], engine_.swap_chain_->get_draw_extent(), engine_.window_extent_);
 
+}
+
+void LavaPBRRenderSystem::setClearValue(float r, float g, float b)
+{
+	clear_value_.color = { r,g,b,0.0f };
 }
 
 /*	******************************** NEED FIX: ************************************
@@ -783,15 +787,16 @@ void LavaPBRRenderSystem::update_lights(std::vector<std::optional<struct LightCo
 				light_transform_it->value().pos_,
 				light_transform_it->value().rot_
 			);
-
-			float fov = 2.0f * light_component.cutoff_;
-
-			float near = 10000.0f; // Plano cercano
+			
+			float fov = 90;//2.0f * light_component.cutoff_;
+			
+			float near = 100.0f; // Plano cercano
 			float far = 0.1f; // Plano lejano
-			// Generar la matriz de proyección en perspectiva
+			// Generar la matriz de proyecciÃ³n en perspectiva
 			glm::mat4 proj = glm::perspective(glm::radians(fov), (float)shadowmap_image_[2].image_extent.width / (float)shadowmap_image_[2].image_extent.height, near, far);
 			proj[1][1] *= -1;
 			light_component.viewproj_ = proj * view;
+
 			light_component.light_viewproj_buffer_->updateBufferData(&light_component.viewproj_, sizeof(glm::mat4));
 		}
 		else {

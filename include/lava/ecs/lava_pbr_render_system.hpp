@@ -20,6 +20,8 @@ public:
 		std::vector<std::optional<RenderComponent>>&,
 		std::vector<std::optional<LightComponent>>& light_component_vector);
 
+	void setClearValue(float r, float g, float b);
+
 private:
 	class LavaEngine& engine_;
 	std::unique_ptr<class LavaPipeline> pipeline_;
@@ -34,6 +36,8 @@ private:
 	void allocate_lights(std::vector<std::optional<struct LightComponent>>& light_component_vector);
 	void update_lights(std::vector<std::optional<struct LightComponent>>& light_component_vector,
 		std::vector<std::optional<struct TransformComponent>>& transform_vector);
+
+	VkClearValue clear_value_;
 };
 
 

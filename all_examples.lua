@@ -161,3 +161,22 @@ project"Gaussian"
 	files "src/stdafx.cpp"
 	files "examples/assets/*"
 	common_settings()
+project"CartoonRender"
+    kind "ConsoleApp" -- This was WindowedApp
+    language "C++"
+    targetdir "build/%{prj.name}/%{cfg.buildcfg}"
+    includedirs "include"
+    links "LavaEngine"
+    conan_config_exec("Debug")
+    conan_config_exec("Release")
+    conan_config_exec("RelWithDebInfo")
+    pchheader "stdafx.hpp"
+	pchsource "src/stdafx.cpp"
+	forceincludes { "stdafx.hpp" }
+    debugargs { _MAIN_SCRIPT_DIR .. "/examples/data" }
+    files "examples/cartoon_demostrator.cpp"
+    files "src/shaders/*"
+    files "src/shaders/*/*"
+    files "src/stdafx.cpp"
+    files "examples/assets/*"
+    common_settings()

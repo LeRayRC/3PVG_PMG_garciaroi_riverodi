@@ -11,6 +11,9 @@ layout (location = 3) out vec4 outPos;
 layout (location = 4) out mat3 TBN;
 layout (location = 7) out vec4 fragPosLightSpace;
 layout (location = 8) out mat4 cameraView;
+layout (location = 12) out vec3 outCameraPos;
+layout (location = 13) out vec3 outViewDir;
+
 
 //layout (location = 4) out vec3 tangentLightPos;
 //layout (location = 5) out vec3 tangentViewPos;
@@ -75,7 +78,8 @@ void main()
 
 	outUV.x = v.uv_x;
 	outUV.y = v.uv_y;
-	outNormal = normalize(PushConstants.render_matrix * vec4(v.normal,0.0)).xyz;
+	mat3 normalMatrix = mat3(transpose(inverse(PushConstants.render_matrix)));
+	outNormal = normalize(normalMatrix * v.normal);
 
 	//Normal Mapping Calculations
     vec3 T = normalize(vec3(PushConstants.render_matrix * vec4(v.tangent,   0.0)));
@@ -83,5 +87,8 @@ void main()
     vec3 N = normalize(vec3(PushConstants.render_matrix * vec4(v.normal,    0.0)));
     TBN = mat3(T, B, N);
 
-	
+	outCameraPos = globalData.cameraPos;
+	outViewDir = normalize(globalData.cameraPos - pos.xyz);
+	fragPosLightSpace = light_viewproj.viewproj[0] * pos;
+
 }

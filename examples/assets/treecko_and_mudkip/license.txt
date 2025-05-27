@@ -1,0 +1,11 @@
+Model Information:
+* title:	Treecko and Mudkip
+* source:	https://sketchfab.com/3d-models/treecko-and-mudkip-a2e74411f3f54f10a0318856628f2065
+* author:	npbehunin (https://sketchfab.com/npbehunin)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Treecko and Mudkip" (https://sketchfab.com/3d-models/treecko-and-mudkip-a2e74411f3f54f10a0318856628f2065) by npbehunin (https://sketchfab.com/npbehunin) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

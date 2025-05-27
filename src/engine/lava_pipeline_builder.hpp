@@ -48,6 +48,10 @@ public:
     void EnableDepthTest(bool depthWriteEnable, VkCompareOp op);
 
     void DisableDepthtest();
+
+    void SetDepthBias(float bias);
+
+    void SetDepthWrite(bool v);
 };
 
 #endif

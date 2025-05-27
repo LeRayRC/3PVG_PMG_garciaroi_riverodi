@@ -257,6 +257,19 @@ void PipelineBuilder::DisableDepthtest()
     _depth_stencil.maxDepthBounds = 1.0f;
 }
 
+void PipelineBuilder::SetDepthBias(float bias)
+{
+    _rasterizer.depthBiasEnable = VK_TRUE;
+    _rasterizer.depthBiasConstantFactor = 0.1f;
+    _rasterizer.depthBiasSlopeFactor = 2.0f;
+    _rasterizer.depthBiasClamp = 0.0f;
+}
+
+void PipelineBuilder::SetDepthWrite(bool v)
+{
+    _depth_stencil.depthWriteEnable = v;
+}
+
 void PipelineBuilder::EnableDepthTest(bool depthWriteEnable, VkCompareOp op) {
     _depth_stencil.depthTestEnable = VK_TRUE;
     _depth_stencil.depthWriteEnable = depthWriteEnable;

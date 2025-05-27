@@ -195,12 +195,16 @@ LavaPipeline::LavaPipeline(PipelineConfig config)
 	{
 	case PIPELINE_BLEND_DISABLE:
 		pipeline_builder.DisableBlending();
+		pipeline_builder.EnableDepthTest(true, config.compare_op);
 		break;
 	case PIPELINE_BLEND_ONE_ZERO:
 		pipeline_builder.EnableBlending(config.blend_mode);
+		pipeline_builder.EnableDepthTest(true, config.compare_op);
 		break;
 	case PIPELINE_BLEND_ONE_ONE:
 		pipeline_builder.EnableBlending(config.blend_mode);
+		pipeline_builder.EnableDepthTest(false, config.compare_op);
+		pipeline_builder.SetDepthBias(-0.1f);
 		//pipeline_builder.EnableDepthTest(false, VK_COMPARE_OP_GREATER_OR_EQUAL);
 		//pipeline_builder.DisableDepthtest();
 		break;
@@ -209,7 +213,7 @@ LavaPipeline::LavaPipeline(PipelineConfig config)
 	}
 	//pipeline_builder.DisableBlending();
 
-	pipeline_builder.EnableDepthTest(true, config.compare_op);
+	//pipeline_builder.EnableDepthTest(true, config.compare_op);
 
 	pipeline_builder.SetDepthFormat(config.swap_chain->get_depth_image().image_format);
 	//no depth testing

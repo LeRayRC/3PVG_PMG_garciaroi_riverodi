@@ -1,0 +1,11 @@
+Model Information:
+* title:	Pokemon Cubone - Skeleton
+* source:	https://sketchfab.com/3d-models/pokemon-cubone-skeleton-5cbad8c14a2f4c1094bb728771198ddb
+* author:	kuayarts (https://sketchfab.com/kuayarts)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Pokemon Cubone - Skeleton" (https://sketchfab.com/3d-models/pokemon-cubone-skeleton-5cbad8c14a2f4c1094bb728771198ddb) by kuayarts (https://sketchfab.com/kuayarts) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
