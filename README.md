@@ -6,27 +6,38 @@
 - **Visual Studio 2022**: C++23
 - **Python**: Conan1 library.
 
-## 2 - Generate dependencies
+## 2 - Download and compile OpenXR
+
+```bash
+./build_openxr.bat
+```
+
+## 3 - Generate dependencies
 
 ```bash
 cd tools
 gendeps.bat
 ```
-## 3 - Compile Shaders
+## 4 - Compile Shaders
 
 ```bash
 cd tools
 compileshaders.bat
 ```
 
-## 4 - Generate sln solution
+## 5 - Generate sln solution
 Project root
 
 ```bash
-./tools/premake5.exe vs2022
+./tools/premake5.exe vs2022 --build-engine --include-examples
 ```
 
-## 5 - Open sln solution at build folder
+## 6 - Open sln solution at build folder
+
+```bash
+cd build
+Lava.sln
+```
 
 
 
